@@ -1,0 +1,19 @@
+[submodule "Submodules/bgfx"]
+	path = Submodules/bgfx
+	url = https://github.com/bkaradzic/bgfx.git
+[submodule "Submodules/bx"]
+	path = Submodules/bx
+	url = https://github.com/bkaradzic/bx.git
+[submodule "Submodules/bimg"]
+	path = Submodules/bimg
+	url = https://github.com/bkaradzic/bimg.git
+[submodule "Submodules/glfw"]
+	path = Submodules/glfw
+	url = git@github.com:TommyP844/glfw.git
+[submodule "Submodules/imgui"]
+	path = Submodules/imgui
+	url = git@github.com:TommyP844/imgui.git
+	branch = docking
+[submodule "Submodules/spdlog"]
+	path = Submodules/spdlog
+	url = git@github.com:TommyP844/spdlog.git
