@@ -1,0 +1,45 @@
+#include "ECS/Scene.h"
+#include "ECS/Entity.h"
+#include "ECS/Components.h"
+#include <entt/entt.hpp>
+
+#include <fstream>
+
+namespace Mule
+{
+
+	Entity Scene::CreateEntity(const std::string& name, const Guid& guid)
+	{
+		entt::entity id = mRegistry.create();
+		auto& meta = AddComponent<MetaComponent>(id);
+		meta.Name = name;
+		meta.Guid = guid;
+		auto& blank = AddComponent<RootComponent>(id);
+
+		return Entity(id, WeakRef<Scene>(this));
+	}
+
+	void Scene::DestroyEntity(entt::entity id)
+	{
+		mRegistry.destroy(id);
+	}
+
+	void Scene::IterateRootEntities(std::function<void(Entity)> func)
+	{
+		auto view = mRegistry.view<RootComponent>();
+		for (auto id : view)
+		{
+			Entity e(id, WeakRef<Scene>(this));
+			func(e);
+		}
+	}
+	
+	bool Scene::IsEntityValid(entt::entity id)
+	{
+		return mRegistry.valid(id);
+	}
+
+	void Scene::OnUpdate(float dt)
+	{
+	}
+}

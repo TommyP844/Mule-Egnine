@@ -1,7 +1,7 @@
 workspace "Game Engine"
     configurations { "Debug", "Release" }
     architecture "x64"
-    startproject "Editor"
+    startproject "Mule Editor"
 
     dir = os.getcwd();
 
@@ -9,8 +9,12 @@ workspace "Game Engine"
         dir .. "/Submodules/imgui",
         dir .. "/Submodules/glfw/include",
         dir .. "/Submodules/bgfx/include",
+        dir .. "/Submodules/bx/include",
+        dir .. "/Submodules/bimg/include",
         dir .. "/Submodules/bgfx/3rdparty",
-        dir .. "/Submodules/spdlog/include"
+        dir .. "/Submodules/spdlog/include",
+        dir .. "/Submodules/stb",
+        dir .. "/Submodules/entt/single_include",
     } 
 
     debugLibDirs = {
@@ -37,10 +41,10 @@ workspace "Game Engine"
         "bimg_decodeRelease.lib",
     }
     
-    -- Submodules
+    -- Submodule
     include "Submodules/imgui/premake5.lua"
     include "Submodules/glfw/premake5.lua"
     include "Submodules/spdlog/premake5.lua"
     -- Projects
-    include "Editor/Editor.lua"
-    include "Engine/Engine.lua"
+    include "Mule Editor/editor.lua"
+    include "Mule/mule.lua"

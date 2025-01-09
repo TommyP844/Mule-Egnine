@@ -17,3 +17,12 @@
 [submodule "Submodules/spdlog"]
 	path = Submodules/spdlog
 	url = git@github.com:TommyP844/spdlog.git
+[submodule "Submodules/stb/stb"]
+	path = Submodules/stb/stb
+	url = https://github.com/nothings/stb.git
+[submodule "Submodules/entt"]
+	path = Submodules/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "Submodules/IconFontCppHeaders"]
+	path = Submodules/IconFontCppHeaders
+	url = https://github.com/juliettef/IconFontCppHeaders.git
