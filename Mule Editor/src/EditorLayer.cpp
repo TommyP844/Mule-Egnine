@@ -1,7 +1,13 @@
 #include "EditorLayer.h"
 
+// Engine
 #include "Mule.h"
 
+// Editor
+#include "Popups.h"
+
+
+// Submodules
 #include <spdlog/spdlog.h>
 #include <imgui.h>
 
@@ -33,12 +39,18 @@ void EditorLayer::OnAttach()
 	ImGui::GetIO().Fonts->Build();
 
 	Ref<Mule::Scene> scene = mApplicationData->GetActiveScene();
+
+
 	Mule::Entity a = scene->CreateEntity("A");
 	Mule::Entity b = scene->CreateEntity("B");
 	Mule::Entity c = scene->CreateEntity("C");
 
 	a.AddChild(b);
 	b.AddChild(c);
+
+	scene->SetFilePath("C:\\Development\\Mule Projects\\test.scene");
+
+	mApplicationData->GetAssetManager()->SaveAssetText<Mule::Scene>(scene);
 }
 
 void EditorLayer::OnUpdate(float dt)
@@ -64,6 +76,7 @@ void EditorLayer::OnUIRender()
 		{
 			if (ImGui::MenuItem("Scene"))
 			{
+				mNewScenePopup = true;
 			}
 			ImGui::EndMenu();
 		}
@@ -82,6 +95,8 @@ void EditorLayer::OnUIRender()
 	mSceneHierarchyPanel.OnUIRender();
 	mSceneViewPanel.OnUIRender();
 	mContentBrowserPanel.OnUIRender();
+
+	CreateScenePopup(mNewScenePopup, mEditorState->mAssetsPath);
 }
 
 void EditorLayer::OnDetach()

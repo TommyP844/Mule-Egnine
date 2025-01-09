@@ -33,6 +33,12 @@ namespace Mule
 		Ref<T> LoadAsset(const fs::path& filepath);
 
 		template<typename T>
+		void SaveAssetText(AssetHandle handle);
+
+		template<typename T>
+		void SaveAssetText(Ref<T> asset);
+
+		template<typename T>
 		std::future<Ref<T>> LoadAssetAsync(const fs::path& filepath);
 
 		template<typename T>

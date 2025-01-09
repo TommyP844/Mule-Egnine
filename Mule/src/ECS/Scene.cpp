@@ -14,7 +14,8 @@ namespace Mule
 		auto& meta = AddComponent<MetaComponent>(id);
 		meta.Name = name;
 		meta.Guid = guid;
-		auto& blank = AddComponent<RootComponent>(id);
+		AddComponent<RootComponent>(id);
+		AddComponent<TransformComponent>(id);
 
 		return Entity(id, WeakRef<Scene>(this));
 	}

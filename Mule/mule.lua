@@ -19,7 +19,8 @@ project "Mule"
         "ImGui",
         "glfw",
         "spdlog",
-        "opengl32.lib"
+        "opengl32.lib",
+        "yaml-cpp",
     }
 
     files {

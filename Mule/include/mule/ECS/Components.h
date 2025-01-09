@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include <glm/glm.hpp>
 
 namespace Mule
 {
@@ -18,5 +19,22 @@ namespace Mule
 
 		Entity Parent;
 		std::vector<Entity> Children;
+	};
+
+	struct TransformComponent
+	{
+		glm::vec3 Translation;
+		glm::vec3 Rotation;
+		glm::vec3 Scale;
+	};
+
+	struct CameraComponent
+	{
+		bool Active = true;
+	};
+
+	struct SkyLightComponent
+	{
+		bool Active = true;
 	};
 }

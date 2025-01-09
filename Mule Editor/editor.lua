@@ -22,7 +22,9 @@ project "Mule Editor"
         "glfw",
         "spdlog",
         "opengl32.lib",
-        "Mule"
+        "Mule",
+        "yaml-cpp",
+        "tinyfd",
     }
 
     files {

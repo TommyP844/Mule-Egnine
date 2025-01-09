@@ -25,6 +25,25 @@ namespace Mule
 	}
 
 	template<typename T>
+	inline void AssetManager::SaveAssetText(AssetHandle handle)
+	{
+		constexpr AssetType type = T::sType;
+		Ref<T> asset = mAssets[handle];
+		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
+		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		loader->SaveText(asset);
+	}
+
+	template<typename T>
+	inline void AssetManager::SaveAssetText(Ref<T> asset)
+	{
+		constexpr AssetType type = T::sType;
+		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
+		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		loader->SaveText(asset);
+	}
+
+	template<typename T>
 	inline std::future<Ref<T>> AssetManager::LoadAssetAsync(const fs::path& filepath)
 	{
 		return std::async(std::launch::async, &AssetManager::LoadAsset<T>, this, filepath);

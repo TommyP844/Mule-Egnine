@@ -28,6 +28,12 @@ namespace Mule
 		const fs::path& FilePath() const { return mFilepath; }
 		AssetHandle Handle() const { return mHandle; }
 
+		void SetFilePath(const fs::path& filepath)
+		{
+			mFilepath = filepath;
+			mName = filepath.filename().string();
+		}
+
 		virtual ~Asset() {}
 
 		static AssetHandle GenerateUUID() {

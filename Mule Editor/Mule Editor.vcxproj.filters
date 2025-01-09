@@ -8,6 +8,7 @@
   <ItemGroup>
     <ClInclude Include="src\EditorLayer.h" />
     <ClInclude Include="src\EditorState.h" />
+    <ClInclude Include="src\ImguiUtil.h" />
     <ClInclude Include="src\Panel\ComponentPanel.h">
       <Filter>Panel</Filter>
     </ClInclude>
@@ -23,6 +24,7 @@
     <ClInclude Include="src\Panel\SceneViewPanel.h">
       <Filter>Panel</Filter>
     </ClInclude>
+    <ClInclude Include="src\Popups.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\EditorLayer.cpp" />

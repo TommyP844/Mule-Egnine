@@ -48,7 +48,7 @@ namespace Mule
 		}
 
 		template<typename T>
-		bool HasComponent(entt::entity id)
+		bool HasComponent(entt::entity id) const
 		{
 			return mRegistry.all_of<T>(id);
 		}

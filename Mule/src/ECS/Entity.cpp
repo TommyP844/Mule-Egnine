@@ -4,16 +4,24 @@
 
 #include <spdlog/spdlog.h>
 
+#include "ECS/Components.h"
+
 namespace Mule 
 {
-	const std::string& Entity::Name()
+	const std::string& Entity::Name() const
 	{
 		return GetComponent<MetaComponent>().Name;
 	}
 
-	Guid Entity::Guid()
+	Guid Entity::Guid() const
 	{
 		return GetComponent<MetaComponent>().Guid;
+	}
+
+	TransformComponent& Entity::GetTransformComponent()
+	{
+		auto& transform = GetComponent<TransformComponent>();
+		return transform;
 	}
 
 	Entity Entity::Parent()
@@ -22,7 +30,7 @@ namespace Mule
 		return meta.Parent;
 	}
 
-	std::vector<Entity> Entity::Children()
+	const std::vector<Entity>& Entity::Children() const
 	{
 		auto& meta = GetComponent<MetaComponent>();
 		return meta.Children;

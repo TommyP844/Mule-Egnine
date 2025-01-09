@@ -12,19 +12,22 @@ namespace fs = std::filesystem;
 
 namespace Mule
 {
+
 	class IBaseLoader
 	{
 	public:
 		virtual ~IBaseLoader() {}
 	};
 
-
-
 	template<typename T, AssetType Type>
 	class IAssetLoader : public IBaseLoader
 	{
 	public:
-		virtual Ref<T> Load(const fs::path& filepath) = 0;
+		virtual Ref<T> LoadText(const fs::path& filepath) = 0;
+		virtual void SaveText(Ref<T> asset) = 0;
+
+		virtual Ref<T> LoadBinary(const fs::path& filepath) = 0;
+		virtual void SaveBinary(Ref<T> asset) = 0;
 
 		static constexpr AssetType sType = Type;
 	};

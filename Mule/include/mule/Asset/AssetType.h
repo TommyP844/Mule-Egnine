@@ -4,7 +4,7 @@
 
 namespace Mule
 {
-	enum AssetType
+	enum class AssetType : unsigned int
 	{
 		Texture,
 		Scene,
@@ -17,11 +17,11 @@ namespace Mule
 	{
 		switch (type)
 		{
-		case Mule::Texture: return "Texture";
-		case Mule::Scene: return "Scene";
-		case Mule::Model: return "Model";
-		case Mule::Mesh: return "Mesh";
-		case Mule::Material: return "Material";
+		case AssetType::Texture: return "Texture";
+		case AssetType::Scene: return "Scene";
+		case AssetType::Model: return "Model";
+		case AssetType::Mesh: return "Mesh";
+		case AssetType::Material: return "Material";
 		}
 
 		return "Unknown";

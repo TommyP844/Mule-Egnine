@@ -57,8 +57,8 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>BX_CONFIG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\bgfx\include;..\Submodules\bx\include;..\Submodules\bimg\include;..\Submodules\bgfx\3rdparty;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;BX_CONFIG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\bgfx\include;..\Submodules\bx\include;..\Submodules\bimg\include;..\Submodules\bgfx\3rdparty;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\tinyfd;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MTd %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -74,7 +74,8 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\bgfx\include;..\Submodules\bx\include;..\Submodules\bimg\include;..\Submodules\bgfx\3rdparty;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\bgfx\include;..\Submodules\bx\include;..\Submodules\bimg\include;..\Submodules\bgfx\3rdparty;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\tinyfd;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MT %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -89,11 +90,13 @@
   <ItemGroup>
     <ClInclude Include="src\EditorLayer.h" />
     <ClInclude Include="src\EditorState.h" />
+    <ClInclude Include="src\ImguiUtil.h" />
     <ClInclude Include="src\Panel\ComponentPanel.h" />
     <ClInclude Include="src\Panel\ContentBrowserPanel.h" />
     <ClInclude Include="src\Panel\IPanel.h" />
     <ClInclude Include="src\Panel\SceneHierarchyPanel.h" />
     <ClInclude Include="src\Panel\SceneViewPanel.h" />
+    <ClInclude Include="src\Popups.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\EditorLayer.cpp" />
@@ -115,6 +118,12 @@
     </ProjectReference>
     <ProjectReference Include="..\Mule\Mule.vcxproj">
       <Project>{B848897C-A47F-8A0D-4D6C-70103982060F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Submodules\yaml\yaml-cpp.vcxproj">
+      <Project>{88F1A057-74BE-FB62-9DD7-E90A890331F1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Submodules\tinyfd\tinyfd.vcxproj">
+      <Project>{93DC1F1E-7F7E-4AF4-6839-5E48547AD144}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

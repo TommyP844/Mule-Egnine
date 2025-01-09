@@ -5,10 +5,14 @@
 #include "Guid.h"
 #include "Scene.h"
 
+
+
 #include "entt/entt.hpp"
 
 namespace Mule
 {
+	struct TransformComponent;
+
 	class Entity // : public ScriptableClass
 	{
 	public:
@@ -31,11 +35,12 @@ namespace Mule
 
 		WeakRef<Scene> GetScene() const { return mScene; }
 		uint32_t ID() const { return (uint32_t)mId; }
-		const std::string& Name();
-		Guid Guid();
+		const std::string& Name() const;
+		Guid Guid() const;
+		TransformComponent& GetTransformComponent();
 
 		Entity Parent();
-		std::vector<Entity> Children();
+		const std::vector<Entity>& Children() const;
 		void Orphan();
 		void RemoveChild(Entity child);
 		void AddChild(Entity child);
@@ -57,7 +62,19 @@ namespace Mule
 		}
 
 		template<typename T>
+		const T& GetComponent() const
+		{
+			return mScene->GetComponent<T>(mId);
+		}
+
+		template<typename T>
 		bool HasComponent()
+		{
+			return mScene->HasComponent<T>(mId);
+		}
+
+		template<typename T>
+		bool HasComponent() const
 		{
 			return mScene->HasComponent<T>(mId);
 		}
@@ -68,7 +85,7 @@ namespace Mule
 			mScene->RemoveComponent<T>(mId);
 		}
 
-		bool operator==(const Entity& other)
+		bool operator==(Entity& other)
 		{
 			return mId == other.mId && mScene == other.mScene;
 		}

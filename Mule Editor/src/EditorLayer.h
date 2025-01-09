@@ -30,4 +30,7 @@ private:
 	SceneHierarchyPanel mSceneHierarchyPanel;
 	SceneViewPanel mSceneViewPanel;
 
+	// Popups
+	bool mNewScenePopup = false;
+
 };
