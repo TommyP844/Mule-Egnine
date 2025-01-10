@@ -20,7 +20,7 @@ project "Mule"
         "glfw",
         "spdlog",
         "opengl32.lib",
-        "yaml-cpp",
+        "yaml-cpp"
     }
 
     files {

@@ -8,6 +8,7 @@
 
 // Asset Loaders
 #include "Asset/Loader/SceneLoader.h"
+#include "Asset/Loader/ModelLoader.h"
 
 namespace Mule
 {
@@ -27,6 +28,9 @@ namespace Mule
 
 		WeakRef<AssetManager> assetManager = mApplicationData->GetAssetManager();
 		assetManager->RegisterLoader<SceneLoader>();
+		assetManager->RegisterLoader<ModelLoader>();
+
+		assetManager->LoadAsset<Model>("C:\\Development\\Mule Projects\\Test Project\\Models\\Avocado\\glTF\\Avocado.gltf");
 	}
 
 	Application::~Application()

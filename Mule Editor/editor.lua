@@ -24,7 +24,7 @@ project "Mule Editor"
         "opengl32.lib",
         "Mule",
         "yaml-cpp",
-        "nativefiledialog",
+        "nativefiledialog"
     }
 
     files {

@@ -19,7 +19,7 @@ namespace Mule
 		constexpr AssetType type = T::sType;
 		SPDLOG_INFO("Loading asset: [{}, {}]", GetAssetTypeString(type), filepath.string());
 		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
-		Ref<T> asset = loader->Load(filepath);
+		Ref<T> asset = loader->LoadText(filepath);
 		mAssets[asset->Handle()] = asset;
 		return asset;
 	}

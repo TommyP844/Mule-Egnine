@@ -18,6 +18,7 @@ workspace "Game Engine"
         dir .. "/Submodules/glm",
         dir .. "/Submodules/yaml/include",
         dir .. "/Submodules/nativefiledialog/src/include",
+        dir .. "/Submodules/tinygltf",
     } 
 
     debugLibDirs = {
