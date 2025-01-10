@@ -16,6 +16,7 @@ namespace Mule
 	class Texture2D : public Asset<AssetType::Texture>
 	{
 	public:
+		Texture2D() {}
 		Texture2D(void* data, int width, int height, bgfx::TextureFormat::Enum format, bool createMips);
 		Texture2D(const fs::path& filepath);
 

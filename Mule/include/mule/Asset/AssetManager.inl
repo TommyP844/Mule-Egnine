@@ -44,6 +44,12 @@ namespace Mule
 	}
 
 	template<typename T>
+	inline void AssetManager::InsertAsset(Ref<T> asset)
+	{
+		mAssets[asset->Handle()] = asset;
+	}
+
+	template<typename T>
 	inline std::future<Ref<T>> AssetManager::LoadAssetAsync(const fs::path& filepath)
 	{
 		return std::async(std::launch::async, &AssetManager::LoadAsset<T>, this, filepath);

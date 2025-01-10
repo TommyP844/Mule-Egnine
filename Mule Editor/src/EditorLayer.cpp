@@ -96,7 +96,12 @@ void EditorLayer::OnUIRender()
 	mSceneViewPanel.OnUIRender();
 	mContentBrowserPanel.OnUIRender();
 
-	CreateScenePopup(mNewScenePopup, mEditorState->mAssetsPath);
+	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
+		Ref<Mule::Scene> scene = Ref<Mule::Scene>::Make();
+		scene->SetFilePath(filepath);
+		mApplicationData->GetAssetManager()->InsertAsset(scene);
+		mApplicationData->SetActiveScene(scene);
+		});
 }
 
 void EditorLayer::OnDetach()

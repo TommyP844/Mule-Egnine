@@ -18,3 +18,6 @@
 #include "ECS/Entity.h"
 #include "ECS/Scene.h"
 #include "ECS/Guid.h"
+
+// Rendering
+#include "Rendering/Texture2D.h"

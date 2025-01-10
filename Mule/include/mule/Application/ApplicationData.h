@@ -12,6 +12,8 @@ namespace Mule
 		ApplicationData();
 		~ApplicationData();
 
+		void SetActiveScene(Ref<Scene> scene) { mActiveScene = scene; }
+
 		WeakRef<AssetManager> GetAssetManager() const { return mAssetManager; }
 		Ref<Scene> GetActiveScene() const { return mActiveScene; }
 	private:

@@ -17,7 +17,7 @@ workspace "Game Engine"
         dir .. "/Submodules/entt/single_include",
         dir .. "/Submodules/glm",
         dir .. "/Submodules/yaml/include",
-        dir .. "/Submodules/tinyfd",
+        dir .. "/Submodules/nativefiledialog/src/include",
     } 
 
     debugLibDirs = {
@@ -55,7 +55,7 @@ workspace "Game Engine"
     include "Submodules/glfw/premake5.lua"
     include "Submodules/spdlog/premake5.lua"
     include "Submodules/yaml/yaml.lua"
-    include "Submodules/tinyfd/tinyfd.lua"
+    include "Submodules/nativefiledialog/nativefiledialog.lua"
     -- Projects
     include "Mule Editor/editor.lua"
     include "Mule/mule.lua"

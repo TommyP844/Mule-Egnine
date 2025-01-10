@@ -10,6 +10,15 @@ void SceneHierarchyPanel::OnUIRender()
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
+		if (ImGui::BeginPopupContextWindow())
+		{
+			if (ImGui::MenuItem("Create Entity"))
+			{
+				mApplicationData->GetActiveScene()->CreateEntity();
+			}
+			ImGui::EndPopup();
+		}
+
 		WeakRef<Mule::Scene> scene = mApplicationData->GetActiveScene();
 		scene->IterateRootEntities([&](Mule::Entity e) {
 				RecurseEntities(e);
@@ -22,6 +31,10 @@ void SceneHierarchyPanel::OnUIRender()
 		}
 		if (mEntityToDelete)
 		{
+			if (mEditorState->SelectedEntity == mEntityToDelete)
+			{
+				mEditorState->SelectedEntity = Mule::Entity();
+			}
 			mEntityToDelete.Destroy();
 			mEntityToDelete = Mule::Entity();
 		}
@@ -56,7 +69,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 
 void SceneHierarchyPanel::EntityContextMenu(Mule::Entity e)
 {
-	std::string popupContextId = e.Name() + "_PopupContext";
+	std::string popupContextId = e.Name() + "_PopupContext_" + std::to_string((int)e.ID());
 	if (ImGui::BeginPopupContextItem(popupContextId.c_str()))
 	{
 		ImGui::Text(e.Name().c_str());

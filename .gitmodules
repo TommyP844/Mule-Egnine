@@ -35,3 +35,6 @@
 [submodule "Submodules/tinyfd"]
 	path = Submodules/tinyfd
 	url = git@github.com:TommyP844/libtinyfiledialogs.git
+[submodule "Submodules/nativefiledialog"]
+	path = Submodules/nativefiledialog
+	url = git@github.com:TommyP844/nativefiledialog.git

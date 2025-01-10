@@ -2,11 +2,17 @@
 
 #include "IPanel.h"
 
+#include "Mule.h"
+
 class ContentBrowserPanel : public IPanel
 {
 public:
-	ContentBrowserPanel() : IPanel("Content Browser") {}
+	ContentBrowserPanel();
 	~ContentBrowserPanel() {}
 
 	virtual void OnUIRender() override;
+
+private:
+	Ref<Mule::Texture2D> mFolderTexture;
+	Ref<Mule::Texture2D> mFileTexture;
 };

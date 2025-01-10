@@ -2,26 +2,24 @@
 
 #include "imgui.h"
 
-#define TINYFD_NOLIB
+// Submodules
+#include "nfd.h"
 
-#include <Windows.h>
-#include "tinyfiledialogs.h"
+// STd
+#include <functional>
 
-
-static void CreateScenePopup(bool& show, const fs::path& defaultPath)
+static void NewItemPopup(bool& show, const std::string& itemName, const std::string& ext, const fs::path& defaultPath, std::function<void(const fs::path&)> func)
 {
 	static char pathBuffer[256] = { 0 };
 	static char name[256] = { 0 };
 	if (show)
 	{
-		ImGui::OpenPopup("New Scene");
+		ImGui::OpenPopup(("New " + itemName).c_str());
 		show = false;
 		memset(pathBuffer, 0, 256);
 		memcpy(pathBuffer, defaultPath.string().c_str(), defaultPath.string().size());
 
-		static const char* defaultName = "Scene.scene";
 		memset(name, 0, 256);
-		memcpy(name, defaultName, strlen(defaultName));
 	}
 
 	if (ImGui::BeginPopupModal("New Scene", nullptr, ImGuiWindowFlags_NoResize))
@@ -39,16 +37,17 @@ static void CreateScenePopup(bool& show, const fs::path& defaultPath)
 
 			ImGui::TableNextColumn();
 			ImGui::PushItemWidth(350.f);
-			ImGui::InputText("##NewScenePath", pathBuffer, 256);
+			ImGui::InputText("##NewItemPath", pathBuffer, 256);
 			
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Browse"))
 			{
-				const char* selected = tinyfd_selectFolderDialog("Select Folder", pathBuffer);
-				if (selected)
+				nfdchar_t* outPath = NULL;
+				nfdresult_t result = NFD_PickFolder(pathBuffer, &outPath);
+				if (result == NFD_OKAY)
 				{
 					memset(pathBuffer, 0, 256);
-					memcpy(pathBuffer, selected, strlen(selected));
+					memcpy(pathBuffer, outPath, strlen(outPath));
 				}
 			}
 
@@ -59,7 +58,7 @@ static void CreateScenePopup(bool& show, const fs::path& defaultPath)
 
 			ImGui::TableNextColumn();
 			ImGui::PushItemWidth(350.f);
-			ImGui::InputText("##NewSceneName", name, 256);
+			ImGui::InputText("##NewItemName", name, 256);
 
 			ImGui::TableNextColumn();
 
@@ -76,7 +75,13 @@ static void CreateScenePopup(bool& show, const fs::path& defaultPath)
 
 		if (ImGui::Button("Create"))
 		{
-			// add .file extension if missing
+			fs::path filepath = std::string(pathBuffer) + "\\" + name;
+			if (filepath.extension() != ext)
+			{
+				filepath += ext;
+			}
+
+			func(filepath);
 
 			ImGui::CloseCurrentPopup();
 		}
