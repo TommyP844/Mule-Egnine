@@ -41,3 +41,6 @@
 [submodule "Submodules/tinygltf"]
 	path = Submodules/tinygltf
 	url = https://github.com/TommyP844/tinygltf
+[submodule "Submodules/magma"]
+	path = Submodules/magma
+	url = git@github.com:TommyP844/magma.git
