@@ -2,7 +2,6 @@
 
 #include "RenderTypes.h"
 
-#include <bgfx/bgfx.h>
 
 // STD
 #include <vector>
@@ -35,14 +34,8 @@ namespace Mule
 
 		void Resize(int width, int height);
 
-		void Bind();
 
 	private:
 		FramebufferDesc mDesc;
-		std::vector<bgfx::TextureHandle> mAttachments;
-		bgfx::FrameBufferHandle mHandle;
-
-		void CreateFramebuffer();
-		bgfx::TextureHandle CreateAttachment(int width, int height, const AttachmentDesc& attachmentDesc);
 	};
 }

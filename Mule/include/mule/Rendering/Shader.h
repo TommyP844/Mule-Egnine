@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
-
 namespace Mule
 {
 	class Shader
@@ -9,6 +7,5 @@ namespace Mule
 	public:
 		Shader();
 	private:
-		bgfx::ShaderHandle mHandle;
 	};
 }

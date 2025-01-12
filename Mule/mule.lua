@@ -20,7 +20,9 @@ project "Mule"
         "glfw",
         "spdlog",
         "opengl32.lib",
-        "yaml-cpp"
+        "yaml-cpp",
+        "magma",
+        vulkanLib
     }
 
     files {
@@ -31,21 +33,9 @@ project "Mule"
 
     filter {"configurations:Debug"}
         buildoptions {"/MTd"}
-        libdirs {
-            debugLibDirs
-        }
-        links {
-            debugLibs
-        }
         defines {
             "BX_CONFIG_DEBUG"
         }
         
     filter {"configurations:Release"}
         buildoptions {"/MT"}
-        libdirs {
-            releaseLibDirs
-        }
-        links {
-            releaseLibs
-        }

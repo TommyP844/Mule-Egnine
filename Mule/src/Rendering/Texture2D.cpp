@@ -7,30 +7,11 @@
 
 namespace Mule
 {
-	Texture2D::Texture2D(void* data, int width, int height, bgfx::TextureFormat::Enum format, bool createMips)
+	Texture2D::Texture2D(void* data, int width, int height, bool createMips)
 		:
 		Asset()
 	{
-		uint64_t flags = 0;
-		if (createMips) 
-		{
-			flags |= BGFX_RESOLVE_AUTO_GEN_MIPS;
-		}
 
-		bgfx::TextureInfo info;
-		bgfx::calcTextureSize(info, width, height, 1, false, false, 1, format);
-		uint32_t size = info.storageSize;
-
-		const bgfx::Memory* mem = bgfx::copy(data, size);
-		
-		mHandle = bgfx::createTexture2D(
-			(uint16_t)width,
-			(uint16_t)height,
-			false,
-			1,
-			format,
-			flags,
-			mem);
 	}
 
 	Texture2D::Texture2D(const fs::path& filepath)
@@ -46,26 +27,9 @@ namespace Mule
 			SPDLOG_ERROR("\tError: {}", stbi_failure_reason());
 			return;
 		}
-
-		bgfx::TextureInfo info;
-		bgfx::calcTextureSize(info, width, height, 1, false, false, 1, bgfx::TextureFormat::RGBA8);
-		uint32_t size = info.storageSize;
-
-		const bgfx::Memory* mem = bgfx::copy(data, size);
-
-		mHandle = bgfx::createTexture2D(
-			(uint16_t)width,
-			(uint16_t)height,
-			false,
-			1,
-			bgfx::TextureFormat::RGBA8,
-			BGFX_SAMPLER_BITS_MASK,
-			mem);
 	}
 
 	Texture2D::~Texture2D()
 	{
-		if(bgfx::isValid(mHandle))
-			bgfx::destroy(mHandle);
 	}
 }

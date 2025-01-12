@@ -20,6 +20,7 @@
 #include "ECS/Guid.h"
 
 // Rendering
+#include "Rendering/GraphicsContext.h"
 #include "Rendering/Texture2D.h"
 #include "Rendering/Model.h"
 #include "Rendering/Rendertypes.h"

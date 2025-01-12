@@ -6,7 +6,6 @@
 
 // Submodules
 #include <glm/glm.hpp>
-#include <bgfx/bgfx.h>
 
 // STD
 #include <string>
@@ -16,7 +15,7 @@ namespace Mule
 	class Mesh
 	{
 	public:
-		Mesh(const std::string& name, const Buffer& vertices, const Buffer& indices, const bgfx::VertexLayout& layout, AssetHandle defaultMaterialHandle, bool indice32Bit);
+		Mesh(const std::string& name, const Buffer& vertices, const Buffer& indices, AssetHandle defaultMaterialHandle, bool indice32Bit);
 		~Mesh();
 
 		Mesh(const Mesh& other) = delete;
@@ -36,9 +35,6 @@ namespace Mule
 
 		AssetHandle mDefaultMaterialHandle;
 
-		bgfx::VertexLayoutHandle mVertexLayoutHandle;
-		bgfx::VertexBufferHandle mVertexBufferHandle;
-		bgfx::IndexBufferHandle mIndexBufferHandle;
 
 	};
 }

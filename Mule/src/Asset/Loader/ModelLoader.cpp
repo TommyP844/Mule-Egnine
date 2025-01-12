@@ -161,12 +161,12 @@ namespace Mule
 			}
 			
 
-			Ref<Mesh> mesh = Ref<Mesh>::Make(gltfMesh.name, vertices, indices, StaticVertex::CreateLayout(), 0, uses32BitIndicies);
+			//Ref<Mesh> mesh = Ref<Mesh>::Make(gltfMesh.name, vertices, indices, StaticVertex::CreateLayout(), 0, uses32BitIndicies);
 
 			vertices.Release();
 			indices.Release();
 
-			meshes.push_back(mesh);
+			//meshes.push_back(mesh);
 		}
 
 		return meshes;

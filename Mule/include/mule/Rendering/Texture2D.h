@@ -4,7 +4,6 @@
 #include "Asset/Asset.h"
 
 // Submodules
-#include <bgfx/bgfx.h>
 #include <imgui.h>
 
 // STD
@@ -17,15 +16,13 @@ namespace Mule
 	{
 	public:
 		Texture2D() {}
-		Texture2D(void* data, int width, int height, bgfx::TextureFormat::Enum format, bool createMips);
+		Texture2D(void* data, int width, int height, bool createMips);
 		Texture2D(const fs::path& filepath);
 		~Texture2D();
 
-		bgfx::TextureHandle GetRenderHandle() const { return mHandle; }
-		ImTextureID GetImGuiID() const { return (ImTextureID)mHandle.idx; }
+		ImTextureID GetImGuiID() const { return (ImTextureID)0; }
 	private:
 
-		bgfx::TextureHandle mHandle = bgfx::TextureHandle();
 
 	};
 }

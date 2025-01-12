@@ -8,10 +8,6 @@ workspace "Game Engine"
     includes = {
         dir .. "/Submodules/imgui",
         dir .. "/Submodules/glfw/include",
-        dir .. "/Submodules/bgfx/include",
-        dir .. "/Submodules/bx/include",
-        dir .. "/Submodules/bimg/include",
-        dir .. "/Submodules/bgfx/3rdparty",
         dir .. "/Submodules/spdlog/include",
         dir .. "/Submodules/stb",
         dir .. "/Submodules/entt/single_include",
@@ -19,30 +15,12 @@ workspace "Game Engine"
         dir .. "/Submodules/yaml/include",
         dir .. "/Submodules/nativefiledialog/src/include",
         dir .. "/Submodules/tinygltf",
+        dir .. "Submodules/bgfx/magma",
+        "%VULKAN_SDK%/Include"
     } 
 
-    debugLibDirs = {
-        dir .. "/Submodules/bgfx/.build/win64_vs2022/bin"
-    }
-
-    releaseLibDirs = {
-        dir .. "/Submodules/bgfx/.build/win64_vs2022/bin"
-    }
-
-    debugLibs = {
-        "bgfxDebug.lib",
-        "bxDebug.lib",
-        "bimgDebug.lib",
-        "bimg_encodeDebug.lib",
-        "bimg_decodeDebug.lib",
-    }
-
-    releaseLibs = {
-        "bgfxRelease.lib",
-        "bxRelease.lib",
-        "bimgRelease.lib",
-        "bimg_encodeRelease.lib",
-        "bimg_decodeRelease.lib",
+    vulkanLib = {
+        "%VULKAN_SDK%/vulkan-1.lib"
     }
 
     defines
@@ -52,11 +30,14 @@ workspace "Game Engine"
     }
     
     -- Submodule
-    include "Submodules/imgui/premake5.lua"
-    include "Submodules/glfw/premake5.lua"
-    include "Submodules/spdlog/premake5.lua"
-    include "Submodules/yaml/yaml.lua"
-    include "Submodules/nativefiledialog/nativefiledialog.lua"
+    group "Submodules"
+        include "Submodules/imgui/premake5.lua"
+        include "Submodules/glfw/premake5.lua"
+        include "Submodules/spdlog/premake5.lua"
+        include "Submodules/yaml/yaml.lua"
+        include "Submodules/nativefiledialog/nativefiledialog.lua"
+        include "Submodules/magma/magma.lua"
+    group ""
     -- Projects
     include "Mule Editor/editor.lua"
     include "Mule/mule.lua"
