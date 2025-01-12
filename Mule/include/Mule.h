@@ -21,3 +21,5 @@
 
 // Rendering
 #include "Rendering/Texture2D.h"
+#include "Rendering/Model.h"
+#include "Rendering/Rendertypes.h"

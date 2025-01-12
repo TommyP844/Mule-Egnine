@@ -19,6 +19,7 @@ namespace Mule
 		Texture2D() {}
 		Texture2D(void* data, int width, int height, bgfx::TextureFormat::Enum format, bool createMips);
 		Texture2D(const fs::path& filepath);
+		~Texture2D();
 
 		bgfx::TextureHandle GetRenderHandle() const { return mHandle; }
 		ImTextureID GetImGuiID() const { return (ImTextureID)mHandle.idx; }

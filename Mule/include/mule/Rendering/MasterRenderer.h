@@ -6,12 +6,12 @@
 
 namespace Mule
 {
-	class Renderer
+	class MasterRenderer
 	{
 	public:
-		static Renderer& Init(Ref<Window> window);
+		static MasterRenderer& Init(Ref<Window> window);
 		static void Shutdown();
-		static Renderer& Get();
+		static MasterRenderer& Get();
 
 		void NewFrame();
 		void RenderFrame();
@@ -20,11 +20,11 @@ namespace Mule
 		void RenderImGuiFrame();
 
 	private:
-		Renderer(Ref<Window> window);
-		~Renderer();
-		Renderer(const Renderer&) = delete;
+		MasterRenderer(Ref<Window> window);
+		~MasterRenderer();
+		MasterRenderer(const MasterRenderer&) = delete;
 
-		static Renderer* sRenderer;
+		static MasterRenderer* sRenderer;
 		
 		BGFXDebugCallback callback;
 	};

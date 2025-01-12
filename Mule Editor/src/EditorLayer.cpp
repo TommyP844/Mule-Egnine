@@ -51,11 +51,12 @@ void EditorLayer::OnAttach()
 	scene->SetFilePath("C:\\Development\\Mule Projects\\test.scene");
 
 	mApplicationData->GetAssetManager()->SaveAssetText<Mule::Scene>(scene);
+	mApplicationData->GetAssetManager()->LoadAsset<Mule::Model>("C:\\Development\\Mule Projects\\Test Project\\Models\\Avocado\\glTF\\Avocado.gltf");
 }
 
 void EditorLayer::OnUpdate(float dt)
 {
-	SPDLOG_INFO("Layer OnUpdate: {}", GetName());	
+	SPDLOG_INFO("Layer OnUpdate: {}", GetName());
 }
 
 void EditorLayer::OnUIRender()

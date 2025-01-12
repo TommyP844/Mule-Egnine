@@ -1,4 +1,4 @@
-#include "Rendering/Renderer.h"
+#include "Rendering/MasterRenderer.h"
 
 #include "spdlog/spdlog.h"
 
@@ -13,44 +13,44 @@
 namespace Mule
 {
 
-	Renderer* Renderer::sRenderer = nullptr;
+	MasterRenderer* MasterRenderer::sRenderer = nullptr;
 
-	Renderer& Renderer::Init(Ref<Window> window)
+	MasterRenderer& MasterRenderer::Init(Ref<Window> window)
 	{
 		assert(sRenderer == nullptr && "Renderer already initialized");
-		sRenderer = new Renderer(window);
+		sRenderer = new MasterRenderer(window);
 		return *sRenderer;
 	}
 
-	void Renderer::Shutdown()
+	void MasterRenderer::Shutdown()
 	{
 		SPDLOG_INFO("Shutting down renderer...");
 		delete sRenderer;
 		SPDLOG_INFO("Renderer shutdown");
 	}
 
-	Renderer& Renderer::Get()
+	MasterRenderer& MasterRenderer::Get()
 	{
 		return *sRenderer;
 	}
 
-	void Renderer::NewFrame()
+	void MasterRenderer::NewFrame()
 	{
 		bgfx::touch(0);
 	}
 
-	void Renderer::RenderFrame()
+	void MasterRenderer::RenderFrame()
 	{
 		bgfx::frame();
 	}
 
-	void Renderer::NewImGuiFrame()
+	void MasterRenderer::NewImGuiFrame()
 	{
 		ImGui_Implbgfx_NewFrame();
 		ImGui::NewFrame();
 	}
 
-	void Renderer::RenderImGuiFrame()
+	void MasterRenderer::RenderImGuiFrame()
 	{
 		ImGui::EndFrame();
 		ImGui::Render();
@@ -59,7 +59,7 @@ namespace Mule
 		bgfx::TextureHandle;
 	}
 
-	Renderer::Renderer(Ref<Window> window)
+	MasterRenderer::MasterRenderer(Ref<Window> window)
 	{
 		bgfx::PlatformData pd{};
 		pd.nwh = glfwGetWin32Window(window->GetGLFWWindow());
@@ -72,7 +72,7 @@ namespace Mule
 		init.resolution.reset = BGFX_RESET_VSYNC;
 		init.debug = true;
 		init.platformData = pd;
-		//init.callback = &callback;
+		init.callback = &callback;
 		if (!bgfx::init(init))
 		{
 			SPDLOG_CRITICAL("Failed to init renderer");
@@ -103,7 +103,7 @@ namespace Mule
 
 	}
 
-	Renderer::~Renderer()
+	MasterRenderer::~MasterRenderer()
 	{
 		ImGui_Implbgfx_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

@@ -13,6 +13,7 @@ namespace Mule
 
 	AssetManager::~AssetManager()
 	{
+		SPDLOG_INFO("Shutting down asset manager");
 	}
 
 	void AssetManager::RemoveAsset(AssetHandle handle)

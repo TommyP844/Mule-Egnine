@@ -17,13 +17,17 @@ public:
 	{
 		char buffer[1024];
 
-		SPDLOG_INFO("[{}:{}] {}", _filePath, _line, buffer); // Log the message
+		// Format the message using va_list
+		vsnprintf(buffer, sizeof(buffer), _format, _argList);
+		buffer[strlen(buffer) - 1] = 0;
+
+		SPDLOG_INFO("{}", buffer); // Log the message
 	}
 
 	// Override other methods as needed
 	void fatal(const char* _filePath, uint16_t _line, bgfx::Fatal::Enum _code, const char* _str) override
 	{
-		SPDLOG_CRITICAL("[FATAL] [{}:{}] {} (Code: {})", _filePath, _line, _str, static_cast<int>(_code));
+		SPDLOG_CRITICAL("[FATAL] {} (Code: {})", _str, static_cast<int>(_code));
 	}
 
 	uint32_t cacheReadSize(uint64_t /*_id*/) override { return 0; }

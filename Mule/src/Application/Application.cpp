@@ -1,6 +1,6 @@
 
 #include "Application/Application.h"
-#include "Rendering/Renderer.h"
+#include "Rendering/MasterRenderer.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 
@@ -15,27 +15,26 @@ namespace Mule
 	Application::Application()
 	{
 #ifdef _DEBUG
-#ifdef _WIN32
-		SetConsoleOutputCP(CP_UTF8);
-#endif
 		spdlog::set_pattern("[%H:%M:%S %z] [%n] [thread %t] %v");
 		SPDLOG_INFO("Application Started");
 #endif
 		mWindow = Ref<Window>::Make("Title");
-		Renderer::Init(mWindow);
+		MasterRenderer::Init(mWindow);
 
 		mApplicationData = Ref<ApplicationData>::Make();
 
 		WeakRef<AssetManager> assetManager = mApplicationData->GetAssetManager();
 		assetManager->RegisterLoader<SceneLoader>();
 		assetManager->RegisterLoader<ModelLoader>();
-
-		assetManager->LoadAsset<Model>("C:\\Development\\Mule Projects\\Test Project\\Models\\Avocado\\glTF\\Avocado.gltf");
 	}
 
 	Application::~Application()
 	{
-		Renderer::Shutdown();
+		while (!mLayerStack.empty())
+			mLayerStack.PopLayer();
+
+		mApplicationData->Shutdown();
+		MasterRenderer::Shutdown();
 	}
 
 	void Application::Run()
@@ -44,7 +43,7 @@ namespace Mule
 		{
 			glfwPollEvents();
 			
-			Renderer& renderer = Renderer::Get();
+			MasterRenderer& renderer = MasterRenderer::Get();
 			renderer.NewFrame();
 			renderer.NewImGuiFrame();
 

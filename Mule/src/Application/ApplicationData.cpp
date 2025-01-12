@@ -11,4 +11,9 @@ namespace Mule
 	ApplicationData::~ApplicationData()
 	{
 	}
+	void ApplicationData::Shutdown()
+	{
+		mActiveScene = nullptr;
+		mAssetManager = nullptr;
+	}
 }

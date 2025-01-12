@@ -3,6 +3,8 @@
 #include "ECS/Guid.h"
 #include "ECS/Entity.h"
 
+#include "Rendering/Camera.h"
+
 #include <string>
 
 #include <glm/glm.hpp>
@@ -31,6 +33,7 @@ namespace Mule
 	struct CameraComponent
 	{
 		bool Active = true;
+		Camera Camera;
 	};
 
 	struct SkyLightComponent

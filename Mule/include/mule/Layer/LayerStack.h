@@ -25,6 +25,8 @@ namespace Mule
 			layer->OnDetach();
 		}
 
+		bool empty() const { return mLayers.empty(); }
+
 		std::vector<Ref<ILayer>>::iterator begin() { return mLayers.begin(); }
 		std::vector<Ref<ILayer>>::iterator end() { return mLayers.end(); }
 

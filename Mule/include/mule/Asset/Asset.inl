@@ -1,5 +1,6 @@
-#include "Asset.h"
 #pragma once
+
+#include "Asset.h"
 
 namespace Mule
 {
@@ -9,7 +10,7 @@ namespace Mule
 		mHandle(handle),
 		mFilepath(path)
 	{
-		mName = path.filename();
+		mName = path.filename().string();
 	}
 
 	template<AssetType Type>

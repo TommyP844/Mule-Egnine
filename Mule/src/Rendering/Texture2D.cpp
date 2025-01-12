@@ -62,4 +62,10 @@ namespace Mule
 			BGFX_SAMPLER_BITS_MASK,
 			mem);
 	}
+
+	Texture2D::~Texture2D()
+	{
+		if(bgfx::isValid(mHandle))
+			bgfx::destroy(mHandle);
+	}
 }
