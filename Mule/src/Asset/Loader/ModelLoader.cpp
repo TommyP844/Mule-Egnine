@@ -62,7 +62,7 @@ namespace Mule
 
 	Ref<Model> ModelLoader::ConvertModel(const tinygltf::Model& gltfModel)
 	{
-		Ref<Model> model = Ref<Model>::Make();
+		Ref<Model> model = MakeRef<Model>();
 
 		if (gltfModel.scenes.empty()) {
 			throw std::runtime_error("GLTF file has no scenes.");

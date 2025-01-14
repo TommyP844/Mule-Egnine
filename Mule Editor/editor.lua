@@ -9,6 +9,10 @@ project "Mule Editor"
     buildoptions {"/Zc:__cplusplus"}
     buildoptions {"/utf-8"} -- Needed for spdlog to compile
 
+    defines {
+        "GLFW_INCLUDE_VULKAN"
+    }
+
     includedirs {
         includes,
         "../Mule/include",
@@ -25,8 +29,7 @@ project "Mule Editor"
         "Mule",
         "yaml-cpp",
         "nativefiledialog",
-        "magma",
-        vulkanLib
+        libs
     }
 
     files {
@@ -36,22 +39,7 @@ project "Mule Editor"
 
     filter {"configurations:Debug"}
         buildoptions {"/MTd"}
-        libdirs {
-            debugLibDirs
-        }
-        links {
-            debugLibs
-        }
-        defines {
-            "BX_CONFIG_DEBUG"
-        }
         
     filter {"configurations:Release"}
         buildoptions {"/MT"}
-        libdirs {
-            releaseLibDirs
-        }
-        links {
-            releaseLibs
-        }
         

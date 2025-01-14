@@ -57,8 +57,8 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;BX_CONFIG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;..\..\Mule EngineSubmodules\bgfx\magma;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MTd %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -66,15 +66,15 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;..\..\Mule EngineSubmodules\bgfx\magma;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MT %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -82,7 +82,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -122,9 +122,6 @@
     </ProjectReference>
     <ProjectReference Include="..\Submodules\nativefiledialog\nativefiledialog.vcxproj">
       <Project>{5CD62ECE-48CF-4D20-7101-33A55D592D2C}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Submodules\magma\magma.vcxproj">
-      <Project>{6864EA0F-D478-12C1-9DFA-B52009CE0EF2}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

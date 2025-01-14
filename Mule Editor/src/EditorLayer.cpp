@@ -18,7 +18,7 @@ EditorLayer::EditorLayer(WeakRef<Mule::ApplicationData> appData)
 	:
 	ILayer(appData, "Editor Layer")
 {
-	mEditorState = Ref<EditorState>::Make();
+	mEditorState = MakeRef<EditorState>();
 	
 	mSceneHierarchyPanel.SetContext(mEditorState, appData);
 	mSceneViewPanel.SetContext(mEditorState, appData);
@@ -98,7 +98,7 @@ void EditorLayer::OnUIRender()
 	mContentBrowserPanel.OnUIRender();
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
-		Ref<Mule::Scene> scene = Ref<Mule::Scene>::Make();
+		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
 		scene->SetFilePath(filepath);
 		mApplicationData->GetAssetManager()->InsertAsset(scene);
 		mApplicationData->SetActiveScene(scene);

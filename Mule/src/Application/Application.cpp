@@ -1,8 +1,8 @@
 
 #include "Application/Application.h"
-#include "Rendering/MasterRenderer.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
+#include "Rendering/GraphicsContext.h"
 
 #include "imgui.h"
 
@@ -18,14 +18,24 @@ namespace Mule
 		spdlog::set_pattern("[%H:%M:%S %z] [%n] [thread %t] %v");
 		SPDLOG_INFO("Application Started");
 #endif
-		mWindow = Ref<Window>::Make("Title");
-		MasterRenderer::Init(mWindow);
+		mWindow = MakeRef<Window>("Title");
 
-		mApplicationData = Ref<ApplicationData>::Make();
+		GraphicsContextDescription graphicsContextDesc{};
+		graphicsContextDesc.AppName = "Mule Editor";
+		graphicsContextDesc.AppVersion = 1;
+		graphicsContextDesc.EngineName = "Mule Engine";
+		graphicsContextDesc.EngineVersion = 1;
+		graphicsContextDesc.Window = mWindow;
+#ifdef _DEBUG
+		graphicsContextDesc.EnableDebug = true;
+#else
+		graphicsContextDesc.EnableDebug = false;
+#endif
 
-		WeakRef<AssetManager> assetManager = mApplicationData->GetAssetManager();
-		assetManager->RegisterLoader<SceneLoader>();
-		assetManager->RegisterLoader<ModelLoader>();
+		mGraphicsContext = MakeRef<GraphicsContext>(graphicsContextDesc);
+		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
+		mApplicationData = MakeRef<ApplicationData>();
+		mApplicationData->SetGraphicsContext(mGraphicsContext);		
 	}
 
 	Application::~Application()
@@ -34,7 +44,6 @@ namespace Mule
 			mLayerStack.PopLayer();
 
 		mApplicationData->Shutdown();
-		MasterRenderer::Shutdown();
 	}
 
 	void Application::Run()
@@ -43,17 +52,16 @@ namespace Mule
 		{
 			glfwPollEvents();
 			
-			MasterRenderer& renderer = MasterRenderer::Get();
-			renderer.NewFrame();
-			renderer.NewImGuiFrame();
+			mGraphicsContext->BeginFrame();
 
+			mImguiContext->NewFrame();
 			for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
 			{
 				(*it)->OnUIRender();
 			}
+			mImguiContext->EndFrame();
 
-			renderer.RenderImGuiFrame();
-			renderer.RenderFrame();
+			mGraphicsContext->EndFrame();
 
 			mRunning = mWindow->WindowOpen();
 		}

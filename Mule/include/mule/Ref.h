@@ -52,14 +52,6 @@ public:
         }
     }
 
-    template<typename ...Args>
-    static Ref Make(Args&&... args)
-    {
-        T* ptr = new T(std::forward<Args>(args)...);
-        size_t* refCount = new size_t(1);
-        return Ref(ptr, refCount);
-    }
-
     template<typename Derived>
     Ref& operator=(const Ref<Derived>& other) {
         if (mPtr != other.Get()) {
@@ -155,3 +147,9 @@ private:
     T* mPtr;
     size_t* mRefCount;
 };
+
+template <typename T, typename... Args>
+Ref<T> MakeRef(Args&&... args)
+{
+    return Ref<T>(new T(std::forward<Args>(args)...));
+}

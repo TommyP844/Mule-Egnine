@@ -8,8 +8,8 @@ ContentBrowserPanel::ContentBrowserPanel()
 	:
 	IPanel("Content Browser")
 {
-	mFolderTexture = Ref<Mule::Texture2D>::Make("../Assets/Textures/folder.png");
-	mFileTexture = Ref<Mule::Texture2D>::Make("../Assets/Textures/file.png");
+	mFolderTexture = MakeRef<Mule::Texture2D>("../Assets/Textures/folder.png");
+	mFileTexture = MakeRef<Mule::Texture2D>("../Assets/Textures/file.png");
 }
 
 void ContentBrowserPanel::OnUIRender()

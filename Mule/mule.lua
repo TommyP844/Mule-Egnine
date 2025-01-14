@@ -9,6 +9,10 @@ project "Mule"
     buildoptions {"/Zc:__cplusplus"}
     buildoptions {"/utf-8"} -- Needed for spdlog to compile
 
+    defines {
+        "GLFW_INCLUDE_VULKAN"
+    }
+
     includedirs {
         "include/imguiImpl",
         "include/mule",
@@ -21,8 +25,7 @@ project "Mule"
         "spdlog",
         "opengl32.lib",
         "yaml-cpp",
-        "magma",
-        vulkanLib
+        libs
     }
 
     files {

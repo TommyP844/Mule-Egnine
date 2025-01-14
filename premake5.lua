@@ -1,4 +1,4 @@
-workspace "Game Engine"
+workspace "Mule"
     configurations { "Debug", "Release" }
     architecture "x64"
     startproject "Mule Editor"
@@ -15,18 +15,19 @@ workspace "Game Engine"
         dir .. "/Submodules/yaml/include",
         dir .. "/Submodules/nativefiledialog/src/include",
         dir .. "/Submodules/tinygltf",
-        dir .. "Submodules/bgfx/magma",
         "%VULKAN_SDK%/Include"
     } 
 
-    vulkanLib = {
-        "%VULKAN_SDK%/vulkan-1.lib"
+    libs = {
+        "%VULKAN_SDK%/Lib/vulkan-1.lib"
     }
 
     defines
     {
         "GLM_ENABLE_EXPERIMENTAL",
-        "YAML_CPP_STATIC_DEFINE"
+        "YAML_CPP_STATIC_DEFINE",
+        "VK_USE_PLATFORM_WIN32_KHR", --TODO add to windows filter
+        "GLFW_EXPOSE_NATIVE_WIN32" --TODO add to windows filter
     }
     
     -- Submodule
@@ -36,7 +37,6 @@ workspace "Game Engine"
         include "Submodules/spdlog/premake5.lua"
         include "Submodules/yaml/yaml.lua"
         include "Submodules/nativefiledialog/nativefiledialog.lua"
-        include "Submodules/magma/magma.lua"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"

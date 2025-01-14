@@ -4,8 +4,8 @@ namespace Mule
 {
 	ApplicationData::ApplicationData()
 	{
-		mAssetManager = Ref<AssetManager>::Make();
-		mActiveScene = Ref<Scene>::Make();
+		mAssetManager = MakeRef<AssetManager>();
+		mActiveScene = MakeRef<Scene>();
 	}
 
 	ApplicationData::~ApplicationData()
@@ -15,5 +15,9 @@ namespace Mule
 	{
 		mActiveScene = nullptr;
 		mAssetManager = nullptr;
+	}
+	void ApplicationData::SetGraphicsContext(Ref<GraphicsContext> graphicsContext)
+	{
+		mGraphicsContext = graphicsContext;
 	}
 }

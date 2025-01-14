@@ -10,7 +10,7 @@ namespace Mule
 	{
 		AssetType type = T::sType;
 		SPDLOG_INFO("Loader redistered with AssetManager: {}", GetAssetTypeString(type));
-		mLoaders[type] = Ref<T>::Make();
+		mLoaders[type] = MakeRef<T>();
 	}
 
 	template<typename T>

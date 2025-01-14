@@ -11,7 +11,7 @@ namespace Mule
 		template<typename T>
 		void PushLayer(WeakRef<ApplicationData> appData)
 		{
-			Ref<T> layer = Ref<T>::Make(appData);
+			Ref<T> layer = MakeRef<T>(appData);
 			layer->OnAttach();
 			SPDLOG_INFO("Layer added to application stack: {}", layer->GetName());
 			mLayers.push_back(layer);
