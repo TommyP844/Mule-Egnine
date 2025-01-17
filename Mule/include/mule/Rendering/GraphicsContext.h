@@ -5,7 +5,11 @@
 #include "Application/Window.h"
 
 #include "GraphicsQueue.h"
-
+#include "RenderPass.h"
+#include "Fence.h"
+#include "Semaphore.h"
+#include "FrameBuffer.h"
+#include "SwapchainframeBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -38,7 +42,14 @@ namespace Mule
 		GraphicsContext(const GraphicsContext&) = delete;
 		
 		void BeginFrame();
-		void EndFrame();
+		void EndFrame(std::vector<WeakRef<Semaphore>> gpuFences = {});
+		void ResizeSwapchain(uint32_t width, uint32_t height);
+		void WaitForDeviceIdle();
+
+		Ref<RenderPass> CreateRenderPass(const RenderPassDescription& renderPassDescription);
+		Ref<Fence> CreateFence();
+		Ref<Semaphore> CreateSemaphore();
+		Ref<FrameBuffer> CreateFrameBuffer(const FramebufferDescription& frameBufferDesc);
 
 
 		// TODO: generate queues in a better manner, right now all three are identical
@@ -54,6 +65,16 @@ namespace Mule
 		VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
 		VkDescriptorPool GetDescriptorPool() const { return mDescriptorPool; }
 
+		// Frame Data
+		uint32_t GetImageIndex() const { return mImageIndex; }
+		WeakRef<Fence> GetImageAcquiredCPUFence() const { return mFrameData[mFrameIndex].ImageAcquiredFence; }
+		WeakRef<Semaphore> GetImageAcquiredGPUFence() const { return mFrameData[mFrameIndex].ImageAcquiredSemaphore; }
+
+		Ref<SwapchainFrameBuffer> GetSwapchainFrameBuffer() const { return mFrameData[mFrameIndex].SwapchainFrameBuffer; }
+
+		// Internal
+		VkImageView CreateImageView(VkImage image, VkImageViewType viewtype, VkFormat format, int layers, int mips, bool depthImage);
+		VulkanImage CreateImage(uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageType imageType, int layers, int mips, VkImageUsageFlagBits usage);
 	private:
 		VkInstance mInstance;
 		VkDevice mDevice;
@@ -63,6 +84,9 @@ namespace Mule
 		VkDescriptorPool mDescriptorPool;
 		PhysicalDeviceInfo mPhysicalDeviceInfo;
 		VkDebugUtilsMessengerEXT mDebugMessenger;
+		VkSurfaceFormatKHR mSurfaceFormat;
+		VkCompositeAlphaFlagBitsKHR mCompositeAlphaFlags;
+		VkPhysicalDeviceMemoryProperties mMemoryProperties;
 
 		Ref<GraphicsQueue> mGraphicsQueue;
 		Ref<GraphicsQueue> mComputeQueue;
@@ -71,5 +95,21 @@ namespace Mule
 		// VkAllocationCallbacks mAllocCallback; TODO: implement
 
 		Ref<Window> mWindow;
+
+		// frame Data;
+		uint32_t mFrameCount;
+		uint32_t mFrameIndex;
+		uint32_t mImageIndex;
+		uint32_t mImageCount;
+
+		struct FrameData
+		{
+			Ref<Fence> ImageAcquiredFence;
+			Ref<Semaphore> ImageAcquiredSemaphore;
+			Ref<SwapchainFrameBuffer> SwapchainFrameBuffer;
+			Ref<RenderPass> SwapchainRenderPass;
+		};
+		std::vector<FrameData> mFrameData;
+
 	};
 }

@@ -4,7 +4,17 @@
 
 namespace Mule
 {
-	Ref<CommandBuffer> Mule::CommandPool::CreateCommandbuffer()
+	CommandPool::~CommandPool()
+	{
+		vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
+	}
+
+	void CommandPool::Reset()
+	{
+		vkResetCommandPool(mDevice, mCommandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	}
+
+	Ref<CommandBuffer> Mule::CommandPool::CreateCommandBuffer()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 
@@ -16,6 +26,6 @@ namespace Mule
 
 		VkCommandBuffer commandBuffer;
 		vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
-		return MakeRef<CommandBuffer>(commandBuffer);
+		return MakeRef<CommandBuffer>(mDevice, mCommandPool, commandBuffer);
 	}
 }

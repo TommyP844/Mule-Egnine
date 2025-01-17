@@ -4,7 +4,7 @@
 
 namespace Mule
 {
-	void GraphicsQueue::Submit(Ref<CommandBuffer> commandbuffer)
+	void GraphicsQueue::Submit(Ref<CommandBuffer> commandbuffer, const std::vector<Ref<Semaphore>>& waitGPUFences, const std::vector<Ref<Semaphore>>& signalGPUFences, Ref<Fence> cpuFence)
 	{
 		VkCommandBuffer buffer = commandbuffer->GetHandle();
 
@@ -13,17 +13,29 @@ namespace Mule
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &buffer;
 
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
+		std::vector<VkSemaphore> signalSemaphores;
+		for (auto& signal : signalGPUFences)
+		{
+			signalSemaphores.push_back(signal->GetHandle());
+		}
 
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.signalSemaphoreCount = signalSemaphores.size();
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+		std::vector<VkSemaphore> waitSemaphores;
+		for (auto& signal : waitGPUFences)
+		{
+			waitSemaphores.push_back(signal->GetHandle());
+		}
+
+		submitInfo.waitSemaphoreCount = waitSemaphores.size();
+		submitInfo.pWaitSemaphores = waitSemaphores.data();
 		submitInfo.pWaitDstStageMask = nullptr;
 
 
 		submitInfo.pNext = nullptr;
 
-		vkQueueSubmit(mQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		VkResult result = vkQueueSubmit(mQueue, 1, &submitInfo, (cpuFence ? cpuFence->GetHandle() : VK_NULL_HANDLE));
 	}
 
 	Ref<CommandPool> GraphicsQueue::CreateCommandPool()
@@ -31,7 +43,7 @@ namespace Mule
 		VkCommandPoolCreateInfo createInfo{};
 
 		createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		createInfo.flags = 0;
+		createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		createInfo.queueFamilyIndex = mQueueFamilyIndex;
 		createInfo.pNext = nullptr;
 

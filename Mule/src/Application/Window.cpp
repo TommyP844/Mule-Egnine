@@ -2,6 +2,9 @@
 
 #include "spdlog/spdlog.h"
 
+// Events
+#include "Application/Events/WindowResizeEvent.h"
+
 
 namespace Mule
 {
@@ -25,7 +28,9 @@ namespace Mule
 			SPDLOG_CRITICAL("Failed to create window: {}", title);
 			exit(1);
 		}
-
+		
+		glfwSetWindowUserPointer(mWindow, this);
+		SetupEventCallbacks();
 		glfwMakeContextCurrent(mWindow);
 	}
 
@@ -36,5 +41,25 @@ namespace Mule
 	bool Window::WindowOpen() const
 	{
 		return !glfwWindowShouldClose(mWindow);
+	}
+
+	void Window::PollEvents()
+	{
+		mEvents.clear();
+		glfwPollEvents();
+	}
+
+	void Window::PushEvent(Ref<Event> event)
+	{
+		mEvents.push_back(event);
+	}
+
+	void Window::SetupEventCallbacks()
+	{
+		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height) {
+			Window* currWindow = (Window*)glfwGetWindowUserPointer(window);
+			Ref<WindowResizeEvent> event = MakeRef<WindowResizeEvent>(width, height);
+			currWindow->PushEvent(event);
+			});
 	}
 }

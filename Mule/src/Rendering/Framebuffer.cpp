@@ -3,18 +3,18 @@
 
 namespace Mule
 {
-	Framebuffer::Framebuffer(const FramebufferDesc& desc)
+	FrameBuffer::FrameBuffer(const FramebufferDescription& desc)
 		:
 		mDesc(desc)
 	{
 	}
 
-	Framebuffer::~Framebuffer()
+	FrameBuffer::~FrameBuffer()
 	{
 
 	}
 
-	void Framebuffer::Resize(int width, int height)
+	void FrameBuffer::Resize(int width, int height)
 	{
 		mDesc.Width = width;
 		mDesc.Height = height;

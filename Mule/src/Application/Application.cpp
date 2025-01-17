@@ -10,6 +10,14 @@
 #include "Asset/Loader/SceneLoader.h"
 #include "Asset/Loader/ModelLoader.h"
 
+// Events
+#include "Application/Events/Event.h"
+#include "Application/Events/WindowResizeEvent.h"
+
+// STD
+#include <vector>
+#include <chrono>
+
 namespace Mule
 {
 	Application::Application()
@@ -34,8 +42,13 @@ namespace Mule
 
 		mGraphicsContext = MakeRef<GraphicsContext>(graphicsContextDesc);
 		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
+
 		mApplicationData = MakeRef<ApplicationData>();
-		mApplicationData->SetGraphicsContext(mGraphicsContext);		
+		mApplicationData->SetGraphicsContext(mGraphicsContext);
+
+		// Loaders
+		mApplicationData->GetAssetManager()->RegisterLoader<SceneLoader>();
+		mApplicationData->GetAssetManager()->RegisterLoader<ModelLoader>();
 	}
 
 	Application::~Application()
@@ -44,26 +57,68 @@ namespace Mule
 			mLayerStack.PopLayer();
 
 		mApplicationData->Shutdown();
+
+		mImguiContext = nullptr;
+		mGraphicsContext = nullptr;
 	}
 
 	void Application::Run()
 	{
+		float ms = 1.f;
+		float maxFPS = 1.f;
 		while (mRunning)
 		{
-			glfwPollEvents();
-			
+			auto start = std::chrono::high_resolution_clock::now();
+			mWindow->PollEvents();
+			const std::vector<Ref<Event>>& events = mWindow->GetFrameEvents();
+
+			for (auto& event : events)
+			{
+				switch (event->Type)
+				{
+				case EventType::WindowResize:
+				{
+					Ref<WindowResizeEvent> resizeEvent = event;
+					mGraphicsContext->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
+					mImguiContext->Resize(resizeEvent->Width, resizeEvent->Height);
+				}
+					break;
+				default:
+					break;
+				}
+			}
+
 			mGraphicsContext->BeginFrame();
 
-			mImguiContext->NewFrame();
-			for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+			// ImGui UI render
 			{
-				(*it)->OnUIRender();
-			}
-			mImguiContext->EndFrame();
+ 				mImguiContext->NewFrame();
 
-			mGraphicsContext->EndFrame();
+				for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+				{
+					(*it)->OnUIRender();
+				}
+
+				ImGui::Begin("Frame Counter");
+
+				float fps = 1.f / (ms / 1000.f);
+				if (fps > maxFPS) maxFPS = fps;
+				ImGui::Text("Frame Time : %.3fms", ms);
+				ImGui::Text("FPS        : %.2f", fps);
+				ImGui::Text("Highest FPS: %.2f", maxFPS);
+
+				ImGui::End();
+
+				mImguiContext->EndFrame();
+			}
+
+			auto semaphore = mImguiContext->GetRenderSemaphore();
+			mGraphicsContext->EndFrame({ semaphore });
 
 			mRunning = mWindow->WindowOpen();
+			auto end = std::chrono::high_resolution_clock::now();
+			auto diff = end - start;
+			ms = diff.count() * 1e-6f;
 		}
 	}
 

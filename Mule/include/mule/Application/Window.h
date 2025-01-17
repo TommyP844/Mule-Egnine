@@ -2,6 +2,10 @@
 
 #include <GLFW/glfw3.h>
 #include <string>
+#include <functional>
+
+#include "Ref.h"
+#include "Events/Event.h"
 
 namespace Mule
 {
@@ -20,9 +24,18 @@ namespace Mule
 
 		bool WindowOpen() const;
 
+		void PollEvents();
+		void PushEvent(Ref<Event> event);
+		const std::vector<Ref<Event>> GetFrameEvents() const { return mEvents; }
+
+
 	private:
 		GLFWwindow* mWindow;
 		std::string mTitle;
 		int mWidth, mHeight;
+
+		std::vector<Ref<Event>> mEvents;
+
+		void SetupEventCallbacks();
 	};
 }

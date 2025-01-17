@@ -6,13 +6,10 @@
 // Editor
 #include "Popups.h"
 
-
 // Submodules
 #include <spdlog/spdlog.h>
 #include <imgui.h>
-
 #include <IconsFontAwesome6.h>
-
 
 EditorLayer::EditorLayer(WeakRef<Mule::ApplicationData> appData)
 	:
@@ -24,11 +21,6 @@ EditorLayer::EditorLayer(WeakRef<Mule::ApplicationData> appData)
 	mSceneViewPanel.SetContext(mEditorState, appData);
 	mComponentPanel.SetContext(mEditorState, appData);
 	mContentBrowserPanel.SetContext(mEditorState, appData);
-}
-
-void EditorLayer::OnAttach()
-{
-	SPDLOG_INFO("Layer attached: {}", GetName());
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -37,9 +29,13 @@ void EditorLayer::OnAttach()
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
+}
+
+void EditorLayer::OnAttach()
+{
+	SPDLOG_INFO("Layer attached: {}", GetName());
 
 	Ref<Mule::Scene> scene = mApplicationData->GetActiveScene();
-
 
 	Mule::Entity a = scene->CreateEntity("A");
 	Mule::Entity b = scene->CreateEntity("B");
@@ -62,7 +58,7 @@ void EditorLayer::OnUpdate(float dt)
 void EditorLayer::OnUIRender()
 {
 	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
-	ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), dockspace_flags);
+	ImGui::DockSpaceOverViewport();//ImGui::GetMainViewport(), dockspace_flags);
 
 	if (ImGui::BeginMainMenuBar())
 	{

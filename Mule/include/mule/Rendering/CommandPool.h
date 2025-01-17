@@ -12,10 +12,11 @@ namespace Mule
 	class CommandPool
 	{
 	public:
-		CommandPool(VkDevice device, VkCommandPool commandPool) : mCommandPool(commandPool) {}
-		~CommandPool() {}
+		CommandPool(VkDevice device, VkCommandPool commandPool) : mDevice(device), mCommandPool(commandPool) {}
+		~CommandPool();
 
-		Ref<CommandBuffer> CreateCommandbuffer();
+		void Reset();
+		Ref<CommandBuffer> CreateCommandBuffer();
 
 	private:
 		VkDevice mDevice;

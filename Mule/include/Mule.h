@@ -24,3 +24,7 @@
 #include "Rendering/Texture2D.h"
 #include "Rendering/Model.h"
 #include "Rendering/Rendertypes.h"
+
+// Events
+#include "Application/Events/Event.h"
+#include "Application/Events/WindowResizeEvent.h"

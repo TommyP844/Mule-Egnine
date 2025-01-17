@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CommandPool.h"
+#include "Fence.h"
+#include "Semaphore.h"
 
 
 #include <vulkan/vulkan.h>
@@ -15,7 +17,7 @@ namespace Mule
 		VkQueue GetHandle() const { return mQueue; }
 		uint32_t GetQueueFamilyIndex() const { return mQueueFamilyIndex; }
 
-		void Submit(Ref<CommandBuffer> commandbuffer);
+		void Submit(Ref<CommandBuffer> commandbuffer, const std::vector<Ref<Semaphore>>& waitGPUFences = {}, const std::vector<Ref<Semaphore>>& signalGPUFences = {}, Ref<Fence> cpuFence = nullptr);
 
 		Ref<CommandPool> CreateCommandPool();
 	private:
