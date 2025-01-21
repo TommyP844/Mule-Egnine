@@ -10,33 +10,40 @@ void SceneHierarchyPanel::OnUIRender()
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
-		if (ImGui::BeginPopupContextWindow())
+		if (mEngineContext->GetScene())
 		{
-			if (ImGui::MenuItem("Create Entity"))
+			if (ImGui::BeginPopupContextWindow())
 			{
-				mApplicationData->GetActiveScene()->CreateEntity();
+				if (ImGui::MenuItem("Create Entity"))
+				{
+					mEngineContext->GetScene()->CreateEntity();
+				}
+				ImGui::EndPopup();
 			}
-			ImGui::EndPopup();
-		}
 
-		WeakRef<Mule::Scene> scene = mApplicationData->GetActiveScene();
-		scene->IterateRootEntities([&](Mule::Entity e) {
+			WeakRef<Mule::Scene> scene = mEngineContext->GetScene();
+			scene->IterateRootEntities([&](Mule::Entity e) {
 				RecurseEntities(e);
-			});
+				});
 
-		if (mEntityToOrphan) 
-		{
-			mEntityToOrphan.Orphan();
-			mEntityToOrphan = Mule::Entity();
-		}
-		if (mEntityToDelete)
-		{
-			if (mEditorState->SelectedEntity == mEntityToDelete)
+			if (mEntityToOrphan)
 			{
-				mEditorState->SelectedEntity = Mule::Entity();
+				mEntityToOrphan.Orphan();
+				mEntityToOrphan = Mule::Entity();
 			}
-			mEntityToDelete.Destroy();
-			mEntityToDelete = Mule::Entity();
+			if (mEntityToDelete)
+			{
+				if (mEditorState->SelectedEntity == mEntityToDelete)
+				{
+					mEditorState->SelectedEntity = Mule::Entity();
+				}
+				mEntityToDelete.Destroy();
+				mEntityToDelete = Mule::Entity();
+			}
+		}
+		else
+		{
+			ImGui::Text("No Scene Selected");
 		}
 	}
 	ImGui::End();

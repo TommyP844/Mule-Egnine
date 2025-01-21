@@ -2,14 +2,14 @@
 
 #include <string>
 
-#include "Application/ApplicationData.h"
+#include "EngineContext.h"
 
 namespace Mule
 {
 	class ILayer
 	{
 	public:
-		ILayer(WeakRef<ApplicationData> appData, const std::string& name = "Layer") : mName(name), mApplicationData(appData) {}
+		ILayer(Ref<EngineContext> context, const std::string& name = "Layer") : mName(name), mEngineContext(context) {}
 		~ILayer() {}
 		ILayer(const ILayer&) = delete;
 
@@ -22,7 +22,7 @@ namespace Mule
 		const std::string& GetName() const { return mName; }
 
 	protected:
-		WeakRef<ApplicationData> mApplicationData;
+		WeakRef<EngineContext> mEngineContext;
 	private:
 		std::string mName;
 	};

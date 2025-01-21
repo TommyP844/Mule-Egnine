@@ -2,8 +2,6 @@
 
 #include <spdlog/spdlog.h>
 
-// Assets
-#include "Rendering/Texture2D.h"
 
 namespace Mule
 {

@@ -60,13 +60,13 @@
       <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
-      <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MTd %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MDd %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%VULKAN_SDK%\Lib\shadercd.lib;%VULKAN_SDK%\Lib\shaderc_combinedd.lib;%VULKAN_SDK%\Lib\shaderc_utild.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -76,13 +76,13 @@
       <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
-      <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MT %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MD %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;%VULKAN_SDK%\Lib\vulkan-1.lib;%VULKAN_SDK%\Lib\shaderc.lib;%VULKAN_SDK%\Lib\shaderc_combined.lib;%VULKAN_SDK%\Lib\shaderc_util.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

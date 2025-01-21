@@ -35,10 +35,13 @@ project "Mule"
     }
 
     filter {"configurations:Debug"}
-        buildoptions {"/MTd"}
-        defines {
-            "BX_CONFIG_DEBUG"
+        buildoptions {"/MDd"}
+        links {
+            debugLibs
         }
         
     filter {"configurations:Release"}
-        buildoptions {"/MT"}
+        buildoptions {"/MD"}
+        links {
+            releaseLibs
+        }

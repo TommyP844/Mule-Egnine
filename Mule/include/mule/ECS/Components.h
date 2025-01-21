@@ -3,7 +3,7 @@
 #include "ECS/Guid.h"
 #include "ECS/Entity.h"
 
-#include "Rendering/Camera.h"
+#include "Graphics/Camera.h"
 
 #include <string>
 
@@ -39,5 +39,12 @@ namespace Mule
 	struct SkyLightComponent
 	{
 		bool Active = true;
+	};
+
+	struct MeshComponent
+	{
+		bool Visible = true;
+		AssetHandle MeshHandle = NullAssetHandle;
+		AssetHandle MaterialHandle = NullAssetHandle;
 	};
 }

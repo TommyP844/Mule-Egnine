@@ -11,7 +11,7 @@ public:
 
 	virtual void OnUIRender() = 0;
 
-	void SetContext(WeakRef<EditorState> editorState, WeakRef<Mule::ApplicationData> appData) { mEditorState = editorState; mApplicationData = appData; }
+	void SetContext(WeakRef<EditorState> editorState, WeakRef<Mule::EngineContext> context) { mEditorState = editorState; mEngineContext = context; }
 	void Open() { mIsOpen = true; }
 	void Close() { mIsOpen = false; }
 	void Toggle() { mIsOpen = !mIsOpen; }
@@ -19,6 +19,6 @@ public:
 protected:
 	bool mIsOpen;
 	WeakRef<EditorState> mEditorState;
-	WeakRef<Mule::ApplicationData> mApplicationData;
+	WeakRef<Mule::EngineContext> mEngineContext;
 	const std::string mName;
 };

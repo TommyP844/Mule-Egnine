@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 namespace Mule
 {
 	typedef uint64_t AssetHandle;
+	constexpr uint64_t NullAssetHandle = 0;
 
 	class IAsset
 	{

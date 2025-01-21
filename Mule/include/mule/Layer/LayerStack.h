@@ -9,9 +9,9 @@ namespace Mule
 	public:
 
 		template<typename T>
-		void PushLayer(WeakRef<ApplicationData> appData)
+		void PushLayer(Ref<EngineContext> context)
 		{
-			Ref<T> layer = MakeRef<T>(appData);
+			Ref<T> layer = MakeRef<T>(context);
 			layer->OnAttach();
 			SPDLOG_INFO("Layer added to application stack: {}", layer->GetName());
 			mLayers.push_back(layer);

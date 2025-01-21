@@ -18,6 +18,18 @@ workspace "Mule"
         "%VULKAN_SDK%/Include"
     } 
 
+    debugLibs = {
+        "%VULKAN_SDK%/Lib/shadercd.lib",
+        "%VULKAN_SDK%/Lib/shaderc_combinedd.lib",
+        "%VULKAN_SDK%/Lib/shaderc_utild.lib"
+    }
+
+    releaseLibs = {
+        "%VULKAN_SDK%/Lib/shaderc.lib",
+        "%VULKAN_SDK%/Lib/shaderc_combined.lib",
+        "%VULKAN_SDK%/Lib/shaderc_util.lib"
+    }
+
     libs = {
         "%VULKAN_SDK%/Lib/vulkan-1.lib"
     }

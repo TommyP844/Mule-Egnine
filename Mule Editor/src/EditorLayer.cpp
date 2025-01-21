@@ -11,16 +11,16 @@
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
 
-EditorLayer::EditorLayer(WeakRef<Mule::ApplicationData> appData)
+EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	:
-	ILayer(appData, "Editor Layer")
+	ILayer(context, "Editor Layer")
 {
 	mEditorState = MakeRef<EditorState>();
 	
-	mSceneHierarchyPanel.SetContext(mEditorState, appData);
-	mSceneViewPanel.SetContext(mEditorState, appData);
-	mComponentPanel.SetContext(mEditorState, appData);
-	mContentBrowserPanel.SetContext(mEditorState, appData);
+	mSceneHierarchyPanel.SetContext(mEditorState, context);
+	mSceneViewPanel.SetContext(mEditorState, context);
+	mComponentPanel.SetContext(mEditorState, context);
+	mContentBrowserPanel.SetContext(mEditorState, context);
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -35,19 +35,6 @@ void EditorLayer::OnAttach()
 {
 	SPDLOG_INFO("Layer attached: {}", GetName());
 
-	Ref<Mule::Scene> scene = mApplicationData->GetActiveScene();
-
-	Mule::Entity a = scene->CreateEntity("A");
-	Mule::Entity b = scene->CreateEntity("B");
-	Mule::Entity c = scene->CreateEntity("C");
-
-	a.AddChild(b);
-	b.AddChild(c);
-
-	scene->SetFilePath("C:\\Development\\Mule Projects\\test.scene");
-
-	mApplicationData->GetAssetManager()->SaveAssetText<Mule::Scene>(scene);
-	mApplicationData->GetAssetManager()->LoadAsset<Mule::Model>("C:\\Development\\Mule Projects\\Test Project\\Models\\Avocado\\glTF\\Avocado.gltf");
 }
 
 void EditorLayer::OnUpdate(float dt)
@@ -96,8 +83,8 @@ void EditorLayer::OnUIRender()
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
 		scene->SetFilePath(filepath);
-		mApplicationData->GetAssetManager()->InsertAsset(scene);
-		mApplicationData->SetActiveScene(scene);
+		mEngineContext->GetAssetManager()->InsertAsset(scene);
+		mEngineContext->SetScene(scene);
 		});
 }
 

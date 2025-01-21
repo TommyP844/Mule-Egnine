@@ -1,7 +1,7 @@
 
 #include "Asset/Loader/ModelLoader.h"
 
-#include "Rendering/Vertex.h"
+#include "Graphics/Vertex.h"
 
 #define TINYGLTF_IMPLEMENTATION
 // #define STB_IMAGE_IMPLEMENTATION

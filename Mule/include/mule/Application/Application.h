@@ -6,9 +6,7 @@
 #include "Window.h"
 #include "Layer/ILayer.h"
 #include "Layer/LayerStack.h"
-#include "ApplicationData.h"
-#include "Rendering/GraphicsContext.h"
-#include "Rendering/ImGuiContext.h"
+#include "EngineContext.h"
 
 // Submodules
 #include "spdlog/spdlog.h"
@@ -29,17 +27,14 @@ namespace Mule
 		template<typename T>
 		void PushLayer()
 		{
-			mLayerStack.PushLayer<T>(mApplicationData);
+			mLayerStack.PushLayer<T>(mEngineContext);
 		}
 
 		void PopLayer();
 
 	private:
-		Ref<ApplicationData> mApplicationData;
 		bool mRunning;
-		Ref<Window> mWindow;
-		Ref<GraphicsContext> mGraphicsContext;
-		Ref<ImGuiContext> mImguiContext;
 		LayerStack mLayerStack;
+		Ref<EngineContext> mEngineContext;
 	};
 }

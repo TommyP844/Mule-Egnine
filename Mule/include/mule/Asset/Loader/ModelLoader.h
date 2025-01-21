@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AssetLoader.h"
-#include "Rendering/Model.h"
+#include "Graphics/Model.h"
 #include "tiny_gltf.h"
 
 // STD

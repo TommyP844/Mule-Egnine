@@ -3,6 +3,7 @@
 #include "Mule.h"
 #include "Ref.h"
 #include "EditorState.h"
+#include "EngineContext.h"
 
 // Panels
 #include "Panel/ComponentPanel.h"
@@ -13,7 +14,7 @@
 class EditorLayer : public Mule::ILayer
 {
 public:
-	EditorLayer(WeakRef<Mule::ApplicationData> appData);
+	EditorLayer(Ref<Mule::EngineContext> context);
 	~EditorLayer() {}
 
 	virtual void OnAttach() override;

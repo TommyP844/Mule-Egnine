@@ -2,7 +2,7 @@
 #include "Application/Application.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
-#include "Rendering/GraphicsContext.h"
+#include "Graphics/Context/GraphicsContext.h"
 
 #include "imgui.h"
 
@@ -26,51 +26,45 @@ namespace Mule
 		spdlog::set_pattern("[%H:%M:%S %z] [%n] [thread %t] %v");
 		SPDLOG_INFO("Application Started");
 #endif
-		mWindow = MakeRef<Window>("Title");
+		
 
-		GraphicsContextDescription graphicsContextDesc{};
-		graphicsContextDesc.AppName = "Mule Editor";
-		graphicsContextDesc.AppVersion = 1;
-		graphicsContextDesc.EngineName = "Mule Engine";
-		graphicsContextDesc.EngineVersion = 1;
-		graphicsContextDesc.Window = mWindow;
+		EngineContextDescription engineDescription{};
+		engineDescription.WindowName = "Mule";
+		engineDescription.GraphicsDescription.AppName = "Mule Editor";
+		engineDescription.GraphicsDescription.AppVersion = 1;
+		engineDescription.GraphicsDescription.EngineName = "Mule Engine";
+		engineDescription.GraphicsDescription.EngineVersion = 1;
+		// engineDescription.GraphicsDescription.Window = mWindow; -- Will be set by engine context
 #ifdef _DEBUG
-		graphicsContextDesc.EnableDebug = true;
+		engineDescription.GraphicsDescription.EnableDebug = true;
 #else
 		graphicsContextDesc.EnableDebug = false;
 #endif
 
-		mGraphicsContext = MakeRef<GraphicsContext>(graphicsContextDesc);
-		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
-
-		mApplicationData = MakeRef<ApplicationData>();
-		mApplicationData->SetGraphicsContext(mGraphicsContext);
-
-		// Loaders
-		mApplicationData->GetAssetManager()->RegisterLoader<SceneLoader>();
-		mApplicationData->GetAssetManager()->RegisterLoader<ModelLoader>();
+		mEngineContext = MakeRef<EngineContext>(engineDescription);
 	}
 
 	Application::~Application()
 	{
 		while (!mLayerStack.empty())
 			mLayerStack.PopLayer();
-
-		mApplicationData->Shutdown();
-
-		mImguiContext = nullptr;
-		mGraphicsContext = nullptr;
+		mEngineContext = nullptr;
 	}
 
 	void Application::Run()
 	{
+		Ref<Window> window = mEngineContext->GetWindow();
+		Ref<ImGuiContext> imguiContext = mEngineContext->GetImGuiContext();
+		Ref<GraphicsContext> graphicsContext = mEngineContext->GetGraphicsContext();
+		Ref<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 		float ms = 1.f;
 		float maxFPS = 1.f;
 		while (mRunning)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
-			mWindow->PollEvents();
-			const std::vector<Ref<Event>>& events = mWindow->GetFrameEvents();
+
+			window->PollEvents();
+			const std::vector<Ref<Event>>& events = window->GetFrameEvents();
 
 			for (auto& event : events)
 			{
@@ -79,8 +73,8 @@ namespace Mule
 				case EventType::WindowResize:
 				{
 					Ref<WindowResizeEvent> resizeEvent = event;
-					mGraphicsContext->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
-					mImguiContext->Resize(resizeEvent->Width, resizeEvent->Height);
+					graphicsContext->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
+					imguiContext->Resize(resizeEvent->Width, resizeEvent->Height);
 				}
 					break;
 				default:
@@ -88,11 +82,17 @@ namespace Mule
 				}
 			}
 
-			mGraphicsContext->BeginFrame();
+			graphicsContext->BeginFrame();
+
+			Ref<Scene> scene = mEngineContext->GetScene();
+			if (scene)
+			{
+				sceneRenderer->Render(scene);
+			}
 
 			// ImGui UI render
 			{
- 				mImguiContext->NewFrame();
+				imguiContext->NewFrame();
 
 				for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
 				{
@@ -109,13 +109,19 @@ namespace Mule
 
 				ImGui::End();
 
-				mImguiContext->EndFrame();
+				std::vector<Ref<Semaphore>> waitSemaphores;
+				if (scene)
+				{
+					waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
+				}
+
+				imguiContext->EndFrame(waitSemaphores);
 			}
 
-			auto semaphore = mImguiContext->GetRenderSemaphore();
-			mGraphicsContext->EndFrame({ semaphore });
+			auto semaphore = imguiContext->GetRenderSemaphore();
+			graphicsContext->EndFrame({ semaphore });
 
-			mRunning = mWindow->WindowOpen();
+			mRunning = window->WindowOpen();
 			auto end = std::chrono::high_resolution_clock::now();
 			auto diff = end - start;
 			ms = diff.count() * 1e-6f;

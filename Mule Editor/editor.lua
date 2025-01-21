@@ -38,8 +38,14 @@ project "Mule Editor"
     }
 
     filter {"configurations:Debug"}
-        buildoptions {"/MTd"}
+        buildoptions {"/MDd"}
+        links {
+            debugLibs
+        }
         
     filter {"configurations:Release"}
-        buildoptions {"/MT"}
+        buildoptions {"/MD"}
+        links {
+            releaseLibs
+        }
         
