@@ -9,6 +9,7 @@ public:
 	IPanel(const std::string& name) : mName(name), mIsOpen(true) {}
 	virtual ~IPanel() {}
 
+	virtual void OnAttach() = 0;
 	virtual void OnUIRender() = 0;
 
 	void SetContext(WeakRef<EditorState> editorState, WeakRef<Mule::EngineContext> context) { mEditorState = editorState; mEngineContext = context; }

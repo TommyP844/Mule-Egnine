@@ -2,6 +2,10 @@
 
 #include "imgui.h"
 
+void SceneViewPanel::OnAttach()
+{
+}
+
 void SceneViewPanel::OnUIRender()
 {
 	if (!mIsOpen) return;

@@ -10,7 +10,7 @@ namespace Mule
 	{
 	public:
 		ILayer(Ref<EngineContext> context, const std::string& name = "Layer") : mName(name), mEngineContext(context) {}
-		~ILayer() {}
+		virtual ~ILayer() {}
 		ILayer(const ILayer&) = delete;
 
 		virtual void OnAttach() = 0;

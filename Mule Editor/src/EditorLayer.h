@@ -15,7 +15,7 @@ class EditorLayer : public Mule::ILayer
 {
 public:
 	EditorLayer(Ref<Mule::EngineContext> context);
-	~EditorLayer() {}
+	virtual ~EditorLayer();
 
 	virtual void OnAttach() override;
 	virtual void OnUpdate(float dt) override;

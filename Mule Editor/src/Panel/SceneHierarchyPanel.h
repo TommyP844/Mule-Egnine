@@ -8,6 +8,7 @@ public:
 	SceneHierarchyPanel() : IPanel("Scene") {}
 	~SceneHierarchyPanel() {}
 
+	virtual void OnAttach() override;
 	virtual void OnUIRender() override;
 
 

@@ -4,6 +4,10 @@
 
 #include "Mule.h"
 
+void ComponentPanel::OnAttach()
+{
+}
+
 void ComponentPanel::OnUIRender()
 {
 	if (!mIsOpen) return;

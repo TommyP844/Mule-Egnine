@@ -3,6 +3,7 @@
 // Asset Loaders
 #include "Asset/Loader/ModelLoader.h"
 #include "Asset/Loader/SceneLoader.h"
+#include "Asset/Loader/TextureLoader.h"
 
 namespace Mule
 {
@@ -18,6 +19,8 @@ namespace Mule
 		mAssetManager = MakeRef<AssetManager>();
 		mAssetManager->RegisterLoader<SceneLoader>();
 		mAssetManager->RegisterLoader<ModelLoader>();
+		Ref<TextureLoader> textureLoader = mAssetManager->RegisterLoader<TextureLoader>();
+		textureLoader->SetContext(mGraphicsContext);
 
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
 	}

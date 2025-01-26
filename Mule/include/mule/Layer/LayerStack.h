@@ -20,9 +20,10 @@ namespace Mule
 		void PopLayer()
 		{
 			Ref<ILayer> layer = mLayers.back();
-			SPDLOG_INFO("Layer removed to application stack: {}", layer->GetName());
-			mLayers.pop_back();
 			layer->OnDetach();
+			mLayers[mLayers.size() - 1] = nullptr; // Force destruction of layer
+			mLayers.pop_back();
+			SPDLOG_INFO("Layer removed to application stack: {}", layer->GetName());
 		}
 
 		bool empty() const { return mLayers.empty(); }

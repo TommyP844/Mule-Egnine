@@ -45,7 +45,7 @@ namespace Mule
 		file.close();
 	}
 
-	Ref<Scene> SceneLoader::LoadBinary(const fs::path& filepath)
+	Ref<Scene> SceneLoader::LoadBinary(const Buffer& filepath)
 	{
 		return Ref<Scene>();
 	}

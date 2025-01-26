@@ -5,6 +5,10 @@
 #include "imgui.h"
 
 
+void SceneHierarchyPanel::OnAttach()
+{
+}
+
 void SceneHierarchyPanel::OnUIRender()
 {
 	if (!mIsOpen) return;

@@ -6,11 +6,13 @@
 namespace Mule
 {
 	template<typename T>
-	inline void AssetManager::RegisterLoader()
+	inline Ref<T> AssetManager::RegisterLoader()
 	{
 		AssetType type = T::sType;
 		SPDLOG_INFO("Loader redistered with AssetManager: {}", GetAssetTypeString(type));
-		mLoaders[type] = MakeRef<T>();
+		auto loader = MakeRef<T>();
+		mLoaders[type] = loader;
+		return loader;
 	}
 
 	template<typename T>

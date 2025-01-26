@@ -51,7 +51,7 @@ namespace Mule
 	{
 	}
 
-	Ref<Model> ModelLoader::LoadBinary(const fs::path& filepath)
+	Ref<Model> ModelLoader::LoadBinary(const Buffer& filepath)
 	{
 		return Ref<Model>();
 	}

@@ -9,6 +9,9 @@
 // STD
 #include <set>
 
+
+
+
 namespace Mule
 {
 	VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -341,11 +344,74 @@ namespace Mule
 
 #pragma endregion
 
+#pragma region Sampler
+
+		VkSamplerCreateInfo samplerCreateInfo{};
+
+		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerCreateInfo.pNext = nullptr;
+		samplerCreateInfo.flags = 0;
+		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.mipLodBias = 0.f;
+		samplerCreateInfo.anisotropyEnable = VK_FALSE;
+		// samplerCreateInfo.maxAnisotropy;
+		samplerCreateInfo.compareEnable = VK_FALSE;
+		// samplerCreateInfo.compareOp;
+		samplerCreateInfo.minLod = 0.f;
+		samplerCreateInfo.maxLod = 1.f;
+		samplerCreateInfo.borderColor = VK_BORDER_COLOR_MAX_ENUM;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+		result = vkCreateSampler(mDevice, &samplerCreateInfo, nullptr, &mLinearSampler);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to create linear sampler");
+		}
+
+#pragma endregion
+
+#pragma region Single Time Submit Objects
+
+		VkCommandPoolCreateInfo singleTimeCommandPoolCreateInfo{};
+
+		singleTimeCommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		singleTimeCommandPoolCreateInfo.pNext = nullptr;
+		singleTimeCommandPoolCreateInfo.flags = 0;
+		singleTimeCommandPoolCreateInfo.queueFamilyIndex = mGraphicsQueue->GetQueueFamilyIndex();
+
+		result = vkCreateCommandPool(mDevice, &singleTimeCommandPoolCreateInfo, nullptr, &mSingleTimeCommandPool);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to create sisngle time command pool");
+		}
+
+		VkFenceCreateInfo singleTimeFenceCreateInfo{};
+
+		singleTimeFenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		singleTimeFenceCreateInfo.pNext = nullptr;
+		singleTimeFenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		result = vkCreateFence(mDevice, &singleTimeFenceCreateInfo, nullptr, &mSingleTimeSubmitFence);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to create sisngle time fence");
+		}
+#pragma endregion
+
 	}
 
 	GraphicsContext::~GraphicsContext()
 	{
 		mFrameData.clear();
+
+		vkDestroySampler(mDevice, mLinearSampler, nullptr);
+		vkDestroyCommandPool(mDevice, mSingleTimeCommandPool, nullptr);
+		vkDestroyFence(mDevice, mSingleTimeSubmitFence, nullptr);
 
 		vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
 		vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
@@ -366,18 +432,26 @@ namespace Mule
 
 	void GraphicsContext::BeginFrame()
 	{
-		mFrameData[mImageIndex].ImageAcquiredFence->Wait();
 		mFrameData[mFrameIndex].ImageAcquiredFence->Reset();
-
-		mFrameData[mFrameIndex].ImageAcquiredSemaphore->Wait();
-
 		VkResult result = vkAcquireNextImageKHR(
 			mDevice,
 			mSwapchain, 
 			UINT64_MAX, 
-			mFrameData[mFrameIndex].ImageAcquiredSemaphore->GetHandle(),
+			VK_NULL_HANDLE, //mFrameData[mImageIndex].ImageAcquiredSemaphore->GetHandle(),
 			mFrameData[mFrameIndex].ImageAcquiredFence->GetHandle(),
 			&mImageIndex);
+		mFrameData[mFrameIndex].ImageAcquiredFence->Wait();
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		{
+			int width, height;
+			glfwGetFramebufferSize(mWindow->GetGLFWWindow(), &width, &height);
+			ResizeSwapchain(width, height);
+		}
+		else if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("failed to get next image from swap chain");
+		}
 	}
 
 	void GraphicsContext::EndFrame(std::vector<WeakRef<Semaphore>> gpuFences)
@@ -387,8 +461,6 @@ namespace Mule
 		{
 			waitSemaphores.emplace_back(semaphore->GetHandle());
 		}
-
-		waitSemaphores.push_back(mFrameData[mImageIndex].ImageAcquiredSemaphore->GetHandle());
 
 		VkResult submitResult{};
 
@@ -409,6 +481,15 @@ namespace Mule
 
 	void GraphicsContext::ResizeSwapchain(uint32_t width, uint32_t height)
 	{
+		vkDeviceWaitIdle(mDevice);
+
+		VkSurfaceCapabilitiesKHR surfaceCapabilities;
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurface, &surfaceCapabilities);
+
+		vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
+
+		VkExtent2D newExtent = surfaceCapabilities.currentExtent;
+
 		VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -416,13 +497,13 @@ namespace Mule
 		swapchainCreateInfo.compositeAlpha = mCompositeAlphaFlags;
 		swapchainCreateInfo.flags = 0;
 		swapchainCreateInfo.imageArrayLayers = 1;
-		swapchainCreateInfo.imageExtent = { width, height };
+		swapchainCreateInfo.imageExtent = surfaceCapabilities.currentExtent;
 		swapchainCreateInfo.imageColorSpace = mSurfaceFormat.colorSpace;
 		swapchainCreateInfo.imageFormat = mSurfaceFormat.format;
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		swapchainCreateInfo.minImageCount = mImageCount;
-		swapchainCreateInfo.oldSwapchain = mSwapchain;
+		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 		swapchainCreateInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 		swapchainCreateInfo.queueFamilyIndexCount = 0;
@@ -446,15 +527,12 @@ namespace Mule
 		std::vector<VkImage> swapchainImages(mImageCount);
 		vkGetSwapchainImagesKHR(mDevice, mSwapchain, &mImageCount, swapchainImages.data());
 
-		// Create image views
-		std::vector<VkImageView> swapchainImageViews(mImageCount);
-
 		for (int i = 0; i < mFrameCount; i++)
 		{
 			SwapchainFrameBufferDescription swapchainFrameBufferDesc{};
 
-			swapchainFrameBufferDesc.Width = width;
-			swapchainFrameBufferDesc.Height = height;
+			swapchainFrameBufferDesc.Width = surfaceCapabilities.currentExtent.width;
+			swapchainFrameBufferDesc.Height = surfaceCapabilities.currentExtent.height;
 			swapchainFrameBufferDesc.RenderPass = mFrameData[i].SwapchainRenderPass->GetHandle();
 
 			swapchainFrameBufferDesc.ColorImage.Image = swapchainImages[i];
@@ -467,8 +545,8 @@ namespace Mule
 				false);
 
 			swapchainFrameBufferDesc.DepthImage = CreateImage(
-				width,
-				height,
+				surfaceCapabilities.currentExtent.width,
+				surfaceCapabilities.currentExtent.height,
 				1, 
 				(VkFormat)TextureFormat::D32F,
 				VK_IMAGE_TYPE_2D,
@@ -680,6 +758,88 @@ namespace Mule
 		}
 		
 		return vulkanImage;
+	}
+
+	VkCommandBuffer GraphicsContext::CreateSingleTimeCmdBuffer()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+		allocInfo.commandBufferCount = 1;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = mSingleTimeCommandPool;
+
+		VkCommandBuffer commandBuffer;
+		VkResult result = vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to allocate single time command buffer");
+		}
+
+		VkCommandBufferBeginInfo beginInfo{};
+
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to begin single time submit command buffer");
+		}
+
+		return commandBuffer;
+	}
+
+	void GraphicsContext::SubmitSingleTimeCmdBuffer(VkCommandBuffer commandBuffer)
+	{
+		VkResult result = vkEndCommandBuffer(commandBuffer);
+
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to end single time submit command buffer");
+		}
+
+		VkSubmitInfo submitInfo{};
+		VkPipelineStageFlags flags = VK_PIPELINE_STAGE_NONE_KHR;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = &flags;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		result = vkWaitForFences(mDevice, 1, &mSingleTimeSubmitFence, VK_TRUE, UINT64_MAX);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to wait for single time submit fence");
+		}
+
+		result = vkResetFences(mDevice, 1, &mSingleTimeSubmitFence);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to reset single time submit fence");
+		}
+
+		result = vkQueueSubmit(mGraphicsQueue->GetHandle(), 1, &submitInfo, mSingleTimeSubmitFence);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to submit single time command buffer");
+		}
+	}
+
+	void GraphicsContext::WaitForSingleTimeCommands()
+	{
+		VkResult result = vkWaitForFences(mDevice, 1, &mSingleTimeSubmitFence, VK_TRUE, UINT64_MAX);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to wait for single time submit fence");
+		}
 	}
 
 }

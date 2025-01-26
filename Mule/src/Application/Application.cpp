@@ -24,6 +24,7 @@ namespace Mule
 	{
 #ifdef _DEBUG
 		spdlog::set_pattern("[%H:%M:%S %z] [%n] [thread %t] %v");
+		
 		SPDLOG_INFO("Application Started");
 #endif
 		
@@ -109,13 +110,13 @@ namespace Mule
 
 				ImGui::End();
 
-				std::vector<Ref<Semaphore>> waitSemaphores;
-				if (scene)
-				{
-					waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
-				}
+				//std::vector<Ref<Semaphore>> waitSemaphores;
+				//if (scene)
+				//{
+				//	waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
+				//}
 
-				imguiContext->EndFrame(waitSemaphores);
+				imguiContext->EndFrame();
 			}
 
 			auto semaphore = imguiContext->GetRenderSemaphore();

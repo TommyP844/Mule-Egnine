@@ -8,5 +8,6 @@ public:
 	ComponentPanel() : IPanel("Component Panel") {}
 	~ComponentPanel() {}
 
+	virtual void OnAttach() override;
 	virtual void OnUIRender() override;
 };

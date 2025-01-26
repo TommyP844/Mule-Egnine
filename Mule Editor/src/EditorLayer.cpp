@@ -22,6 +22,11 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mComponentPanel.SetContext(mEditorState, context);
 	mContentBrowserPanel.SetContext(mEditorState, context);
 
+	mSceneHierarchyPanel.OnAttach();
+	mSceneViewPanel.OnAttach();
+	mComponentPanel.OnAttach();
+	mContentBrowserPanel.OnAttach();
+
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
 	fontConfig.MergeMode = true;
@@ -29,6 +34,11 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
+}
+
+EditorLayer::~EditorLayer()
+{
+	SPDLOG_TRACE("Shutting down editor layer");
 }
 
 void EditorLayer::OnAttach()

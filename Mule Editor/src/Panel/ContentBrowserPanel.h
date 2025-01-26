@@ -10,6 +10,7 @@ public:
 	ContentBrowserPanel();
 	~ContentBrowserPanel() {}
 
+	virtual void OnAttach() override;
 	virtual void OnUIRender() override;
 
 private:

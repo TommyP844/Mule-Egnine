@@ -126,7 +126,7 @@ namespace ImguiUtil
 
 		ImGui::GetWindowDrawList()->AddRectFilled(cursorPos, cursorPos + size, IM_COL32(40, 40, 40, 255), 5.f, ImDrawFlags_RoundCornersBottom);
 		ImGui::GetWindowDrawList()->AddRectFilled(cursorPos + ImVec2(0.f, size.x), cursorPos + size, IM_COL32(50, 50, 50, 255), 5.f, ImDrawFlags_RoundCornersBottom);
-		//ImGui::GetWindowDrawList()->AddImage(texId, cursorPos + padding, cursorPos + ImVec2(size.x, size.x) - padding);
+		ImGui::GetWindowDrawList()->AddImage(texId, cursorPos + padding, cursorPos + ImVec2(size.x, size.x) - padding);
 
 
 		if (hovered)
@@ -138,21 +138,23 @@ namespace ImguiUtil
 		}
 
 
-		const ImFont* font = ImGui::GetFont();
+		ImFont* font = ImGui::GetFont();
 		float fontSize = ImGui::GetFontSize();
 
+		ImVec2 textPos = cursorPos + ImVec2(padding.x, size.x);
 		ImVec2 textBegin = cursorPos + ImVec2(padding.x, size.x);
 		ImVec2 textEnd = textBegin + ImVec2(size.x - padding.x * 2, ImGui::GetTextLineHeight() * 2.f);
 		ImVec4 textClipRect = ImVec4(textBegin.x, textBegin.y, textEnd.x, textEnd.y);
 		 
-		//ImGui::GetWindowDrawList()->AddText(
-		//	font,
-		//	fontSize, 
-		//	cursorPos + ImVec2(padding.x, size.x), 
-		//	IM_COL32(255, 255, 255, 255), name.c_str(),
-		//	NULL,
-		//	size.x - padding.x * 2,
-		//	&textClipRect);
+		ImGui::GetWindowDrawList()->AddText(
+			font,
+			fontSize, 
+			textPos,
+			IM_COL32(255, 255, 255, 255),
+			name.c_str(),
+			nullptr,
+			size.x - padding.x * 2,
+			&textClipRect);
 
 		ImVec2 nextPos = ImGui::GetCursorScreenPos();
 

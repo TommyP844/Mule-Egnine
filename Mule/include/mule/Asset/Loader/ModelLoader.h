@@ -18,7 +18,7 @@ namespace Mule
 		virtual Ref<Model> LoadText(const fs::path& filepath) override;
 		virtual void SaveText(Ref<Model> asset) override;
 
-		virtual Ref<Model> LoadBinary(const fs::path& filepath) override;
+		virtual Ref<Model> LoadBinary(const Buffer& filepath) override;
 		virtual void SaveBinary(Ref<Model> asset) override;
 
 	private:

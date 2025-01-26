@@ -8,5 +8,6 @@ public:
 	SceneViewPanel() : IPanel("Scene View") {}
 	~SceneViewPanel() {}
 
+	virtual void OnAttach() override;
 	virtual void OnUIRender() override;
 };

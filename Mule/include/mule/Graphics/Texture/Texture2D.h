@@ -20,11 +20,11 @@ namespace Mule
 	class Texture2D : public Asset<AssetType::Texture>, public ITexture
 	{
 	public:
-		Texture2D(WeakRef<GraphicsContext> context, void* data, int width, int height, TextureFormat format, TextureFlags flags);
+		Texture2D(WeakRef<GraphicsContext> context, void* data, int width, int height, int mips, TextureFormat format, TextureFlags flags);
 		virtual ~Texture2D();
 
-		ImTextureID GetImGuiID() const { return (ImTextureID)0; }
+		ImTextureID GetImGuiID() const { return mImGuiID; }
 	private:
-
+		ImTextureID mImGuiID;
 	};
 }

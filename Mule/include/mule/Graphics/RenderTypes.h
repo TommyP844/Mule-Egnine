@@ -27,7 +27,8 @@ namespace Mule
 
 	enum TextureFlags : uint32_t
 	{
-		Texture_Flag_CreateMips
+		Texture_Flag_CreateMips,
+		None
 	};
 
 	enum class TextureFormat : uint32_t
@@ -37,7 +38,9 @@ namespace Mule
 		RGB8U = VK_FORMAT_R8G8B8_UNORM,
 		D32F = VK_FORMAT_D32_SFLOAT,
 		D24S8 = VK_FORMAT_D24_UNORM_S8_UINT,
-
+		RGBA32F = VK_FORMAT_R32G32B32A32_SFLOAT,
+		RGBA32S = VK_FORMAT_R32G32B32A32_SINT,
+		RGBA32U = VK_FORMAT_R32G32B32A32_UINT,
 		NONE = VK_FORMAT_UNDEFINED
 	};
 

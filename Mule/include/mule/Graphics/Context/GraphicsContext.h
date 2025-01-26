@@ -17,6 +17,10 @@
 
 #include <vulkan/vulkan.h>
 
+#ifdef CreateSemaphore
+#undef CreateSemaphore
+#endif // CreateSemaphore
+
 namespace Mule
 {
 	struct GraphicsContextDescription
@@ -78,6 +82,11 @@ namespace Mule
 		VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return mMemoryProperties; }
 		VkImageView CreateImageView(VkImage image, VkImageViewType viewtype, VkFormat format, int layers, int mips, bool depthImage);
 		VulkanImage CreateImage(uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageType imageType, int layers, int mips, VkImageUsageFlagBits usage);
+		VkSampler GetLinearSampler() const { return mLinearSampler; }
+		VkCommandBuffer CreateSingleTimeCmdBuffer();
+		void SubmitSingleTimeCmdBuffer(VkCommandBuffer commandBuffer);
+		void WaitForSingleTimeCommands();
+		VkCommandPool GetSingleTimeCommandPool() const { return mSingleTimeCommandPool; }
 
 		// Frame Data
 		uint32_t GetImageIndex() const { return mImageIndex; }
@@ -96,10 +105,14 @@ namespace Mule
 		VkSurfaceFormatKHR mSurfaceFormat;
 		VkCompositeAlphaFlagBitsKHR mCompositeAlphaFlags;
 		VkPhysicalDeviceMemoryProperties mMemoryProperties;
+		VkCommandPool mSingleTimeCommandPool;
+		VkFence mSingleTimeSubmitFence;
 
 		Ref<GraphicsQueue> mGraphicsQueue;
 		Ref<GraphicsQueue> mComputeQueue;
 		Ref<GraphicsQueue> mTransferQueue;
+
+		VkSampler mLinearSampler;
 		
 		// VkAllocationCallbacks mAllocCallback; TODO: implement
 

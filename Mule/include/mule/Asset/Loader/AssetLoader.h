@@ -2,6 +2,7 @@
 
 #include "Asset/AssetType.h"
 #include "Ref.h"
+#include "Buffer.h"
 
 #include <future>
 #include <filesystem>
@@ -26,7 +27,7 @@ namespace Mule
 		virtual Ref<T> LoadText(const fs::path& filepath) = 0;
 		virtual void SaveText(Ref<T> asset) = 0;
 
-		virtual Ref<T> LoadBinary(const fs::path& filepath) = 0;
+		virtual Ref<T> LoadBinary(const Buffer& buffer) = 0;
 		virtual void SaveBinary(Ref<T> asset) = 0;
 
 		static constexpr AssetType sType = Type;

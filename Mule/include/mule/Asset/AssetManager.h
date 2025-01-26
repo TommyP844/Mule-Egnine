@@ -27,7 +27,7 @@ namespace Mule
 
 		// Loaders
 		template<typename T>
-		void RegisterLoader();
+		Ref<T> RegisterLoader();
 
 		template<typename T>
 		Ref<T> LoadAsset(const fs::path& filepath);
