@@ -430,7 +430,7 @@ namespace Mule
 		vkDestroyInstance(mInstance, nullptr);
 	}
 
-	void GraphicsContext::BeginFrame()
+	bool GraphicsContext::BeginFrame()
 	{
 		mFrameData[mFrameIndex].ImageAcquiredFence->Reset();
 		VkResult result = vkAcquireNextImageKHR(
@@ -447,11 +447,15 @@ namespace Mule
 			int width, height;
 			glfwGetFramebufferSize(mWindow->GetGLFWWindow(), &width, &height);
 			ResizeSwapchain(width, height);
+			return false;
 		}
 		else if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("failed to get next image from swap chain");
+			return false;
 		}
+
+		return true;
 	}
 
 	void GraphicsContext::EndFrame(std::vector<WeakRef<Semaphore>> gpuFences)
@@ -481,6 +485,7 @@ namespace Mule
 
 	void GraphicsContext::ResizeSwapchain(uint32_t width, uint32_t height)
 	{
+		if (width == 0 || height == 0) return;
 		vkDeviceWaitIdle(mDevice);
 
 		VkSurfaceCapabilitiesKHR surfaceCapabilities;

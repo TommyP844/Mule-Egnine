@@ -49,7 +49,7 @@ namespace Mule
 		
 		GraphicsContext(const GraphicsContext&) = delete;
 		
-		void BeginFrame();
+		bool BeginFrame();
 		void EndFrame(std::vector<WeakRef<Semaphore>> gpuFences = {});
 		void ResizeSwapchain(uint32_t width, uint32_t height);
 		void WaitForDeviceIdle();

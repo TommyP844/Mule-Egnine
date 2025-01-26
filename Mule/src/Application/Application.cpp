@@ -60,6 +60,7 @@ namespace Mule
 		Ref<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 		float ms = 1.f;
 		float maxFPS = 1.f;
+		bool minimized = false;
 		while (mRunning)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
@@ -76,6 +77,10 @@ namespace Mule
 					Ref<WindowResizeEvent> resizeEvent = event;
 					graphicsContext->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
 					imguiContext->Resize(resizeEvent->Width, resizeEvent->Height);
+					if (resizeEvent->Width == 0 || resizeEvent->Height == 0)
+						minimized = true;
+					else
+						minimized = false;
 				}
 					break;
 				default:
@@ -83,44 +88,48 @@ namespace Mule
 				}
 			}
 
-			graphicsContext->BeginFrame();
+			if (minimized) continue;
 
-			Ref<Scene> scene = mEngineContext->GetScene();
-			if (scene)
+			if (graphicsContext->BeginFrame())
 			{
-				sceneRenderer->Render(scene);
-			}
 
-			// ImGui UI render
-			{
-				imguiContext->NewFrame();
-
-				for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+				Ref<Scene> scene = mEngineContext->GetScene();
+				if (scene)
 				{
-					(*it)->OnUIRender();
+					sceneRenderer->Render(scene);
 				}
 
-				ImGui::Begin("Frame Counter");
+				// ImGui UI render
+				{
+					imguiContext->NewFrame();
 
-				float fps = 1.f / (ms / 1000.f);
-				if (fps > maxFPS) maxFPS = fps;
-				ImGui::Text("Frame Time : %.3fms", ms);
-				ImGui::Text("FPS        : %.2f", fps);
-				ImGui::Text("Highest FPS: %.2f", maxFPS);
+					for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+					{
+						(*it)->OnUIRender();
+					}
 
-				ImGui::End();
+					ImGui::Begin("Frame Counter");
 
-				//std::vector<Ref<Semaphore>> waitSemaphores;
-				//if (scene)
-				//{
-				//	waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
-				//}
+					float fps = 1.f / (ms / 1000.f);
+					if (fps > maxFPS) maxFPS = fps;
+					ImGui::Text("Frame Time : %.3fms", ms);
+					ImGui::Text("FPS        : %.2f", fps);
+					ImGui::Text("Highest FPS: %.2f", maxFPS);
 
-				imguiContext->EndFrame();
+					ImGui::End();
+
+					//std::vector<Ref<Semaphore>> waitSemaphores;
+					//if (scene)
+					//{
+					//	waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
+					//}
+
+					imguiContext->EndFrame();
+				}
+
+				auto semaphore = imguiContext->GetRenderSemaphore();
+				graphicsContext->EndFrame({ semaphore });
 			}
-
-			auto semaphore = imguiContext->GetRenderSemaphore();
-			graphicsContext->EndFrame({ semaphore });
 
 			mRunning = window->WindowOpen();
 			auto end = std::chrono::high_resolution_clock::now();
