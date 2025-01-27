@@ -16,4 +16,5 @@ public:
 private:
 	Ref<Mule::Texture2D> mFolderTexture;
 	Ref<Mule::Texture2D> mFileTexture;
+	fs::path mContentBrowserPath;
 };
