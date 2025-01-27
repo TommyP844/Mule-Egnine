@@ -10,4 +10,7 @@ public:
 
 	virtual void OnAttach() override;
 	virtual void OnUIRender() override;
+
+private:
+	float mWidth, mHeight;
 };

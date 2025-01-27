@@ -12,7 +12,8 @@ namespace Mule
 	ITexture::ITexture(WeakRef<GraphicsContext> context)
 		:
 		mContext(context),
-		mDevice(context->GetDevice())
+		mDevice(context->GetDevice()),
+		mIsDepthTexture(false)
 	{
 	}
 
@@ -54,6 +55,9 @@ namespace Mule
 		mMips = mips;
 		mFormat = format;
 
+		mIsDepthTexture = ((flags & TextureFlags::DepthTexture) == TextureFlags::DepthTexture);
+		VkImageAspectFlags imageAspect = mIsDepthTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;;
+
 		VkImageCreateInfo info{};
 
 		std::set<uint32_t> queueFamilyIndicexSet = {
@@ -64,6 +68,13 @@ namespace Mule
 
 		std::vector<uint32_t> queueFamilyIndices;
 		std::copy(queueFamilyIndicexSet.begin(), queueFamilyIndicexSet.end(), std::back_inserter(queueFamilyIndices));
+
+		VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		if ((flags & TextureFlags::RenderTarget) && (flags & TextureFlags::DepthTexture))
+			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		else if(flags & TextureFlags::RenderTarget)
+			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		
 
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		info.pNext = nullptr;
@@ -77,7 +88,7 @@ namespace Mule
 		info.arrayLayers = layers;
 		info.samples = VK_SAMPLE_COUNT_1_BIT;
 		info.tiling = VK_IMAGE_TILING_OPTIMAL;
-		info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		info.usage = usageFlags;
 		info.sharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = queueFamilyIndices.size();
 		info.pQueueFamilyIndices = queueFamilyIndices.data();
@@ -123,7 +134,7 @@ namespace Mule
 		viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.aspectMask = imageAspect;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = mips;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -137,32 +148,30 @@ namespace Mule
 
 		VkCommandBuffer commandBuffer = mContext->CreateSingleTimeCmdBuffer();
 
-		// TODO: create staging buffer object
-		// TODO: use command buffer object here
-		// TODO: create proper layout transition system
+		VkImageMemoryBarrier barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = mVulkanImage.Image;
+		barrier.subresourceRange.aspectMask = imageAspect;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0, 0, nullptr, 0, nullptr, 1, &barrier);
+
 		VkBuffer stagingBuffer = VK_NULL_HANDLE;
 		VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
 		if (data != nullptr)
 		{
-			VkImageMemoryBarrier barrier = {};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = mVulkanImage.Image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(
-				commandBuffer,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 			size_t size = width * height * depth * layers * GetFormatSize(mFormat);
 
@@ -195,7 +204,7 @@ namespace Mule
 			region.bufferOffset = 0;
 			region.bufferRowLength = 0;
 			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.aspectMask = imageAspect;
 			region.imageSubresource.mipLevel = 0;
 			region.imageSubresource.baseArrayLayer = 0;
 			region.imageSubresource.layerCount = mLayers;
@@ -211,31 +220,55 @@ namespace Mule
 				&region);
 		}
 
-
-		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;  // Current layout
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;  // Desired layout
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = mVulkanImage.Image;  // The Vulkan image you're transitioning
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;  // For color images
-		barrier.subresourceRange.baseMipLevel = 0;  // First mip level
-		barrier.subresourceRange.levelCount = 1;  // Number of mip levels
-		barrier.subresourceRange.baseArrayLayer = 0;  // First array layer
-		barrier.subresourceRange.layerCount = 1;  // Number of array layers
+		barrier.image = mVulkanImage.Image;
+		barrier.subresourceRange.aspectMask = imageAspect;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
 
-		// Define the source and destination access masks
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;  // Previous access
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;  // Next access
+		VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		VkPipelineStageFlags dstStage;				
+
+		if (flags & TextureFlags::RenderTarget)
+		{
+			if (flags & TextureFlags::DepthTexture)
+			{
+				barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+				barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+				dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			}
+			else
+			{
+				barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+				dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			}
+		}
+		else
+		{
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+
+		mVulkanImage.Layout = barrier.newLayout;
 
 		vkCmdPipelineBarrier(
 			commandBuffer,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0,                                    
-			0, nullptr,                           
-			0, nullptr,                           
+			srcStage,
+			dstStage,
+			0,
+			0, nullptr,
+			0, nullptr,
 			1, &barrier
 		);
 

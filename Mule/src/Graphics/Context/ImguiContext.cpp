@@ -94,13 +94,13 @@ namespace Mule
 		frameData.CommandPool->Reset();
 		frameData.CommandBuffer->Begin();
 		frameData.CommandBuffer->TransitionSwapchainFrameBufferForRendering(mFrameBuffer);
-		frameData.CommandBuffer->BeginSwapChainFrameBuffer(mFrameBuffer);
+		frameData.CommandBuffer->BeginRenderPass(mFrameBuffer);
 
 		ImGui::Render();
 		ImDrawData* drawData = ImGui::GetDrawData();
 		ImGui_ImplVulkan_RenderDrawData(drawData, frameData.CommandBuffer->GetHandle());
 
-		frameData.CommandBuffer->EndFramebuffer();
+		frameData.CommandBuffer->EndRenderPass();
 		frameData.CommandBuffer->TransitionSwapchainFrameBufferForPresent(mFrameBuffer);
 		frameData.CommandBuffer->End();
 		mGraphicsQueue->Submit(frameData.CommandBuffer, waitSemaphores, { frameData.Semaphore }, frameData.Fence);

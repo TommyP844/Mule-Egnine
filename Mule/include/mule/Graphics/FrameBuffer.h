@@ -4,6 +4,10 @@
 #include "RenderTypes.h"
 #include "RenderPass.h"
 #include "WeakRef.h"
+#include "Texture/Texture2D.h"
+
+// Submodules
+#include <glm/glm.hpp>
 
 // STD
 #include <vector>
@@ -33,22 +37,30 @@ namespace Mule
 		FrameBuffer(WeakRef<GraphicsContext> context, const FramebufferDescription& desc);
 		~FrameBuffer();
 
+		VkFramebuffer GetHandle() const { return mFrameBuffer; }
 		int GetWidth() const { return mDesc.Width; }
 		int GetHeight() const { return mDesc.Height; }
+		std::vector<VkClearValue> GetClearValues() const { return mClearValues; };
+		WeakRef<Texture2D> GetColorAttachment(int index);
+		WeakRef<Texture2D> GetDepthAttachment();
+
+		void SetColorClearValue(int attachmentIndex, glm::vec4 clearColor);
+		void SetColorClearValue(int attachmentIndex, glm::ivec4 clearColor);
+		void SetColorClearValue(int attachmentIndex, glm::uvec4 clearColor);
+		void SetDepthClearColor(float clearValue);
 
 		void Resize(uint32_t width, uint32_t height);
 
-
 	private:
-		void Invalidate();
-		bool mIsValid;
 		WeakRef<GraphicsContext> mContext;
 		VkFramebuffer mFrameBuffer;
 		FramebufferDescription mDesc;
 
-		std::vector<VulkanImage> mColorAttachments;
-		VulkanImage mDepthAttachment;
+		std::vector<Ref<Texture2D>> mColorAttachments;
+		Ref<Texture2D> mDepthAttachment;
 
-		bool CreateImage(VulkanImage& image, uint32_t width, uint32_t height, uint32_t layers, uint32_t mips, VkFormat format, VkImageViewType viewtype, VkImageUsageFlagBits usage, bool depthImage);
+		std::vector<VkClearValue> mClearValues;
+
+		void Invalidate();
 	};
 }

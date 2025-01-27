@@ -374,8 +374,7 @@ namespace Mule
 		}
 	}
 
-
-	void CommandBuffer::BeginSwapChainFrameBuffer(Ref<SwapchainFrameBuffer> framebuffer)
+	void CommandBuffer::BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer)
 	{
 		VkRenderPassBeginInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -406,10 +405,102 @@ namespace Mule
 
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 	}
+
+	void CommandBuffer::BeginRenderPass(Ref<FrameBuffer> framebuffer, Ref<RenderPass> renderPass)
+	{
+		VkRenderPassBeginInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		info.renderPass = renderPass->GetHandle();
+		info.framebuffer = framebuffer->GetHandle();
+		auto clearValues = framebuffer->GetClearValues();
+		info.clearValueCount = clearValues.size();
+		info.pClearValues = clearValues.data();
+
+		VkRect2D rect{};
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = framebuffer->GetWidth();
+		rect.extent.height = framebuffer->GetHeight();
+		info.renderArea = rect;
+
+		info.pNext = nullptr;
+		vkCmdBeginRenderPass(mCommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = framebuffer->GetWidth();
+		viewport.height = framebuffer->GetHeight();
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
+
+		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
+	}
 	
-	void CommandBuffer::EndFramebuffer()
+	void CommandBuffer::NextPass()
+	{
+		vkCmdNextSubpass(mCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	void CommandBuffer::EndRenderPass()
 	{
 		vkCmdEndRenderPass(mCommandBuffer);
+	}
+
+	void CommandBuffer::TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout)
+	{
+		VkImageLayout oldLayout = texture->GetVulkanImage().Layout;
+		VkImageLayout newVkLayout = (VkImageLayout)newLayout;
+		VkPipelineStageFlags srcStage = 0;
+		VkPipelineStageFlags dstStage = 0;
+		VkImageAspectFlags imageAspect = texture->IsDepthTexture() ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+		texture->SetImageLayout(newVkLayout);
+
+		VkImageMemoryBarrier barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newVkLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = texture->GetVulkanImage().Image;
+		barrier.subresourceRange.aspectMask = imageAspect;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = texture->GetMipCount();
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = texture->GetLayerCount();
+		
+
+		if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		}
+		else
+		{
+			SPDLOG_ERROR("Invalid layout transition");
+		}
+
+		vkCmdPipelineBarrier(
+			mCommandBuffer,
+			srcStage,
+			dstStage,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier
+		);
 	}
 
 	void CommandBuffer::BindPipeline(WeakRef<GraphicsShader> shader)

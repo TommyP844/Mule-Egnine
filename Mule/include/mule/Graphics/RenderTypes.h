@@ -6,6 +6,15 @@
 
 namespace Mule
 {
+	enum class ImageLayout : uint32_t
+	{
+		TransferSrc = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		TransferDst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		ColorAttachment = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		DepthAttachment = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+		ShaderReadOnly = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
 	enum class DescriptorType
 	{
 		Texture = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -27,8 +36,10 @@ namespace Mule
 
 	enum TextureFlags : uint32_t
 	{
-		Texture_Flag_CreateMips,
-		None
+		GenerateMips = 1,
+		RenderTarget = 2,
+		DepthTexture = 4,
+		None = 8
 	};
 
 	enum class TextureFormat : uint32_t

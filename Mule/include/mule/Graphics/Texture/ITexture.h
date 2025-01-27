@@ -19,6 +19,8 @@ namespace Mule
 			vkDestroyImage(mDevice, mVulkanImage.Image, nullptr);
 		}
 
+		void SetImageLayout(VkImageLayout layout) { mVulkanImage.Layout = layout; }
+
 		VkImage GetImage() const { return mVulkanImage.Image; }
 		VkImageView GetImageView() const { return mVulkanImage.ImageView; }
 
@@ -28,6 +30,9 @@ namespace Mule
 		uint32_t GetWidth() const { return mWidth; }
 		uint32_t GetHeight() const { return mHeight; }
 		uint32_t GetDepth() const { return mDepth; }
+		bool IsDepthTexture() const { return mIsDepthTexture; }
+
+		const VulkanImage& GetVulkanImage() const { return mVulkanImage; }
 
 	protected:
 		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags);
@@ -36,6 +41,7 @@ namespace Mule
 		VkDevice mDevice;
 		VulkanImage mVulkanImage;
 		
+		bool mIsDepthTexture;
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;
 		TextureFormat mFormat;
 	};

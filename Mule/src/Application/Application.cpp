@@ -118,13 +118,13 @@ namespace Mule
 
 					ImGui::End();
 
-					//std::vector<Ref<Semaphore>> waitSemaphores;
-					//if (scene)
-					//{
-					//	waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
-					//}
+					std::vector<Ref<Semaphore>> waitSemaphores;
+					if (scene)
+					{
+						waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
+					}
 
-					imguiContext->EndFrame();
+					imguiContext->EndFrame({ waitSemaphores });
 				}
 
 				auto semaphore = imguiContext->GetRenderSemaphore();

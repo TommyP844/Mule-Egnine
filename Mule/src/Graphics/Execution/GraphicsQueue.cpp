@@ -13,9 +13,11 @@ namespace Mule
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &buffer;
 
+		std::vector<VkPipelineStageFlags> waitStages;
 		std::vector<VkSemaphore> signalSemaphores;
 		for (auto& signal : signalGPUFences)
 		{
+			waitStages.push_back(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 			signalSemaphores.push_back(signal->GetHandle());
 		}
 
@@ -30,7 +32,7 @@ namespace Mule
 
 		submitInfo.waitSemaphoreCount = waitSemaphores.size();
 		submitInfo.pWaitSemaphores = waitSemaphores.data();
-		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.pWaitDstStageMask = waitStages.data();
 
 
 		submitInfo.pNext = nullptr;

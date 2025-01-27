@@ -7,6 +7,7 @@
 #include "Graphics/RenderPass.h"
 #include "Graphics/SwapchainframeBuffer.h"
 #include "Graphics/GraphicsShader.h"
+#include "Graphics/FrameBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -24,8 +25,13 @@ namespace Mule
 		void TransitionSwapchainFrameBufferForPresent(Ref<SwapchainFrameBuffer> fb);
 
 		// Framebuffers
-		void BeginSwapChainFrameBuffer(Ref<SwapchainFrameBuffer> framebuffer);
-		void EndFramebuffer();
+		void BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer);
+		void BeginRenderPass(Ref<FrameBuffer> framebuffer, Ref<RenderPass> renderPass);
+		void NextPass();
+		void EndRenderPass();
+
+		// Texture
+		void TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout);
 
 		// Shader
 		void BindPipeline(WeakRef<GraphicsShader> shader);
