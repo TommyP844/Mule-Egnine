@@ -14,6 +14,13 @@ namespace Mule
 	}
 
 	template<AssetType Type>
+	inline Asset<Type>::Asset(const std::string& name)
+		:
+		mName(name)
+	{
+	}
+
+	template<AssetType Type>
 	inline Asset<Type>::Asset(const fs::path& path)
 		:
 		mHandle(GenerateUUID()),

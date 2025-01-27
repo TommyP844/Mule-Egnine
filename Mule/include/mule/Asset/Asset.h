@@ -47,8 +47,10 @@ namespace Mule
 			AssetHandle uuid = dist(rng);
 			return uuid;
 		}
+
 	protected:
 		explicit Asset(AssetHandle handle, const fs::path& path);
+		explicit Asset(const std::string& name);
 		explicit Asset(const fs::path& path);
 		explicit Asset();
 

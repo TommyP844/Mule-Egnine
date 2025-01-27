@@ -5,6 +5,9 @@
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
 
+// STD
+#include <algorithm>
+
 ContentBrowserPanel::ContentBrowserPanel()
 	:
 	IPanel("Content Browser")
@@ -69,15 +72,15 @@ void ContentBrowserPanel::OnUIRender()
 			std::vector<fs::directory_entry>::iterator fileIter = sortedFiles.begin();
 			for (auto dir : fs::directory_iterator(mContentBrowserPath))
 			{
-				if (dir.is_directory())
-				{
-					fileIter = sortedFiles.emplace(fileIter, dir);
-				}
-				else
-				{
-					sortedFiles.push_back(dir);
-				}
+				sortedFiles.push_back(dir);
 			}
+			
+			std::sort(sortedFiles.begin(), sortedFiles.end(), [](const fs::directory_entry& lhs, const fs::directory_entry& rhs) {
+				return lhs.is_directory() < rhs.is_directory();
+				});
+
+			float cursorPos = ImGui::GetCursorPos().x;
+			float cursorWidth = 0.f;
 
 			for (auto dir : sortedFiles)
 			{
@@ -93,15 +96,28 @@ void ContentBrowserPanel::OnUIRender()
 				{
 					name = dir.path().filename().string();
 					texId = mFileTexture->GetImGuiID();
+					auto texture = mEngineContext->GetAssetManager()->FindAsset<Mule::Texture2D>(dir.path());
+					if (texture)
+					{
+						texId = texture->GetImGuiID();
+					}
 				}
 
-				ImguiUtil::File(name, texId);
-				if (dir.is_directory() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				bool doubleClicked = false;
+				ImguiUtil::File(name, texId, doubleClicked);
+				if (doubleClicked)
 				{
 					mContentBrowserPath = dir.path();
 				}
 
-				ImGui::SameLine();
+				cursorWidth += ImguiUtil::FileWidth + ImGui::GetStyle().ItemSpacing.x;
+
+				if (cursorWidth + ImguiUtil::FileWidth > ImGui::GetContentRegionAvail().x)
+				{
+					cursorWidth = 0.f;
+				}
+				else
+					ImGui::SameLine();
 			}
 		}
 		ImGui::EndChild();

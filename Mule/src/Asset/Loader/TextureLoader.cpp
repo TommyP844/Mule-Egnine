@@ -29,7 +29,7 @@ namespace Mule
 			return nullptr;
 		}
 
-		return MakeRef<Texture2D>(mContext, data, width, height, 1, format, TextureFlags::None);
+		return MakeRef<Texture2D>(mContext, filepath, data, width, height, 1, format, TextureFlags::None);
 	}
 	
 	void TextureLoader::SaveText(Ref<Texture2D> asset)

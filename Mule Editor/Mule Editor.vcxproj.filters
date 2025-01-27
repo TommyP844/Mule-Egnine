@@ -25,6 +25,7 @@
       <Filter>Panel</Filter>
     </ClInclude>
     <ClInclude Include="src\Popups.h" />
+    <ClInclude Include="src\Panel\AssetManagerPanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\EditorLayer.cpp" />
@@ -41,5 +42,6 @@
       <Filter>Panel</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Panel\AssetManagerPanel.cpp" />
   </ItemGroup>
 </Project>

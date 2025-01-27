@@ -11,6 +11,25 @@ namespace Mule
 {
 	ITexture::ITexture(WeakRef<GraphicsContext> context)
 		:
+		Asset(),
+		mContext(context),
+		mDevice(context->GetDevice()),
+		mIsDepthTexture(false)
+	{
+	}
+
+	ITexture::ITexture(WeakRef<GraphicsContext> context, const fs::path& filepath, AssetHandle handle)
+		:
+		Asset(handle, filepath),
+		mContext(context),
+		mDevice(context->GetDevice()),
+		mIsDepthTexture(false)
+	{
+	}
+
+	ITexture::ITexture(WeakRef<GraphicsContext> context, const std::string& name)
+		:
+		Asset(name),
 		mContext(context),
 		mDevice(context->GetDevice()),
 		mIsDepthTexture(false)

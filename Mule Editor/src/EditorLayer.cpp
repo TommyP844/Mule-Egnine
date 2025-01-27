@@ -21,11 +21,13 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mSceneViewPanel.SetContext(mEditorState, context);
 	mComponentPanel.SetContext(mEditorState, context);
 	mContentBrowserPanel.SetContext(mEditorState, context);
+	mAssetManagerPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
 	mComponentPanel.OnAttach();
 	mContentBrowserPanel.OnAttach();
+	mAssetManagerPanel.OnAttach();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -44,6 +46,19 @@ EditorLayer::~EditorLayer()
 void EditorLayer::OnAttach()
 {
 	SPDLOG_INFO("Layer attached: {}", GetName());
+
+	mAssetLoaderThread = std::async(std::launch::async, [&]() {
+
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		{
+			if (dir.is_directory()) continue;
+			std::this_thread::sleep_for(std::chrono::milliseconds(15));
+			if (dir.path().extension() == ".jpg")
+			{
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(dir.path());
+			}
+		}
+		});
 
 }
 
@@ -76,6 +91,7 @@ void EditorLayer::OnUIRender()
 		}
 		if (ImGui::BeginMenu("Panels"))
 		{
+			ImGui::MenuItem("Asset Manager", "", mAssetManagerPanel.OpenPtr());
 			ImGui::MenuItem("Content Browser", "", mContentBrowserPanel.OpenPtr());
 			ImGui::MenuItem("Components", "", mComponentPanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
@@ -89,6 +105,7 @@ void EditorLayer::OnUIRender()
 	mSceneHierarchyPanel.OnUIRender();
 	mSceneViewPanel.OnUIRender();
 	mContentBrowserPanel.OnUIRender();
+	mAssetManagerPanel.OnUIRender();
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

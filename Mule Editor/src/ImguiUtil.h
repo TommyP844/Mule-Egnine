@@ -41,6 +41,8 @@ static ImVec2& operator-=(ImVec2& lhs, const ImVec2& rhs) {
 
 namespace ImguiUtil
 {
+	constexpr float FileWidth = 140.f;
+
 	static bool Vec3(const std::string& name, glm::vec3& vector, const glm::vec3& resetVal = glm::vec3(0.f))
 	{
 		bool ret = false;
@@ -112,15 +114,16 @@ namespace ImguiUtil
 		return ret;
 	}
 
-	static bool File(std::string name, ImTextureID texId)
+	static bool File(std::string name, ImTextureID texId, bool& doubleClicked)
 	{
-
-		ImVec2 size = { 140.f, 210.f };
+		ImVec2 size = { FileWidth, 210.f };
 
 		ImVec2 padding = ImGui::GetStyle().ItemInnerSpacing;
 		ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 
 		bool ret = ImGui::InvisibleButton(name.c_str(), size);
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			doubleClicked = true;
 		bool hovered = ImGui::IsItemHovered();
 		bool leftPressed = ImGui::IsMouseDown(0);
 

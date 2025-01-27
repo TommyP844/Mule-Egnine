@@ -3,14 +3,18 @@
 #include "WeakRef.h"
 #include "Graphics/RenderTypes.h"
 
+#include "Asset/Asset.h"
+
 namespace Mule
 {
 	class GraphicsContext;
 
-	class ITexture
+	class ITexture : public Asset<AssetType::Texture>
 	{
 	public:
 		ITexture(WeakRef<GraphicsContext> context);
+		ITexture(WeakRef<GraphicsContext> context, const fs::path& filepath, AssetHandle handle = GenerateUUID());
+		ITexture(WeakRef<GraphicsContext> context, const std::string& name);
 		virtual ~ITexture()
 		{
 			vkDeviceWaitIdle(mDevice);

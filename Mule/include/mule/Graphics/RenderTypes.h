@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <typeinfo>
 
 #include <vulkan/vulkan.h>
@@ -54,6 +55,23 @@ namespace Mule
 		RGBA32U = VK_FORMAT_R32G32B32A32_UINT,
 		NONE = VK_FORMAT_UNDEFINED
 	};
+
+	static std::string GetTextureFormatName(TextureFormat format)
+	{
+		switch (format)
+		{
+		case Mule::TextureFormat::BGRA8U: return "BGRA8U";
+		case Mule::TextureFormat::RGBA8U: return "RGBA8U";
+		case Mule::TextureFormat::RGB8U: return "RGB8U";
+		case Mule::TextureFormat::D32F: return "Depth32F";
+		case Mule::TextureFormat::D24S8: return "D24S8";
+		case Mule::TextureFormat::RGBA32F: return "RGBA32F";
+		case Mule::TextureFormat::RGBA32S: return "RGBA32S";
+		case Mule::TextureFormat::RGBA32U: return "RGBA32U";
+		case Mule::TextureFormat::NONE: return "NONE";
+		}
+		return "Unknown";
+	}
 
 	static uint32_t GetFormatSize(TextureFormat format)
 	{

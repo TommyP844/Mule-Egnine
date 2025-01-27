@@ -10,6 +10,10 @@
 #include "Panel/ContentBrowserPanel.h"
 #include "Panel/SceneHierarchyPanel.h"
 #include "Panel/SceneViewPanel.h"
+#include "Panel/AssetManagerPanel.h"
+
+// STD
+#include <future>
 
 class EditorLayer : public Mule::ILayer
 {
@@ -30,6 +34,9 @@ private:
 	ContentBrowserPanel mContentBrowserPanel;
 	SceneHierarchyPanel mSceneHierarchyPanel;
 	SceneViewPanel mSceneViewPanel;
+	AssetManagerPanel mAssetManagerPanel;
+
+	std::future<void> mAssetLoaderThread;
 
 	// Popups
 	bool mNewScenePopup = false;

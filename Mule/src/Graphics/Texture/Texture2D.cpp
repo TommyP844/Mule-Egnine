@@ -10,8 +10,25 @@ namespace Mule
 {
 	Texture2D::Texture2D(WeakRef<GraphicsContext> context, void* data, int width, int height, int mips, TextureFormat format, TextureFlags flags)
 		:
-		Asset(),
 		ITexture(context)
+	{
+		Initialize(data, width, height, 1, 1, mips, format, flags);
+
+		mImGuiID = (ImTextureID)ImGui_ImplVulkan_AddTexture(mContext->GetLinearSampler(), mVulkanImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+
+	Texture2D::Texture2D(WeakRef<GraphicsContext> context, const std::string& name, void* data, int width, int height, int mips, TextureFormat format, TextureFlags flags)
+		:
+		ITexture(context, name)
+	{
+		Initialize(data, width, height, 1, 1, mips, format, flags);
+
+		mImGuiID = (ImTextureID)ImGui_ImplVulkan_AddTexture(mContext->GetLinearSampler(), mVulkanImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+
+	Texture2D::Texture2D(WeakRef<GraphicsContext> context, const fs::path& filepath, void* data, int width, int height, int mips, TextureFormat format, TextureFlags flags)
+		:
+		ITexture(context, filepath)
 	{
 		Initialize(data, width, height, 1, 1, mips, format, flags);
 
@@ -20,5 +37,6 @@ namespace Mule
 
 	Texture2D::~Texture2D()
 	{
+
 	}
 }
