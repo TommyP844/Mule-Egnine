@@ -4,6 +4,7 @@
 #include "Graphics/Model.h"
 #include "tiny_gltf.h"
 #include "Graphics/Context/GraphicsContext.h"
+#include "Asset/AssetManager.h"
 
 // STD
 #include <vector>
@@ -23,8 +24,10 @@ namespace Mule
 		virtual void SaveBinary(Ref<Model> asset) override;
 
 		void SetGraphicsContext(WeakRef<GraphicsContext> context) { mGraphicsContext = context; }
+		void SetAssetManager(WeakRef<AssetManager> assetManager) { mAssetManager = assetManager; }
 
 	private:
+		WeakRef<AssetManager> mAssetManager;
 		WeakRef<GraphicsContext> mGraphicsContext;
 		Ref<Model> ConvertModel(const tinygltf::Model& model);
 		ModelNode ConvertNode(const tinygltf::Model& gltfModel, const tinygltf::Node& gltfNode);
@@ -32,6 +35,7 @@ namespace Mule
 
 		template<typename T>
 		std::vector<T> GetBufferAsVector(const tinygltf::Model& gltfModel, const tinygltf::Primitive& primitive, const std::string& name);
+
 	};
 }
 

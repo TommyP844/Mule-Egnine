@@ -9,8 +9,8 @@ namespace fs = std::filesystem;
 
 static bool IsModelExtension(const fs::path& path)
 {
-	const std::set<std::string> extensions = { "gltf", "bin" };
-	std::string extension = path.extension().string();
+	std::set<std::string> extensions = { ".gltf" };
+	std::string extension = path.extension().string().c_str();
 	return extensions.contains(extension);
 }
 

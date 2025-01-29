@@ -4,8 +4,7 @@
 #include "WeakRef.h"
 #include "Guid.h"
 #include "Scene.h"
-
-
+#include "Graphics/Model.h"
 
 #include "entt/entt.hpp"
 
@@ -26,11 +25,8 @@ namespace Mule
 		Entity(uint32_t id, WeakRef<Scene> scene)
 			:
 			mId((entt::entity)id),
-			mScene(scene)//,
-			//ScriptableClass("Entity")
+			mScene(scene)
 		{
-			//SetFieldValue<int>("id", (int)mId);
-			//scene ? SetFieldValue<Scene*>("scene", scene.Get()) : SetFieldValue("scene", 0);
 		}
 
 		WeakRef<Scene> GetScene() const { return mScene; }
@@ -46,6 +42,8 @@ namespace Mule
 		void AddChild(Entity child);
 		bool HasChildren();
 		bool IsChild();
+
+		void AddModel(Ref<Model> model);
 		
 		void Destroy();
 
@@ -107,5 +105,7 @@ namespace Mule
 	private:
 		entt::entity mId;
 		WeakRef<Scene> mScene;
+
+		void AddModelNodeRecursive(const ModelNode& node);
 	};
 }

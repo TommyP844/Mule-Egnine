@@ -41,7 +41,7 @@ namespace Mule
 
 		// Mesh
 		void BindMesh(WeakRef<Mesh> mesh);
-		void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount);
+		void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount = 1);
 		void BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount);
 		
 

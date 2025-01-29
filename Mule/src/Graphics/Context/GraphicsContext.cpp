@@ -765,6 +765,8 @@ namespace Mule
 
 	VkCommandBuffer GraphicsContext::CreateSingleTimeCmdBuffer()
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		VkCommandBufferAllocateInfo allocInfo{};
 
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -798,6 +800,8 @@ namespace Mule
 
 	void GraphicsContext::SubmitSingleTimeCmdBuffer(VkCommandBuffer commandBuffer)
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		VkResult result = vkEndCommandBuffer(commandBuffer);
 
 		if (result != VK_SUCCESS)
@@ -838,6 +842,8 @@ namespace Mule
 
 	void GraphicsContext::WaitForSingleTimeCommands()
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		VkResult result = vkWaitForFences(mDevice, 1, &mSingleTimeSubmitFence, VK_TRUE, UINT64_MAX);
 		if (result != VK_SUCCESS)
 		{

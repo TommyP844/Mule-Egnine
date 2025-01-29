@@ -86,7 +86,23 @@ namespace Mule
 			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
 			commandBuffer->BeginRenderPass(frameData.Framebuffer, mMainRenderPass);
 
-			// render
+			commandBuffer->BindPipeline(mDefaultGeometryShader);
+
+			scene->IterateEntitiesWithComponents<MeshCollectionComponent>([&](Entity e) {
+
+				const auto& meshCollection = e.GetComponent<MeshCollectionComponent>();
+				for (const auto& meshComponent : meshCollection.Meshes)
+				{
+					if (!meshComponent.Visible) continue;
+
+					auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+					if (!mesh) continue;
+					
+					commandBuffer->BindMesh(mesh);
+					commandBuffer->DrawMesh(mesh);
+				}
+
+				});
 
 			commandBuffer->EndRenderPass();
 			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly);

@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "Asset/Asset.h"
 #include "ECS/Components.h"
 
 namespace Mule 
@@ -79,6 +80,18 @@ namespace Mule
 		return meta.Parent;
 	}
 
+	void Entity::AddModel(Ref<Model> model)
+	{
+		if (!model)
+		{
+			SPDLOG_WARN("Model is null");
+			return;
+		}
+
+		auto& node = model->GetRootNode();
+		AddModelNodeRecursive(node);
+	}
+
 	void Entity::Destroy()
 	{
 		Orphan();
@@ -92,5 +105,31 @@ namespace Mule
 		mScene->DestroyEntity(mId);
 		mId = entt::null;
 		mScene = nullptr;
+	}
+
+	void Entity::AddModelNodeRecursive(const ModelNode& node)
+	{
+
+		for (auto& mesh : node.GetMeshes())
+		{
+			if (!HasComponent<MeshCollectionComponent>())
+				AddComponent<MeshCollectionComponent>();
+
+			MeshCollectionComponent& meshCollection = GetComponent<MeshCollectionComponent>();
+
+			MeshComponent meshComponent;
+			meshComponent.Visible = true;
+			meshComponent.MeshHandle = mesh->Handle();
+			meshComponent.MaterialHandle = mesh->GetDefaultMaterialHandle();
+
+			meshCollection.Meshes.push_back(meshComponent);
+		}
+
+		for (const auto& childNode : node.GetChildren())
+		{
+			auto childEntity = mScene->CreateEntity(childNode.GetName());
+			AddChild(childEntity);
+			childEntity.AddModelNodeRecursive(childNode);
+		}
 	}
 }

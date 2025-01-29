@@ -109,7 +109,7 @@ namespace Mule
 		std::vector<Ref<Mesh>> meshes;
 
 		for (const auto& primitive : gltfMesh.primitives) {
-			
+
 			Buffer vertices;
 			Buffer indices;
 			// Access vertex positions
@@ -187,6 +187,7 @@ namespace Mule
 			meshDescription.VertexSize = sizeof(StaticVertex);
 
 			Ref<Mesh> mesh = mGraphicsContext->CreateMesh(meshDescription);
+			mAssetManager->InsertAsset(mesh);
 
 			vertices.Release();
 			indices.Release();

@@ -20,14 +20,19 @@ namespace Mule
 	template<typename T>
 	inline Ref<T> AssetManager::LoadAsset(const fs::path& filepath)
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
 		constexpr AssetType type = T::sType;
+		Ref<IAssetLoader<T, type>> loader = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			loader = mLoaders[type];
+		}
 		SPDLOG_INFO("Loading asset: [{}, {}]", GetAssetTypeString(type), filepath.string());
-		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
 		Ref<T> asset = loader->LoadText(filepath);
-		mAssets[asset->Handle()] = asset;
-		mAssetTypes[T::sType].push_back(asset);
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			mAssets[asset->Handle()] = asset;
+			mAssetTypes[T::sType].push_back(asset);
+		}
 		return asset;
 	}
 

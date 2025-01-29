@@ -8,7 +8,7 @@ inline void Mule::Scene::IterateEntitiesWithComponents(std::function<void(Entity
 	auto view = mRegistry.view<Components...>();
 	for (auto id : view)
 	{
-		Entity e(id, WeakRef<Scene>(this));
+		Entity e((uint32_t)id, WeakRef<Scene>(this));
 		func(e);
 	}
 }

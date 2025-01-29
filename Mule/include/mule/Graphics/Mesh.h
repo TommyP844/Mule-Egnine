@@ -23,7 +23,7 @@ namespace Mule
 		IndexBufferType IndexBufferType;
 	};
 
-	class Mesh
+	class Mesh : public Asset<AssetType::Mesh>
 	{
 	public:
 		Mesh(WeakRef<GraphicsContext> context, const MeshDescription& description);
@@ -31,8 +31,6 @@ namespace Mule
 
 		Mesh(const Mesh& other) = delete;
 		Mesh& operator=(const Mesh& other) = delete;
-
-		const std::string& GetName() const { return mName; }
 
 		AssetHandle GetDefaultMaterialHandle() const { return mDefaultMaterialHandle; }
 
@@ -42,10 +40,7 @@ namespace Mule
 		const WeakRef<IndexBuffer>& GetIndexBuffer() const { return mIndexBuffer; }
 		const WeakRef<VertexBuffer>& GetVertexBuffer() const { return mVertexBuffer; }
 
-		void Bind();
-
 	private:
-		std::string mName;
 		Ref<VertexBuffer> mVertexBuffer;
 		Ref<IndexBuffer> mIndexBuffer;
 

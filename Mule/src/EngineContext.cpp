@@ -22,6 +22,7 @@ namespace Mule
 		Ref<TextureLoader> textureLoader = mAssetManager->RegisterLoader<TextureLoader>();
 		
 		modelLoader->SetGraphicsContext(mGraphicsContext);
+		modelLoader->SetAssetManager(mAssetManager);
 		textureLoader->SetContext(mGraphicsContext);
 
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);

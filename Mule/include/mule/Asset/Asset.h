@@ -55,9 +55,9 @@ namespace Mule
 		explicit Asset();
 
 	private:
-		AssetHandle mHandle;
 		fs::path mFilepath;
-		std::string mName;	
+		std::string mName;
+		AssetHandle mHandle;
 	};
 }
 

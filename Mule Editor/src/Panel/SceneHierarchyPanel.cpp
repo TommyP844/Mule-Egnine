@@ -84,11 +84,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 		if (IsModelExtension(readPath))
 		{
 			auto model = mEngineContext->GetAssetManager()->GetAssetByFilepath<Mule::Model>(readPath);
-			AddModelToEntity(e, model);
-		}
-		if (IsTextureExtension(readPath))
-		{
-			SPDLOG_INFO("error");
+			e.AddModel(model);
 		}
 	}
 	

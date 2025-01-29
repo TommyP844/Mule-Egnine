@@ -92,24 +92,58 @@ void ComponentPanel::OnUIRender()
 			}
 		});
 
-		DisplayComponent<Mule::MeshComponent>(ICON_FA_DIAGRAM_PROJECT" Mesh", e, [&](Mule::MeshComponent& mesh) {
+		if (e.HasComponent<Mule::MeshCollectionComponent>())
+		{
+			auto& meshCollection = e.GetComponent<Mule::MeshCollectionComponent>();
+			uint32_t id = 0;
+			for (auto it = meshCollection.Meshes.begin(); it != meshCollection.Meshes.end();)
+			{
+				id++;
+				std::string uuid = "##" + std::to_string(id);
+				std::string label = "Mesh" + uuid;
+				bool remove = false;
+				bool open = ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_CollapsingHeader);
 
-			DisplayRow("Visible");
-			ImGui::Checkbox("##ModelVisible", &mesh.Visible);
+				if (ImGui::BeginPopupContextItem(label.c_str()))
+				{
+					if (ImGui::MenuItem("Delete"))
+						remove = true;
+					ImGui::EndPopup();
+				}
 
-			DisplayRow("Mesh");
-			auto meshPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(mesh.MeshHandle);
-			std::string meshName = "(No Mesh)";
-			if (meshPtr)
-				meshName = meshPtr->GetName();
-			ImGui::Text(meshName.c_str());
+				if (open)
+				{
+					if (ImGui::BeginTable("name", 2, ImGuiTableFlags_NoClip | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, { ImGui::GetContentRegionAvail().x, 0.f }))
+					{
+						ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch);
+						ImGui::TableSetupColumn("Data");
 
-			DisplayRow("Material");
-			ImGui::Text("(No Material)");
+						DisplayRow("Visible");
+						ImGui::Checkbox(("##MeshVisible" + uuid).c_str(), &it->Visible);
 
-			});
+						DisplayRow("Mesh");
+						auto mesh = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(it->MeshHandle);
+						if(mesh)
+							ImGui::Text(mesh->Name().c_str());
+						else
+							ImGui::Text("(No Mesh)");
+
+						DisplayRow("Material");
+						ImGui::Text("(No Material)");
+						
+						ImGui::EndTable();
+					}
+				}
+
+				if (remove)
+					it = meshCollection.Meshes.erase(it);
+				else
+					it++;
+			}
+		}
 
 		ImGui::PopStyleColor(3);
+
 	}
 	ImGui::End();
 }

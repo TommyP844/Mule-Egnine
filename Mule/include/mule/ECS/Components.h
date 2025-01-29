@@ -47,4 +47,9 @@ namespace Mule
 		AssetHandle MeshHandle;
 		AssetHandle MaterialHandle;
 	};
+
+	struct MeshCollectionComponent
+	{
+		std::vector<MeshComponent> Meshes;
+	};
 }

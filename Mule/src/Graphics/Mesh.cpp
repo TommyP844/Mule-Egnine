@@ -5,6 +5,8 @@
 namespace Mule
 {
 	Mesh::Mesh(WeakRef<GraphicsContext> context, const MeshDescription& description)
+		:
+		Asset(description.Name)
 	{
 		mVertexBuffer = MakeRef<VertexBuffer>(context, description.Vertices, description.VertexSize);
 		mIndexBuffer = MakeRef<IndexBuffer>(context, description.Indices, description.IndexBufferType);
@@ -15,7 +17,4 @@ namespace Mule
 
 	}
 
-	void Mesh::Bind()
-	{
-	}
 }

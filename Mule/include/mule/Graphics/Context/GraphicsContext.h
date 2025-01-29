@@ -17,6 +17,9 @@
 
 #include <vulkan/vulkan.h>
 
+// STD
+#include <mutex>
+
 #ifdef CreateSemaphore
 #undef CreateSemaphore
 #endif // CreateSemaphore
@@ -94,6 +97,7 @@ namespace Mule
 		WeakRef<Semaphore> GetImageAcquiredGPUFence() const { return mFrameData[mFrameIndex].ImageAcquiredSemaphore; }
 
 	private:
+		std::mutex mMutex;
 		VkInstance mInstance;
 		VkDevice mDevice;
 		VkPhysicalDevice mPhysicalDevice;
