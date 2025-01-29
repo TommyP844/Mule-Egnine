@@ -21,6 +21,7 @@ public:
 	EditorLayer(Ref<Mule::EngineContext> context);
 	virtual ~EditorLayer();
 
+	virtual void OnEvent(Ref<Mule::Event> event) override;
 	virtual void OnAttach() override;
 	virtual void OnUpdate(float dt) override;
 	virtual void OnUIRender() override;

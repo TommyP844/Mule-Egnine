@@ -51,6 +51,9 @@ namespace Mule
 		template<typename T>
 		WeakRef<T> GetAsset(AssetHandle);
 
+		template<typename T>
+		Ref<T> GetAssetByFilepath(const fs::path& path);
+
 		std::vector<Ref<IAsset>> GetAssetsOfType(AssetType type) const;
 
 		void RemoveAsset(AssetHandle handle);

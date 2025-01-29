@@ -1,6 +1,7 @@
 #include "ComponentPanel.h"
 
-#include "ImguiUtil.h"
+#include "ImGuiExtension.h"
+#include <IconsFontAwesome6.h>
 
 #include "Mule.h"
 
@@ -17,17 +18,6 @@ void ComponentPanel::OnUIRender()
 	{
 		Mule::Entity e = mEditorState->SelectedEntity;
 		
-		ImGui::Text("Name");
-		ImGui::SameLine(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(e.Name().c_str()).x);
-		ImGui::Text(e.Name().c_str());
-
-		std::string guid = std::to_string(e.Guid());
-		ImGui::Text("Guid");
-		ImGui::SameLine(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(guid.c_str()).x);
-		ImGui::Text(guid.c_str());
-
-		ImGui::Separator();
-
 		Mule::TransformComponent& transform = e.GetTransformComponent();
 		if (ImGui::BeginTable("TRS", 2, ImGuiTableFlags_NoClip | ImGuiTableFlags_SizingFixedFit, {ImGui::GetContentRegionAvail().x, 0.f}))
 		{
@@ -36,21 +26,25 @@ void ComponentPanel::OnUIRender()
 
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
-			ImGui::Text("Translation");
+			ImGui::Text("%llx", (uint64_t)e.Guid());
 			ImGui::TableNextColumn();
-			ImguiUtil::Vec3("Translation", transform.Translation);
+			char entityName[256] = { 0 };
+			memset(entityName, 0, 256);
+			memcpy(entityName, e.Name().c_str(), e.Name().size());
+			if (ImGui::InputText("##EntityName", entityName, 256))
+			{
+				e.GetComponent<Mule::MetaComponent>().Name = entityName;
+			}
+			ImGui::Separator();
+
+			DisplayRow("Translation");
+			ImGuiExtension::Vec3("Translation", transform.Translation);
 		
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Text("Rotation");
-			ImGui::TableNextColumn();
-			ImguiUtil::Vec3("Rotation", transform.Rotation);
+			DisplayRow("Rotation");
+			ImGuiExtension::Vec3("Rotation", transform.Rotation);
 		
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Text("Scale");
-			ImGui::TableNextColumn();
-			ImguiUtil::Vec3("Scale", transform.Scale, glm::vec3(1.f));
+			DisplayRow("Scale");
+			ImGuiExtension::Vec3("Scale", transform.Scale, glm::vec3(1.f));
 		
 			ImGui::EndTable();
 		}
@@ -61,11 +55,70 @@ void ComponentPanel::OnUIRender()
 		if (ImGui::BeginMenu("Components"))
 		{
 			if (ImGui::MenuItem("Camera", "", nullptr, !e.HasComponent<Mule::CameraComponent>())) e.AddComponent<Mule::CameraComponent>();
+			if (ImGui::MenuItem("Mesh", "", nullptr, !e.HasComponent<Mule::MeshComponent>())) e.AddComponent<Mule::MeshComponent>();
 			if (ImGui::MenuItem("Sky Light", "", nullptr, !e.HasComponent<Mule::SkyLightComponent>())) e.AddComponent<Mule::SkyLightComponent>();
 
 			ImGui::EndMenu();
 		}
 
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.19f, 0.19f, 1.00f));         // Normal color
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.22f, 0.22f, 0.22f, 1.00f));  // Hovered color
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.25f, 0.25f, 0.25f, 1.00f));   // Active (clicked) color
+
+		DisplayComponent<Mule::CameraComponent>(ICON_FA_CAMERA" Camera", e, [&](Mule::CameraComponent& camera) {
+
+			DisplayRow("Primary");
+			ImGui::Checkbox("##CameraPrimary", &camera.Active);
+
+			DisplayRow("Field Of View");
+			float fov = camera.Camera.GetFOVDegrees();
+			if (ImGui::DragFloat("##CameraFOV", &fov, 0.01f, 0.01f, 359.f, "%.2f"))
+			{
+				camera.Camera.SetFOVDegrees(fov);
+			}
+
+			DisplayRow("Near Plane");
+			float nearPlane = camera.Camera.GetNearPlane();
+			if (ImGui::DragFloat("##CameraNearPlane", &nearPlane, 0.05f, 0.01f, camera.Camera.GetFarPlane(), "%.2f"))
+			{
+				camera.Camera.SetNearPlane(nearPlane);
+			}
+
+			DisplayRow("Far Plane");
+			float farPlane = camera.Camera.GetFarPlane();
+			if (ImGui::DragFloat("##CameraFarPlane", &farPlane, 0.05f, camera.Camera.GetNearPlane(), 0.f, "%.2f"))
+			{
+				camera.Camera.SetFarPlane(farPlane);
+			}
+		});
+
+		DisplayComponent<Mule::MeshComponent>(ICON_FA_DIAGRAM_PROJECT" Mesh", e, [&](Mule::MeshComponent& mesh) {
+
+			DisplayRow("Visible");
+			ImGui::Checkbox("##ModelVisible", &mesh.Visible);
+
+			DisplayRow("Mesh");
+			auto meshPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(mesh.MeshHandle);
+			std::string meshName = "(No Mesh)";
+			if (meshPtr)
+				meshName = meshPtr->GetName();
+			ImGui::Text(meshName.c_str());
+
+			DisplayRow("Material");
+			ImGui::Text("(No Material)");
+
+			});
+
+		ImGui::PopStyleColor(3);
 	}
 	ImGui::End();
+}
+
+void ComponentPanel::DisplayRow(const char* name, float dataColumnWidth)
+{
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
+	ImGui::Text(name);
+	ImGui::TableNextColumn();
+	ImGui::PushItemWidth(dataColumnWidth);
 }

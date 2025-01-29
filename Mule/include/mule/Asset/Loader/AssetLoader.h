@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Asset/AssetType.h"
+#include "WeakRef.h"
 #include "Ref.h"
 #include "Buffer.h"
 
@@ -13,6 +14,7 @@ namespace fs = std::filesystem;
 
 namespace Mule
 {
+	class EngineContext;
 
 	class IBaseLoader
 	{

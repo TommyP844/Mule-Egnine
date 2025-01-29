@@ -44,7 +44,7 @@ namespace Mule
 	struct MeshComponent
 	{
 		bool Visible = true;
-		AssetHandle MeshHandle = NullAssetHandle;
-		AssetHandle MaterialHandle = NullAssetHandle;
+		AssetHandle MeshHandle;
+		AssetHandle MaterialHandle;
 	};
 }

@@ -105,6 +105,11 @@ namespace Mule
 
 					for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
 					{
+						for (const auto& event : events)
+						{
+							(*it)->OnEvent(event);
+						}
+
 						(*it)->OnUIRender();
 					}
 

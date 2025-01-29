@@ -6,7 +6,8 @@ namespace Mule
 {
 	enum class EventType
 	{
-		WindowResize
+		WindowResize,
+		DropFile
 	};
 
 

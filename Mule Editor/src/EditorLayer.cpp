@@ -36,11 +36,36 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
+
+	// Test Code
+	auto scene = MakeRef<Mule::Scene>();
+	auto entity = scene->CreateEntity();
+	entity.AddComponent<Mule::CameraComponent>();
+	mEditorState->SelectedEntity = entity;
+	mEngineContext->SetScene(scene);
 }
 
 EditorLayer::~EditorLayer()
 {
 	SPDLOG_TRACE("Shutting down editor layer");
+}
+
+void EditorLayer::OnEvent(Ref<Mule::Event> event)
+{
+	switch (event->Type)
+	{
+	case Mule::EventType::DropFile:
+	{
+		Ref<Mule::DropFileEvent> dropFileEvent = event;
+		SPDLOG_INFO("Drop file event recieved: ");
+		for (auto path : dropFileEvent->GetPaths())
+		{
+			SPDLOG_INFO("\t{}", path.string());
+		}
+	}
+
+		break;
+	}
 }
 
 void EditorLayer::OnAttach()
@@ -52,10 +77,20 @@ void EditorLayer::OnAttach()
 		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
 		{
 			if (dir.is_directory()) continue;
-			std::this_thread::sleep_for(std::chrono::milliseconds(15));
-			if (dir.path().extension() == ".jpg")
+
+			std::string extension = dir.path().extension().string();
+			fs::path filePath = dir.path();
+
+			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+			const std::set<std::string> modelExtensions = { ".gltf" };
+
+			if (imageExtensions.contains(extension))
 			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(dir.path());
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
+			}
+			else if (modelExtensions.contains(extension))
+			{
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
 			}
 		}
 		});

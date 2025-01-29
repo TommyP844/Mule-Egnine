@@ -62,7 +62,7 @@ void AssetManagerPanel::OnUIRender()
 				{
 					fs::path relativePath = fs::relative(model->FilePath(), mEditorState->mAssetsPath);
 					ImGui::Text("Name: %s", model->Name().c_str());
-					ImGui::Text("Path: %s", relativePath.string().c_str());
+					ImGui::Text("Path: %s", model->FilePath().string().c_str());
 
 					ImGui::Separator();
 				}

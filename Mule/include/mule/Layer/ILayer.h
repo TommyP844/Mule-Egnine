@@ -13,6 +13,7 @@ namespace Mule
 		virtual ~ILayer() {}
 		ILayer(const ILayer&) = delete;
 
+		virtual void OnEvent(Ref<Event> event) = 0;
 		virtual void OnAttach() = 0;
 		virtual void OnUpdate(float dt) = 0;
 		virtual void OnUIRender() = 0;

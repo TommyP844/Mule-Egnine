@@ -34,7 +34,7 @@ namespace Mule
 		info.flags = 0;
 		info.size = buffer.GetSize();
 		info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		info.sharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = queueFamilyIndices.size();
 		info.pQueueFamilyIndices = queueFamilyIndices.data();
 
@@ -51,7 +51,7 @@ namespace Mule
 
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.pNext = nullptr;
-		allocInfo.allocationSize = buffer.GetSize();
+		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = context->GetMemoryTypeIndex(memRequirements.memoryTypeBits,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 			| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT

@@ -1,9 +1,13 @@
-#include "SceneHierarchyPanel.h"
+ #include "SceneHierarchyPanel.h"
 
+#include "ImGuiExtension.h"
+#include "Util.h"
+
+// Engine
 #include "Mule.h"
 
+// Submodules
 #include "imgui.h"
-
 
 void SceneHierarchyPanel::OnAttach()
 {
@@ -61,7 +65,32 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	if (mEditorState->SelectedEntity == e)
 		flags |= ImGuiTreeNodeFlags_Selected;
 
-	bool open = ImGui::TreeNodeEx(e.Name().c_str(), flags);
+	unsigned int id = e.ID();
+
+	bool open = ImGui::TreeNodeEx((e.Name() + "##" + std::to_string(id)).c_str(), flags);
+	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_ENTITY, id, [e]() {
+		ImGui::Text(e.Name().c_str());
+		});
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_ENTITY, id))
+	{
+		auto scene = mEngineContext->GetScene();
+		auto entity = Mule::Entity(id, scene);
+		entity.Orphan();
+		e.AddChild(entity);
+	}
+	fs::path readPath;
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE_PATH, readPath))
+	{
+		if (IsModelExtension(readPath))
+		{
+			auto model = mEngineContext->GetAssetManager()->GetAssetByFilepath<Mule::Model>(readPath);
+			AddModelToEntity(e, model);
+		}
+		if (IsTextureExtension(readPath))
+		{
+			SPDLOG_INFO("error");
+		}
+	}
 	
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
 		mEditorState->SelectedEntity = e;

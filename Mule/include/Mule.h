@@ -38,6 +38,7 @@
 // Events
 #include "Application/Events/Event.h"
 #include "Application/Events/WindowResizeEvent.h"
+#include "Application/Events/DropFileEvent.h"
 
 // Engine
 #include "EngineContext.h"

@@ -10,6 +10,10 @@ namespace Mule
 			return {};
 
 		const tinygltf::Accessor& accessor = gltfModel.accessors[primitive.attributes.at(name)];
+
+		if (accessor.bufferView < 0)
+			return {};
+
 		const tinygltf::BufferView& bufferView = gltfModel.bufferViews[accessor.bufferView];
 		const tinygltf::Buffer& buffer = gltfModel.buffers[bufferView.buffer];
 

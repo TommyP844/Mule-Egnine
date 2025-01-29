@@ -3,6 +3,7 @@
 #include "AssetLoader.h"
 #include "Graphics/Model.h"
 #include "tiny_gltf.h"
+#include "Graphics/Context/GraphicsContext.h"
 
 // STD
 #include <vector>
@@ -21,7 +22,10 @@ namespace Mule
 		virtual Ref<Model> LoadBinary(const Buffer& filepath) override;
 		virtual void SaveBinary(Ref<Model> asset) override;
 
+		void SetGraphicsContext(WeakRef<GraphicsContext> context) { mGraphicsContext = context; }
+
 	private:
+		WeakRef<GraphicsContext> mGraphicsContext;
 		Ref<Model> ConvertModel(const tinygltf::Model& model);
 		ModelNode ConvertNode(const tinygltf::Model& gltfModel, const tinygltf::Node& gltfNode);
 		std::vector<Ref<Mesh>> ConvertMesh(const tinygltf::Model& gltfModel, const tinygltf::Mesh& gltfMesh);

@@ -139,34 +139,59 @@ namespace Mule
 
 			
 			const tinygltf::Accessor& indexAccessor = gltfModel.accessors[primitive.indices];
+
+			if (indexAccessor.bufferView < 0)
+			{
+				vertices.Release();
+				continue;
+			}
+
 			const tinygltf::BufferView& indexBufferView = gltfModel.bufferViews[indexAccessor.bufferView];
 			const tinygltf::Buffer& indexBuffer = gltfModel.buffers[indexBufferView.buffer];
 
 			bool uses32BitIndicies = false;
-			
+			IndexBufferType indextype = IndexBufferType::BufferSize_16Bit;
 			if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
 				const uint16_t* indiceArray = reinterpret_cast<const uint16_t*>(&indexBuffer.data[indexBufferView.byteOffset + indexAccessor.byteOffset]);
 				indices.Allocate(indexAccessor.count * sizeof(uint16_t));
 				memcpy(indices.GetData(), indiceArray, indexAccessor.count * sizeof(uint16_t));
+				indextype = IndexBufferType::BufferSize_16Bit;
 			}
 			else if (indexAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
 				const uint32_t* indiceArray = reinterpret_cast<const uint32_t*>(&indexBuffer.data[indexBufferView.byteOffset + indexAccessor.byteOffset]);
 				indices.Allocate(indexAccessor.count * sizeof(uint32_t));
 				memcpy(indices.GetData(), indiceArray, indexAccessor.count * sizeof(uint32_t));
 				uses32BitIndicies = true;
+				indextype = IndexBufferType::BufferSize_32Bit;
 			}
 			else {
 				SPDLOG_ERROR("Unsuppoerted index type");
+				vertices.Release();
 				continue;
 			}
 			
+			if (vertices.GetSize() == 0)
+			{
+				continue;
+			}
+			if (indices.GetSize() == 0)
+			{
+				continue;
+			}
 
-			//Ref<Mesh> mesh = Ref<Mesh>::Make(gltfMesh.name, vertices, indices, StaticVertex::CreateLayout(), 0, uses32BitIndicies);
+			MeshDescription meshDescription{};
+			meshDescription.Name = gltfMesh.name.empty() ? "Mesh" : gltfMesh.name;
+			meshDescription.Indices = indices;
+			meshDescription.IndexBufferType = indextype;
+			meshDescription.Vertices = vertices;
+			meshDescription.VertexSize = sizeof(StaticVertex);
+
+			Ref<Mesh> mesh = mGraphicsContext->CreateMesh(meshDescription);
 
 			vertices.Release();
 			indices.Release();
 
-			//meshes.push_back(mesh);
+			meshes.push_back(mesh);
 		}
 
 		return meshes;

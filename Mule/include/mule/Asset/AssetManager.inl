@@ -92,9 +92,24 @@ namespace Mule
 		auto iter = mAssets.find(handle);
 		if (iter == mAssets.end())
 		{
-			SPDLOG_ERROR("Trying to get invalid asset: {}", handle);
 			return nullptr;
 		}
 		return iter->second;
+	}
+
+	template<typename T>
+	inline Ref<T> AssetManager::GetAssetByFilepath(const fs::path& path)
+	{
+		auto& list = mAssetTypes[T::sType];
+	
+		for (Ref<T> asset : list)
+		{
+			if (fs::equivalent(asset->FilePath(), path))
+			{
+				return asset;
+			}
+		}
+
+		return nullptr;
 	}
 }

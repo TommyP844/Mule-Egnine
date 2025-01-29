@@ -41,7 +41,7 @@ namespace Mule
 		auto& meta = GetComponent<MetaComponent>();
 		if (meta.Parent)
 		{
-			meta.Parent.RemoveChild(Entity(mId, mScene));
+			meta.Parent.RemoveChild(Entity((uint32_t)mId, mScene));
 			meta.Parent = Entity();
 		}
 		else
@@ -64,7 +64,7 @@ namespace Mule
 		meta.Children.push_back(child);
 
 		child.RemoveComponent<RootComponent>();
-		child.GetComponent<MetaComponent>().Parent = Entity(mId, mScene);
+		child.GetComponent<MetaComponent>().Parent = Entity((uint32_t)mId, mScene);
 	}
 
 	bool Entity::HasChildren()

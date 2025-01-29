@@ -17,7 +17,7 @@ namespace Mule
 		AddComponent<RootComponent>(id);
 		AddComponent<TransformComponent>(id);
 
-		return Entity(id, WeakRef<Scene>(this));
+		return Entity((uint32_t)id, WeakRef<Scene>(this));
 	}
 
 	void Scene::DestroyEntity(entt::entity id)
@@ -30,7 +30,7 @@ namespace Mule
 		auto view = mRegistry.view<RootComponent>();
 		for (auto id : view)
 		{
-			Entity e(id, WeakRef<Scene>(this));
+			Entity e((uint32_t)id, WeakRef<Scene>(this));
 			func(e);
 		}
 	}

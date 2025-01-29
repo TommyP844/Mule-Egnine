@@ -4,6 +4,7 @@
 
 // Events
 #include "Application/Events/WindowResizeEvent.h"
+#include "Application/Events/DropFileEvent.h"
 
 
 namespace Mule
@@ -61,5 +62,14 @@ namespace Mule
 			Ref<WindowResizeEvent> event = MakeRef<WindowResizeEvent>(width, height);
 			currWindow->PushEvent(event);
 			});
+
+
+		glfwSetDropCallback(mWindow, [](GLFWwindow* window, int pathCount, const char** paths) {
+			Window* currWindow = (Window*)glfwGetWindowUserPointer(window);
+			Ref<DropFileEvent> event = MakeRef<DropFileEvent>(pathCount, paths);
+			currWindow->PushEvent(event);
+			});
+
+		
 	}
 }

@@ -23,9 +23,9 @@ namespace Mule
 		{
 		}
 
-		Entity(entt::entity id, WeakRef<Scene> scene)
+		Entity(uint32_t id, WeakRef<Scene> scene)
 			:
-			mId(id),
+			mId((entt::entity)id),
 			mScene(scene)//,
 			//ScriptableClass("Entity")
 		{
