@@ -16,8 +16,8 @@ namespace Mule
 		virtual void OnEvent(Ref<Event> event) = 0;
 		virtual void OnAttach() = 0;
 		virtual void OnUpdate(float dt) = 0;
-		virtual void OnUIRender() = 0;
-		// TODO add OnEvent
+		virtual void OnUIRender(float dt) = 0;
+		virtual void OnRender(float dt) = 0;
 		virtual void OnDetach() = 0;
 
 		const std::string& GetName() const { return mName; }

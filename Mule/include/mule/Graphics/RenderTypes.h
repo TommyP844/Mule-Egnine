@@ -45,6 +45,7 @@ namespace Mule
 
 	enum class TextureFormat : uint32_t
 	{
+		R8U = VK_FORMAT_R8_SNORM,
 		BGRA8U = VK_FORMAT_B8G8R8A8_UNORM,
 		RGBA8U = VK_FORMAT_R8G8B8A8_UNORM,
 		RGB8U = VK_FORMAT_R8G8B8_UNORM,
@@ -60,6 +61,7 @@ namespace Mule
 	{
 		switch (format)
 		{
+		case Mule::TextureFormat::R8U: return "R8U";
 		case Mule::TextureFormat::BGRA8U: return "BGRA8U";
 		case Mule::TextureFormat::RGBA8U: return "RGBA8U";
 		case Mule::TextureFormat::RGB8U: return "RGB8U";
@@ -77,13 +79,16 @@ namespace Mule
 	{
 		switch (format)
 		{
+		case Mule::TextureFormat::R8U:
+			return 1;
+		case Mule::TextureFormat::RGB8U:
+			return 3;
 		case Mule::TextureFormat::BGRA8U:
 		case Mule::TextureFormat::RGBA8U:
 		case Mule::TextureFormat::D32F:
 		case Mule::TextureFormat::D24S8:
 			return 4;
-		case Mule::TextureFormat::RGB8U:
-			return 3;
+		
 		case Mule::TextureFormat::NONE:
 		default:
 			return 0;
@@ -102,5 +107,13 @@ namespace Mule
 		VkDeviceMemory Memory = VK_NULL_HANDLE;
 		VkImageView ImageView = VK_NULL_HANDLE;
 		VkImageLayout Layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	};
+
+	struct LayoutDescription
+	{
+		uint32_t Binding;
+		DescriptorType Type;
+		ShaderStage Stage;
+		uint32_t ArrayCount = 1;
 	};
 }

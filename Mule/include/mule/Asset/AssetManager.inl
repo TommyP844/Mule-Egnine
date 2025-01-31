@@ -21,18 +21,16 @@ namespace Mule
 	inline Ref<T> AssetManager::LoadAsset(const fs::path& filepath)
 	{
 		constexpr AssetType type = T::sType;
-		Ref<IAssetLoader<T, type>> loader = nullptr;
+		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		if (!loader)
 		{
-			std::lock_guard<std::mutex> lock(mMutex);
-			loader = mLoaders[type];
+			SPDLOG_WARN("No loader registered to load file: {}", filepath.string());
+			return nullptr;
 		}
-		SPDLOG_INFO("Loading asset: [{}, {}]", GetAssetTypeString(type), filepath.string());
 		Ref<T> asset = loader->LoadText(filepath);
-		{
-			std::lock_guard<std::mutex> lock(mMutex);
-			mAssets[asset->Handle()] = asset;
-			mAssetTypes[T::sType].push_back(asset);
-		}
+		if (!asset)
+			return nullptr;
+		InsertAsset<T>(asset);
 		return asset;
 	}
 

@@ -21,6 +21,7 @@ namespace Mule
 		uint32_t VertexSize;
 		Buffer Indices;
 		IndexBufferType IndexBufferType;
+		AssetHandle DefaultMaterialHandle;
 	};
 
 	class Mesh : public Asset<AssetType::Mesh>

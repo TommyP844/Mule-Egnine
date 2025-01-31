@@ -120,6 +120,6 @@ namespace Mule
 
 	void Camera::UpdateViewProj()
 	{
-		mVP = mView * mProj;
+		mVP = mProj * mView;
 	}
 }

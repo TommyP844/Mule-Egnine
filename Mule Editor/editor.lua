@@ -29,6 +29,7 @@ project "Mule Editor"
         "Mule",
         "yaml-cpp",
         "nativefiledialog",
+        "ImGuizmo",
         libs
     }
 

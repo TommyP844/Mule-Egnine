@@ -8,6 +8,8 @@
 #include <string>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace Mule
 {
@@ -27,7 +29,15 @@ namespace Mule
 	{
 		glm::vec3 Translation;
 		glm::vec3 Rotation;
-		glm::vec3 Scale;
+		glm::vec3 Scale = glm::vec3(1.f);
+
+		glm::mat4 TRS()
+		{
+			glm::mat4 translation = glm::translate(Translation);
+			glm::mat4 rotation = glm::toMat4(glm::quat(glm::radians(Rotation)));
+			glm::mat4 scale = glm::scale(Scale);
+			return translation * rotation * scale;
+		}
 	};
 
 	struct CameraComponent

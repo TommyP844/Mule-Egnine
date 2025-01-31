@@ -44,10 +44,11 @@ namespace Mule
 		return !glfwWindowShouldClose(mWindow);
 	}
 
-	void Window::PollEvents()
+	const std::vector<Ref<Event>> Window::PollEvents()
 	{
 		mEvents.clear();
 		glfwPollEvents();
+		return mEvents;
 	}
 
 	void Window::PushEvent(Ref<Event> event)

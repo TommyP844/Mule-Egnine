@@ -13,6 +13,7 @@
 #include "Graphics/SwapchainframeBuffer.h"
 #include "Graphics/GraphicsShader.h"
 #include "Graphics/DescriptorSet.h"
+#include "Graphics/DescriptorSetLayout.h"
 #include "Graphics/Mesh.h"
 
 #include <vulkan/vulkan.h>
@@ -66,6 +67,7 @@ namespace Mule
 		Ref<Fence> CreateFence();
 		Ref<Semaphore> CreateSemaphore();
 		Ref<FrameBuffer> CreateFrameBuffer(const FramebufferDescription& frameBufferDesc);
+		Ref<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description);
 
 
 		// TODO: generate queues in a better manner, right now all three are identical

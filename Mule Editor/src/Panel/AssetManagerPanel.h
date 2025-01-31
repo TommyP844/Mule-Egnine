@@ -8,7 +8,7 @@ public:
 	~AssetManagerPanel();
 	// Inherited via IPanel
 	virtual void OnAttach() override;
-	virtual void OnUIRender() override;
+	virtual void OnUIRender(float dt) override;
 
 private:
 };

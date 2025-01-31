@@ -10,7 +10,8 @@ namespace Mule
 		Scene,
 		Model,
 		Mesh,
-		Material
+		Material,
+		Shader
 	};
 
 	static std::string GetAssetTypeString(AssetType type)

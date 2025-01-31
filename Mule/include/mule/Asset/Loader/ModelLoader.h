@@ -5,6 +5,7 @@
 #include "tiny_gltf.h"
 #include "Graphics/Context/GraphicsContext.h"
 #include "Asset/AssetManager.h"
+#include "Graphics/Material.h"
 
 // STD
 #include <vector>
@@ -29,12 +30,17 @@ namespace Mule
 	private:
 		WeakRef<AssetManager> mAssetManager;
 		WeakRef<GraphicsContext> mGraphicsContext;
-		Ref<Model> ConvertModel(const tinygltf::Model& model);
-		ModelNode ConvertNode(const tinygltf::Model& gltfModel, const tinygltf::Node& gltfNode);
-		std::vector<Ref<Mesh>> ConvertMesh(const tinygltf::Model& gltfModel, const tinygltf::Mesh& gltfMesh);
+		Ref<Model> ConvertModel(const tinygltf::Model& model, const fs::path& filepath);
+		ModelNode ConvertNode(const tinygltf::Model& gltfModel, const tinygltf::Node& gltfNode, const fs::path& filepath);
+		std::vector<Ref<Mesh>> ConvertMesh(const tinygltf::Model& gltfModel, const tinygltf::Mesh& gltfMesh, const fs::path& filepath);
+		Ref<Material> LoadMaterial(const tinygltf::Model& gltfModel, const tinygltf::Material& gltfMaterial, const fs::path& filepath);
+		Ref<Texture2D> LoadTexture(const tinygltf::Model& gltfModel, const tinygltf::TextureInfo& textureInfo, const fs::path& filepath);
+		Ref<Texture2D> LoadTexture(const tinygltf::Model& gltfModel, const tinygltf::NormalTextureInfo& textureInfo, const fs::path& filepath);
+		Ref<Texture2D> LoadTexture(const tinygltf::Model& gltfModel, const tinygltf::OcclusionTextureInfo& textureInfo, const fs::path& filepath);
+		std::pair<Ref<Texture2D>, Ref<Texture2D>> LoadMetallicRoughnessTextures(const tinygltf::Model& gltfModel, const tinygltf::Material& material, const fs::path& filepath);
 
 		template<typename T>
-		std::vector<T> GetBufferAsVector(const tinygltf::Model& gltfModel, const tinygltf::Primitive& primitive, const std::string& name);
+		const T* GetBufferAsArray(const tinygltf::Model& gltfModel, const tinygltf::Primitive& primitive, const std::string& name);
 
 	};
 }

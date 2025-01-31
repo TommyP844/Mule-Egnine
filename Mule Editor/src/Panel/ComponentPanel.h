@@ -9,7 +9,7 @@ public:
 	~ComponentPanel() {}
 
 	virtual void OnAttach() override;
-	virtual void OnUIRender() override;
+	virtual void OnUIRender(float dt) override;
 
 private:
 	template<typename T>

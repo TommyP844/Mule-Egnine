@@ -3,6 +3,7 @@
 #include "WeakRef.h"
 #include "RenderTypes.h"
 #include "Buffer/UniformBuffer.h"
+#include "DescriptorSetLayout.h"
 
 #include <vector>
 
@@ -10,17 +11,9 @@ namespace Mule
 {
 	class GraphicsContext;
 
-	struct DescriptorLayoutDescription
-	{
-		uint32_t Binding;
-		DescriptorType Type;
-		ShaderStage Stage;
-		uint32_t ArrayCount = 1;
-	};
-
 	struct DescriptorSetDescription
 	{
-		std::vector<DescriptorLayoutDescription> Layouts;
+		std::vector<WeakRef<DescriptorSetLayout>> Layouts;
 	};
 
 	struct DescriptorSetUpdate
@@ -44,6 +37,5 @@ namespace Mule
 		VkDevice mDevice;
 		VkDescriptorPool mDescriptorPool;
 		VkDescriptorSet mDescriptorSet;
-		VkDescriptorSetLayout mDescriptorSetLayout;
 	};
 }

@@ -29,7 +29,7 @@ namespace Mule
 		info.flags = 0;
 		info.size = mSize;
 		info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		info.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		info.sharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = queueFamilyIndices.size();
 		info.pQueueFamilyIndices = queueFamilyIndices.data();
 

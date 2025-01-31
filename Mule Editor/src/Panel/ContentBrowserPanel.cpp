@@ -22,7 +22,7 @@ void ContentBrowserPanel::OnAttach()
 	SetContentBrowserPath(mEditorState->mAssetsPath);
 }
 
-void ContentBrowserPanel::OnUIRender()
+void ContentBrowserPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))

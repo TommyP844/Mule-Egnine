@@ -13,7 +13,7 @@ void SceneHierarchyPanel::OnAttach()
 {
 }
 
-void SceneHierarchyPanel::OnUIRender()
+void SceneHierarchyPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))

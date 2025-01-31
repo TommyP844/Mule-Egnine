@@ -24,9 +24,8 @@ namespace Mule
 
 		bool WindowOpen() const;
 
-		void PollEvents();
+		const std::vector<Ref<Event>> PollEvents();
 		void PushEvent(Ref<Event> event);
-		const std::vector<Ref<Event>> GetFrameEvents() const { return mEvents; }
 
 
 	private:

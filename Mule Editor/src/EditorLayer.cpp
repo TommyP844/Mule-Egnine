@@ -72,28 +72,26 @@ void EditorLayer::OnAttach()
 {
 	SPDLOG_INFO("Layer attached: {}", GetName());
 
-	mAssetLoaderThread = std::async(std::launch::async, [&]() {
 
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+	{
+		if (dir.is_directory()) continue;
+
+		std::string extension = dir.path().extension().string();
+		fs::path filePath = dir.path();
+
+		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+		const std::set<std::string> modelExtensions = { ".gltf" };
+
+		if (imageExtensions.contains(extension))
 		{
-			if (dir.is_directory()) continue;
-
-			std::string extension = dir.path().extension().string();
-			fs::path filePath = dir.path();
-
-			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-			const std::set<std::string> modelExtensions = { ".gltf" };
-
-			if (imageExtensions.contains(extension))
-			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
-			}
-			else if (modelExtensions.contains(extension))
-			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
-			}
+			mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
 		}
-		});
+		else if (modelExtensions.contains(extension))
+		{
+			mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
+		}
+	}
 
 }
 
@@ -102,7 +100,7 @@ void EditorLayer::OnUpdate(float dt)
 	SPDLOG_INFO("Layer OnUpdate: {}", GetName());
 }
 
-void EditorLayer::OnUIRender()
+void EditorLayer::OnUIRender(float dt)
 {
 	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 	ImGui::DockSpaceOverViewport();//ImGui::GetMainViewport(), dockspace_flags);
@@ -136,11 +134,11 @@ void EditorLayer::OnUIRender()
 		ImGui::EndMainMenuBar();
 	}
 
-	mComponentPanel.OnUIRender();
-	mSceneHierarchyPanel.OnUIRender();
-	mSceneViewPanel.OnUIRender();
-	mContentBrowserPanel.OnUIRender();
-	mAssetManagerPanel.OnUIRender();
+	mComponentPanel.OnUIRender(dt);
+	mSceneHierarchyPanel.OnUIRender(dt);
+	mSceneViewPanel.OnUIRender(dt);
+	mContentBrowserPanel.OnUIRender(dt);
+	mAssetManagerPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
@@ -148,6 +146,31 @@ void EditorLayer::OnUIRender()
 		mEngineContext->GetAssetManager()->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
 		});
+}
+
+void EditorLayer::OnRender(float dt)
+{
+	auto scene = mEngineContext->GetScene();
+	auto sceneRenderer = mEngineContext->GetSceneRenderer();
+	if (scene)
+	{
+		switch (mEditorState->SimulationState)
+		{
+		case SimulationState::Editing:
+		{
+			mEditorState->EditorRenderSettings.SelectedEntities = { mEditorState->SelectedEntity };
+			mEditorState->EditorRenderSettings.WaitSemaphores = { mEngineContext->GetGraphicsContext()->GetImageAcquiredGPUFence() };
+			mEditorState->EditorRenderSettings.Scene = scene;
+			sceneRenderer->OnEditorRender(mEditorState->EditorRenderSettings);
+		}
+			break;
+		case SimulationState::Simulation:
+			sceneRenderer->OnRender(scene, { mEngineContext->GetGraphicsContext()->GetImageAcquiredGPUFence() });
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 void EditorLayer::OnDetach()

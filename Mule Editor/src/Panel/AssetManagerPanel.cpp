@@ -14,7 +14,7 @@ void AssetManagerPanel::OnAttach()
 {
 }
 
-void AssetManagerPanel::OnUIRender()
+void AssetManagerPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
 
@@ -25,23 +25,31 @@ void AssetManagerPanel::OnUIRender()
 		{
 			if (ImGui::BeginTabItem("Textures"))
 			{
+				uint32_t textureIndex = 0;
 				for (Ref<Mule::ITexture> texture : assetManager->GetAssetsOfType(Mule::AssetType::Texture))
 				{
-					fs::path relativePath = fs::relative(texture->FilePath(), mEditorState->mAssetsPath);
-					ImGui::Text("Name: %s", texture->Name().c_str());
-					ImGui::Text("Filepath: %s", relativePath.string().c_str());
 
-					if (texture->GetWidth() > 0 && texture->GetHeight() == 1 && texture->GetDepth() == 1)
-						ImGui::Text("Dimension: %i", texture->GetWidth());
-					if (texture->GetWidth() > 0 && texture->GetHeight() > 1 && texture->GetDepth() == 1)
-						ImGui::Text("Dimension: %i x %i", texture->GetWidth(), texture->GetHeight());
-					else
-						ImGui::Text("Dimension: %i x %i x %i", texture->GetWidth(), texture->GetHeight(), texture->GetDepth());
+					if (texture->GetWidth() > 0 && texture->GetHeight() > 0 && texture->GetDepth() == 1)
+					{
+						Ref<Mule::Texture2D> texture2d = texture;
+						ImGui::Image(texture2d->GetImGuiID(), { 128, 128 });
+						ImGui::SameLine();
+					}	
+					if (ImGui::BeginChild(("TexInfo" + std::to_string(textureIndex++)).c_str(), {ImGui::GetContentRegionAvail().x, 0.f}))
+					{
+						fs::path relativePath = fs::relative(texture->FilePath(), mEditorState->mAssetsPath);
+						ImGui::Text("Name: %s", texture->Name().c_str());
 
-					ImGui::Text("Layers: %i", texture->GetLayerCount());
-					ImGui::Text("Mip count: %i", texture->GetMipCount());
-					ImGui::Text("Format: %s", Mule::GetTextureFormatName(texture->GetFormat()).c_str());
-					ImGui::Text("Pixel Size: %i", Mule::GetFormatSize(texture->GetFormat()));
+						if (texture->GetWidth() > 0 && texture->GetHeight() == 1 && texture->GetDepth() == 1)
+							ImGui::Text("Size: %i", texture->GetWidth());
+						if (texture->GetWidth() > 0 && texture->GetHeight() > 1 && texture->GetDepth() == 1)
+							ImGui::Text("Size: %i x %i", texture->GetWidth(), texture->GetHeight());
+						else
+							ImGui::Text("Size: %i x %i x %i", texture->GetWidth(), texture->GetHeight(), texture->GetDepth());
+
+						ImGui::Text("Format: %s", Mule::GetTextureFormatName(texture->GetFormat()).c_str());
+					}
+					ImGui::EndChild();
 
 					ImGui::Separator();
 				}

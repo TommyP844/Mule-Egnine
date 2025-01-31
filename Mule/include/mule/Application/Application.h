@@ -33,6 +33,11 @@ namespace Mule
 		void PopLayer();
 
 	private:
+		void OnEvent(Ref<Event> event);
+		void OnRender(float dt);
+		void OnUIRender(float dt);
+
+		bool mMinimized;
 		bool mRunning;
 		LayerStack mLayerStack;
 		Ref<EngineContext> mEngineContext;

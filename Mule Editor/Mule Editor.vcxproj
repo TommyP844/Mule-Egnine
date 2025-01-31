@@ -58,7 +58,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;..\Submodules\ImGuizmo;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MDd %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -74,7 +74,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLM_ENABLE_EXPERIMENTAL;YAML_CPP_STATIC_DEFINE;VK_USE_PLATFORM_WIN32_KHR;GLFW_EXPOSE_NATIVE_WIN32;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Submodules\imgui;..\Submodules\glfw\include;..\Submodules\spdlog\include;..\Submodules\stb;..\Submodules\entt\single_include;..\Submodules\glm;..\Submodules\yaml\include;..\Submodules\nativefiledialog\src\include;..\Submodules\tinygltf;..\Submodules\ImGuizmo;%VULKAN_SDK%\Include;..\Mule\include;..\Mule\include\mule;..\Submodules\IconFontCppHeaders;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/MP /Zc:preprocessor /Zc:__cplusplus /utf-8 /MD %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -86,10 +86,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\ImGuiExtension.h" />
-    <ClInclude Include="src\Panel\AssetManagerPanel.h" />
     <ClInclude Include="src\EditorLayer.h" />
     <ClInclude Include="src\EditorState.h" />
+    <ClInclude Include="src\ImGuiExtension.h" />
+    <ClInclude Include="src\Panel\AssetManagerPanel.h" />
     <ClInclude Include="src\Panel\ComponentPanel.h" />
     <ClInclude Include="src\Panel\ContentBrowserPanel.h" />
     <ClInclude Include="src\Panel\IPanel.h" />
@@ -99,8 +99,8 @@
     <ClInclude Include="src\Util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Panel\AssetManagerPanel.cpp" />
     <ClCompile Include="src\EditorLayer.cpp" />
+    <ClCompile Include="src\Panel\AssetManagerPanel.cpp" />
     <ClCompile Include="src\Panel\ComponentPanel.cpp" />
     <ClCompile Include="src\Panel\ContentBrowserPanel.cpp" />
     <ClCompile Include="src\Panel\SceneHierarchyPanel.cpp" />
@@ -125,6 +125,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Submodules\nativefiledialog\nativefiledialog.vcxproj">
       <Project>{5CD62ECE-48CF-4D20-7101-33A55D592D2C}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Submodules\ImGuizmo\ImGuizmo.vcxproj">
+      <Project>{36FD234F-22CA-7E5A-4BE3-6C02370FB4E8}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

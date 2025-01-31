@@ -18,7 +18,6 @@ namespace Mule
 		mBufferType(bufferType),
 		mTriangleCount(0)
 	{
-
 		std::set<uint32_t> uniqueQueueFamilyIndices = {
 			context->GetGraphicsQueue()->GetQueueFamilyIndex(),
 			context->GetComputeQueue()->GetQueueFamilyIndex(),
@@ -33,7 +32,7 @@ namespace Mule
 		info.pNext = nullptr;
 		info.flags = 0;
 		info.size = buffer.GetSize();
-		info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR;
 		info.sharingMode = queueFamilyIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = queueFamilyIndices.size();
 		info.pQueueFamilyIndices = queueFamilyIndices.data();
@@ -54,7 +53,6 @@ namespace Mule
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = context->GetMemoryTypeIndex(memRequirements.memoryTypeBits,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
 			| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		result = vkAllocateMemory(mDevice, &allocInfo, nullptr, &mMemory);
@@ -69,11 +67,6 @@ namespace Mule
 			SPDLOG_ERROR("Failed bind vertex buffer memory");
 		}
 
-		void* data;
-		vkMapMemory(mDevice, mMemory, 0, buffer.GetSize(), 0, &data);
-		memcpy(data, buffer.GetData(), buffer.GetSize());
-		vkUnmapMemory(mDevice, mMemory);
-
 		switch (bufferType)
 		{
 		case Mule::IndexBufferType::BufferSize_32Bit:
@@ -87,6 +80,48 @@ namespace Mule
 		}
 
 		mTriangleCount = mIndexCount / 3;
+
+		VkBufferCreateInfo stagingInfo{};
+		stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		stagingInfo.size = buffer.GetSize();
+		stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VkBuffer stagingBuffer;
+		vkCreateBuffer(mDevice, &stagingInfo, nullptr, &stagingBuffer);
+
+		VkMemoryRequirements stagingMemRequirements;
+		vkGetBufferMemoryRequirements(mDevice, stagingBuffer, &stagingMemRequirements);
+
+		VkMemoryAllocateInfo stagingAllocInfo{};
+		stagingAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		stagingAllocInfo.allocationSize = stagingMemRequirements.size;
+		stagingAllocInfo.memoryTypeIndex = context->GetMemoryTypeIndex(
+			stagingMemRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		);
+
+		VkDeviceMemory stagingMemory;
+		vkAllocateMemory(mDevice, &stagingAllocInfo, nullptr, &stagingMemory);
+		vkBindBufferMemory(mDevice, stagingBuffer, stagingMemory, 0);
+
+		// (2) Copy data to the staging buffer
+		void* data;
+		vkMapMemory(mDevice, stagingMemory, 0, buffer.GetSize(), 0, &data);
+		memcpy(data, buffer.GetData(), buffer.GetSize());
+		vkUnmapMemory(mDevice, stagingMemory);
+
+		// (3) Copy from staging buffer to GPU-local buffer
+		VkCommandBuffer commandBuffer = context->CreateSingleTimeCmdBuffer();
+		VkBufferCopy copyRegion{};
+		copyRegion.size = buffer.GetSize();
+		vkCmdCopyBuffer(commandBuffer, stagingBuffer, mBuffer, 1, &copyRegion);
+		context->SubmitSingleTimeCmdBuffer(commandBuffer);
+		context->WaitForSingleTimeCommands();
+
+		// (4) Cleanup staging buffer
+		vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+		vkFreeMemory(mDevice, stagingMemory, nullptr);
 	}
 
 	IndexBuffer::~IndexBuffer()

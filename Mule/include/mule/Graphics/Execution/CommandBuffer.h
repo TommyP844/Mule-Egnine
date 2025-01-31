@@ -8,6 +8,7 @@
 #include "Graphics/SwapchainframeBuffer.h"
 #include "Graphics/GraphicsShader.h"
 #include "Graphics/FrameBuffer.h"
+#include "Graphics/DescriptorSet.h"
 
 #include <vulkan/vulkan.h>
 
@@ -35,9 +36,9 @@ namespace Mule
 
 		// Shader
 		void BindPipeline(WeakRef<GraphicsShader> shader);
-
-		template<typename T>
-		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, const T& value, uint32_t offset = 0);
+		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size);
+		void BindDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet);
+		// void BindDescriptorSet(Ref<ComputeShader> shader, Ref<DescriptorSet> descriptorSet);
 
 		// Mesh
 		void BindMesh(WeakRef<Mesh> mesh);
@@ -53,5 +54,3 @@ namespace Mule
 		VkCommandBuffer mCommandBuffer;
 	};
 }
-
-#include "CommandBuffer.inl"

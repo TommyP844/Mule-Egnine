@@ -15,6 +15,7 @@ workspace "Mule"
         dir .. "/Submodules/yaml/include",
         dir .. "/Submodules/nativefiledialog/src/include",
         dir .. "/Submodules/tinygltf",
+        dir .. "/Submodules/ImGuizmo",
         "%VULKAN_SDK%/Include"
     } 
 
@@ -49,6 +50,7 @@ workspace "Mule"
         include "Submodules/spdlog/premake5.lua"
         include "Submodules/yaml/yaml.lua"
         include "Submodules/nativefiledialog/nativefiledialog.lua"
+        include "Submodules/ImGuizmo/imguizmo.lua"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"

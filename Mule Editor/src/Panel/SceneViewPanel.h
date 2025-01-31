@@ -5,12 +5,13 @@
 class SceneViewPanel : public IPanel
 {
 public:
-	SceneViewPanel() : IPanel("Scene View") {}
+	SceneViewPanel();
 	~SceneViewPanel() {}
 
 	virtual void OnAttach() override;
-	virtual void OnUIRender() override;
+	virtual void OnUIRender(float dt) override;
 
 private:
 	float mWidth, mHeight;
+	bool mWidgetTranslation, mWidgetRotation, mWidgetScale;
 };

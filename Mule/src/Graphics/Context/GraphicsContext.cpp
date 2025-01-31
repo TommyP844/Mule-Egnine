@@ -38,7 +38,7 @@ namespace Mule
 
 #pragma region Extensions
 		std::vector<const char*> enabledLayers = {
-			"VK_LAYER_KHRONOS_validation",
+			"VK_LAYER_KHRONOS_validation"
 		};
 
 		std::vector<const char*> enabledExtensions = {
@@ -167,16 +167,29 @@ namespace Mule
 
 #pragma region Logical Device
 
+		// Enable descriptor indexing features
+		VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+		indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+		indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+		indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+		indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+
+		// Enable separate depth-stencil layouts
 		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures{};
 		separateDepthStencilLayoutsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
 
+		// Chain features together
+		separateDepthStencilLayoutsFeatures.pNext = &indexingFeatures;
+
+		// Query features support
 		VkPhysicalDeviceFeatures2 deviceFeatures2{};
 		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		deviceFeatures2.pNext = &separateDepthStencilLayoutsFeatures;
 
 		vkGetPhysicalDeviceFeatures2(mPhysicalDevice, &deviceFeatures2);
 
-		// Enable the feature if supported
+		// Enable supported features
 		if (separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts) {
 			separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts = VK_TRUE;
 		}
@@ -203,7 +216,8 @@ namespace Mule
 		std::vector<const char*> logicalDeviceExtensions = {
 			"VK_KHR_swapchain",
 			"VK_KHR_separate_depth_stencil_layouts",
-			"VK_KHR_create_renderpass2"
+			"VK_KHR_create_renderpass2",
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 		};
 		
 		float priority = 1.f;
@@ -648,6 +662,11 @@ namespace Mule
 	Ref<FrameBuffer> GraphicsContext::CreateFrameBuffer(const FramebufferDescription& frameBufferDesc)
 	{
 		return MakeRef<FrameBuffer>(WeakRef<GraphicsContext>(this), frameBufferDesc);
+	}
+
+	Ref<DescriptorSetLayout> GraphicsContext::CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description)
+	{
+		return MakeRef<DescriptorSetLayout>(WeakRef<GraphicsContext>(this), description);
 	}
 
 	uint32_t GraphicsContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties)

@@ -14,6 +14,7 @@ namespace Mule
 {
 	GraphicsShader::GraphicsShader(VkDevice device, const GraphicsShaderDescription& description)
 		:
+		Asset(GenerateUUID(), description.SourcePath),
 		mIsValid(false),
 		mDevice(device),
 		mPipeline(VK_NULL_HANDLE),
@@ -47,7 +48,7 @@ namespace Mule
 
 			vertexBindingDesc.binding = 0;
 			vertexBindingDesc.stride = offset;
-			vertexBindingDesc.inputRate =VK_VERTEX_INPUT_RATE_VERTEX;
+			vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 			vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 			vertexInputState.pNext = nullptr;
@@ -181,16 +182,38 @@ namespace Mule
 		}
 
 		// Pipeline Layout
+		std::vector<VkPushConstantRange> pushConstantRanges{};
+		std::vector<VkDescriptorSetLayout> layouts;
 		{
+			for (const auto& layout : description.DescriptorLayouts)
+			{
+				layouts.push_back(layout->GetLayout());
+			}
+
+			uint32_t offset = 0;
+			for (auto& range : description.PushConstants)
+			{
+				VkPushConstantRange pcr{};
+
+				pcr.stageFlags = (VkShaderStageFlagBits)range.Stage;
+				pcr.size = range.Size;
+				pcr.offset = offset;
+
+				pushConstantRanges.push_back(pcr);
+				mPushConstantMapping[range.Stage] = { offset, range.Size };
+
+				offset += pcr.size;
+			}
+
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutCreateInfo.pNext = nullptr;
-			pipelineLayoutCreateInfo.flags = 0;;
-			pipelineLayoutCreateInfo.setLayoutCount;
-			pipelineLayoutCreateInfo.pSetLayouts;
-			pipelineLayoutCreateInfo.pushConstantRangeCount;
-			pipelineLayoutCreateInfo.pPushConstantRanges;
+			pipelineLayoutCreateInfo.flags = 0;
+			pipelineLayoutCreateInfo.setLayoutCount = layouts.size();
+			pipelineLayoutCreateInfo.pSetLayouts = layouts.data();
+			pipelineLayoutCreateInfo.pushConstantRangeCount = pushConstantRanges.size();
+			pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
 
 			VkResult result = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &mPipelineLayout);
 			if (result != VK_SUCCESS)
@@ -248,6 +271,17 @@ namespace Mule
 
 		if(mPipeline)
 			vkDestroyPipeline(mDevice, mPipeline, nullptr);
+	}
+
+	const std::pair<uint32_t, uint32_t>& GraphicsShader::GetPushConstantRange(ShaderStage stage)
+	{
+		auto iter = mPushConstantMapping.find(stage);
+		if (iter == mPushConstantMapping.end())
+		{
+			SPDLOG_WARN("Failed to find push constant for shader: {}, and stage: {}", Name(), (uint32_t)stage);
+			return {0, 0};
+		}
+		return iter->second;
 	}
 
 	bool GraphicsShader::Compile(const fs::path& sourcePath, std::vector<VkPipelineShaderStageCreateInfo>& stages)

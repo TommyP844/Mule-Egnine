@@ -31,19 +31,19 @@ namespace Mule
 		case Mule::AttributeType::UInt:
 		case Mule::AttributeType::Float:
 		case Mule::AttributeType::Int:
-			return 1;
+			return 1 * sizeof(float);
 		case Mule::AttributeType::Vec2:
 		case Mule::AttributeType::UInt2:
 		case Mule::AttributeType::Int2:
-			return 2;
+			return 2 * sizeof(float);
 		case Mule::AttributeType::Int3:
 		case Mule::AttributeType::Vec3:
 		case Mule::AttributeType::UInt3:
-			return 3;
+			return 3 * sizeof(float);
 		case Mule::AttributeType::Int4:
 		case Mule::AttributeType::Vec4:
 		case Mule::AttributeType::UInt4:
-			return 4;
+			return 4 * sizeof(float);
 		default:
 			break;
 		}

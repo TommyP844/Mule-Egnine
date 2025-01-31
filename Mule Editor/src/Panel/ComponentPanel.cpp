@@ -9,7 +9,7 @@ void ComponentPanel::OnAttach()
 {
 }
 
-void ComponentPanel::OnUIRender()
+void ComponentPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
 	

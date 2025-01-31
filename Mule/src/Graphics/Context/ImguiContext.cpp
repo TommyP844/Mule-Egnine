@@ -3,6 +3,7 @@
 // Submodules
 #include "Graphics/imguiImpl/imgui_impl_vulkan.h"
 #include "Graphics/imguiImpl/imgui_impl_glfw.h"
+#include "ImGuizmo.h"
 
 namespace Mule
 {
@@ -106,7 +107,6 @@ namespace Mule
 		ImGui::GetStyle().Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.28f, 0.56f, 1.00f, 0.35f);
 		ImGui::GetStyle().Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.35f);
 
-			
 	}
 
 	ImGuiContext::~ImGuiContext()
@@ -127,6 +127,7 @@ namespace Mule
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiContext::EndFrame(const std::vector<Ref<Semaphore>>& waitSemaphores)

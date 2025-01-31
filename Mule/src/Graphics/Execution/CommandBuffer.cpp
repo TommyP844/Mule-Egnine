@@ -508,6 +508,23 @@ namespace Mule
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipeline());
 	}
 
+	void CommandBuffer::SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size)
+	{
+		const auto& range = shader->GetPushConstantRange(stage);
+		if (size > range.second)
+		{
+			size = range.second;
+			SPDLOG_WARN("Attempting to push a constant that is to large for shader: {}, and stage: {}", shader->Name(), (uint32_t)stage);
+		}
+		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), (VkShaderStageFlags)stage, range.first, size, data);
+	}
+
+	void CommandBuffer::BindDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet)
+	{
+		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
+		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
+	}
+
 	void CommandBuffer::BindMesh(WeakRef<Mesh> mesh)
 	{
 		VkDeviceSize offsets = 0;
@@ -522,7 +539,7 @@ namespace Mule
 
 	void CommandBuffer::DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount)
 	{
-		vkCmdDraw(mCommandBuffer, mesh->GetVertexCount(), instanceCount, 0, 0);
+		vkCmdDrawIndexed(mCommandBuffer, mesh->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
 	}
 
 	void CommandBuffer::BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount)

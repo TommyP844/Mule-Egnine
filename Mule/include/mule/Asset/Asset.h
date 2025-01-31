@@ -35,6 +35,15 @@ namespace Mule
 			mName = filepath.filename().string();
 		}
 
+		void SetName(const std::string& name)
+		{
+			mName = name;
+			if (!mFilepath.empty())
+			{
+				mFilepath = mFilepath.parent_path() / mName / mFilepath.extension();
+			}
+		}
+
 		virtual ~Asset() {}
 
 		static AssetHandle GenerateUUID() {

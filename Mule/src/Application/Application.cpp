@@ -21,6 +21,9 @@
 namespace Mule
 {
 	Application::Application()
+		:
+		mRunning(true),
+		mMinimized(false)
 	{
 #ifdef _DEBUG
 		spdlog::set_pattern("[%H:%M:%S %z] [%n] [thread %t] %v");
@@ -58,93 +61,91 @@ namespace Mule
 		Ref<ImGuiContext> imguiContext = mEngineContext->GetImGuiContext();
 		Ref<GraphicsContext> graphicsContext = mEngineContext->GetGraphicsContext();
 		Ref<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
-		float ms = 1.f;
-		float maxFPS = 1.f;
-		bool minimized = false;
+
+		float dt = 1.f;
+
 		while (mRunning)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
 
-			window->PollEvents();
-			const std::vector<Ref<Event>>& events = window->GetFrameEvents();
+			std::vector<Ref<Event>> events = window->PollEvents();
 
 			for (auto& event : events)
 			{
-				switch (event->Type)
-				{
-				case EventType::WindowResize:
-				{
-					Ref<WindowResizeEvent> resizeEvent = event;
-					graphicsContext->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
-					imguiContext->Resize(resizeEvent->Width, resizeEvent->Height);
-					if (resizeEvent->Width == 0 || resizeEvent->Height == 0)
-						minimized = true;
-					else
-						minimized = false;
-				}
-					break;
-				default:
-					break;
-				}
+				OnEvent(event);
 			}
 
-			if (minimized) continue;
+			if (mMinimized) continue;
 
 			if (graphicsContext->BeginFrame())
 			{
+				OnRender(dt);
 
 				Ref<Scene> scene = mEngineContext->GetScene();
+				std::vector<Ref<Semaphore>> waitSemaphores;
 				if (scene)
 				{
-					sceneRenderer->Render(scene);
+					waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
 				}
 
-				// ImGui UI render
-				{
-					imguiContext->NewFrame();
+				imguiContext->NewFrame();
+				OnUIRender(dt);
+				imguiContext->EndFrame({ waitSemaphores });
 
-					for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
-					{
-						for (const auto& event : events)
-						{
-							(*it)->OnEvent(event);
-						}
-
-						(*it)->OnUIRender();
-					}
-
-					ImGui::Begin("Frame Counter");
-
-					float fps = 1.f / (ms / 1000.f);
-					if (fps > maxFPS) maxFPS = fps;
-					ImGui::Text("Frame Time : %.3fms", ms);
-					ImGui::Text("FPS        : %.2f", fps);
-					ImGui::Text("Highest FPS: %.2f", maxFPS);
-
-					ImGui::End();
-
-					std::vector<Ref<Semaphore>> waitSemaphores;
-					if (scene)
-					{
-						waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
-					}
-
-					imguiContext->EndFrame({ waitSemaphores });
-				}
-
-				auto semaphore = imguiContext->GetRenderSemaphore();
-				graphicsContext->EndFrame({ semaphore });
+				graphicsContext->EndFrame({ imguiContext->GetRenderSemaphore() });
 			}
 
-			mRunning = window->WindowOpen();
 			auto end = std::chrono::high_resolution_clock::now();
 			auto diff = end - start;
-			ms = diff.count() * 1e-6f;
+			dt = diff.count() * 1e-9f;
+			mRunning = window->WindowOpen();
 		}
 	}
 
 	void Application::PopLayer()
 	{
 		mLayerStack.PopLayer();
+	}
+
+	void Application::OnEvent(Ref<Event> event)
+	{
+		switch (event->Type)
+		{
+		case EventType::WindowResize:
+		{
+			Ref<WindowResizeEvent> resizeEvent = event;
+			mEngineContext->GetGraphicsContext()->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
+			mEngineContext->GetImGuiContext()->Resize(resizeEvent->Width, resizeEvent->Height);
+			if (resizeEvent->Width == 0 || resizeEvent->Height == 0)
+				mMinimized = true;
+			else
+				mMinimized = false;
+		}
+		break;
+		}
+
+		for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+		{
+			if (event->IsHandled())
+				break;
+
+			(*it)->OnEvent(event);
+		}
+	}
+
+	void Application::OnRender(float dt)
+	{
+		for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+		{
+			(*it)->OnRender(dt);
+		}
+	}
+
+	void Application::OnUIRender(float dt)
+	{
+		for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+		{
+			(*it)->OnUIRender(dt);
+		}
 	}
 }

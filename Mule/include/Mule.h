@@ -1,5 +1,9 @@
 #pragma once
 
+
+// Loaders
+#include "Asset/Loader/ModelLoader.h"
+
 // Util
 #include "Ref.h"
 #include "WeakRef.h"
