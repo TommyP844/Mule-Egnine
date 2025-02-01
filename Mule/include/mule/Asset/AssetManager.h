@@ -58,6 +58,8 @@ namespace Mule
 
 		void RemoveAsset(AssetHandle handle);
 
+		const std::unordered_map<AssetHandle, Ref<IAsset>>& GetAllAssets() const { return mAssets; }
+
 	private:
 		mutable std::mutex mMutex;
 		std::unordered_map<AssetHandle, Ref<IAsset>> mAssets;

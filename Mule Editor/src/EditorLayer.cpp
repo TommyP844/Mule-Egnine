@@ -11,6 +11,9 @@
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
 
+// Events
+#include "Event/EditMaterialEvent.h"
+
 EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	:
 	ILayer(context, "Editor Layer")
@@ -22,12 +25,16 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mComponentPanel.SetContext(mEditorState, context);
 	mContentBrowserPanel.SetContext(mEditorState, context);
 	mAssetManagerPanel.SetContext(mEditorState, context);
+	mMaterialEditorPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
 	mComponentPanel.OnAttach();
 	mContentBrowserPanel.OnAttach();
 	mAssetManagerPanel.OnAttach();
+	mMaterialEditorPanel.OnAttach();
+
+	// mAssetManagerPanel.Close();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -127,6 +134,7 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Asset Manager", "", mAssetManagerPanel.OpenPtr());
 			ImGui::MenuItem("Content Browser", "", mContentBrowserPanel.OpenPtr());
 			ImGui::MenuItem("Components", "", mComponentPanel.OpenPtr());
+			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
 			ImGui::MenuItem("Scene View", "", mSceneViewPanel.OpenPtr());
 			ImGui::EndMenu();
@@ -134,11 +142,35 @@ void EditorLayer::OnUIRender(float dt)
 		ImGui::EndMainMenuBar();
 	}
 
+	for (auto& event : mEditorState->GetEvents())
+	{
+		switch (event->GetEventType())
+		{
+		case EditorEventType::EditMaterial:
+		{
+			Ref<EditMaterialEvent> editMaterialEvent = event;
+			mMaterialEditorPanel.Open();
+			mMaterialEditorPanel.SetMaterial(editMaterialEvent->GetMaterialHandle());
+		}
+			break;
+		}
+
+		mComponentPanel.OnEvent(event);
+		mSceneHierarchyPanel.OnEvent(event);
+		mSceneViewPanel.OnEvent(event);
+		mContentBrowserPanel.OnEvent(event);
+		mAssetManagerPanel.OnEvent(event);
+		mMaterialEditorPanel.OnEvent(event);
+	}
+
+	mEditorState->ClearEvents();
+
 	mComponentPanel.OnUIRender(dt);
 	mSceneHierarchyPanel.OnUIRender(dt);
 	mSceneViewPanel.OnUIRender(dt);
 	mContentBrowserPanel.OnUIRender(dt);
 	mAssetManagerPanel.OnUIRender(dt);
+	mMaterialEditorPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

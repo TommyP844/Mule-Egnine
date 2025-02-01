@@ -107,6 +107,8 @@ namespace Mule
 		ImGui::GetStyle().Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.28f, 0.56f, 1.00f, 0.35f);
 		ImGui::GetStyle().Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.35f);
 
+		ImGui::GetStyle().FrameRounding = 5.f;
+
 	}
 
 	ImGuiContext::~ImGuiContext()

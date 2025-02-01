@@ -86,6 +86,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Event\EditMaterialEvent.h" />
+    <ClInclude Include="src\Event\IEditorEvent.h" />
+    <ClInclude Include="src\Panel\MaterialEditorPanel.h" />
     <ClInclude Include="src\EditorLayer.h" />
     <ClInclude Include="src\EditorState.h" />
     <ClInclude Include="src\ImGuiExtension.h" />
@@ -99,6 +102,7 @@
     <ClInclude Include="src\Util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Panel\MaterialEditorPanel.cpp" />
     <ClCompile Include="src\EditorLayer.cpp" />
     <ClCompile Include="src\Panel\AssetManagerPanel.cpp" />
     <ClCompile Include="src\Panel\ComponentPanel.cpp" />

@@ -11,6 +11,7 @@
 #include "Panel/SceneHierarchyPanel.h"
 #include "Panel/SceneViewPanel.h"
 #include "Panel/AssetManagerPanel.h"
+#include "Panel/MaterialEditorPanel.h"
 
 // STD
 #include <future>
@@ -37,6 +38,7 @@ private:
 	SceneHierarchyPanel mSceneHierarchyPanel;
 	SceneViewPanel mSceneViewPanel;
 	AssetManagerPanel mAssetManagerPanel;
+	MaterialEditorPanel mMaterialEditorPanel;
 
 	std::future<void> mAssetLoaderThread;
 

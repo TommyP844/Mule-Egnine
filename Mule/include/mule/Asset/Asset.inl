@@ -7,8 +7,7 @@ namespace Mule
 	template<AssetType Type>
 	inline Mule::Asset<Type>::Asset(AssetHandle handle, const fs::path& path)
 		:
-		mHandle(handle),
-		mFilepath(path)
+		IAsset(Type, std::string(), path, handle)
 	{
 		mName = path.filename().string();
 	}
@@ -16,16 +15,14 @@ namespace Mule
 	template<AssetType Type>
 	inline Asset<Type>::Asset(const std::string& name)
 		:
-		mName(name),
-		mHandle(GenerateUUID())
+		IAsset(Type, name, fs::path())
 	{
 	}
 
 	template<AssetType Type>
 	inline Asset<Type>::Asset(const fs::path& path)
 		:
-		mHandle(GenerateUUID()),
-		mFilepath(path)
+		IAsset(Type, std::string(), path)
 	{
 		mName = path.filename().string();
 	}
@@ -33,7 +30,7 @@ namespace Mule
 	template<AssetType Type>
 	inline Asset<Type>::Asset()
 		:
-		mHandle(GenerateUUID())
+		IAsset(Type, std::string(), fs::path())
 	{
 	}
 }

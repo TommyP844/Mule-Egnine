@@ -12,6 +12,7 @@ public:
 
 	virtual void OnAttach() override;
 	virtual void OnUIRender(float dt) override;
+	virtual void OnEvent(Ref<IEditorEvent> event) override {}
 
 private:
 	Ref<Mule::Texture2D> mFolderTexture;

@@ -11,6 +11,7 @@ public:
 
 	virtual void OnAttach() = 0;
 	virtual void OnUIRender(float dt) = 0;
+	virtual void OnEvent(Ref<IEditorEvent> event) = 0;
 
 	void SetContext(WeakRef<EditorState> editorState, WeakRef<Mule::EngineContext> context) { mEditorState = editorState; mEngineContext = context; }
 	void Open() { mIsOpen = true; }

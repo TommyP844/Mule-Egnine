@@ -23,6 +23,7 @@ namespace Mule
 		case AssetType::Model: return "Model";
 		case AssetType::Mesh: return "Mesh";
 		case AssetType::Material: return "Material";
+		case AssetType::Shader: return "Shader";
 		}
 
 		return "Unknown";
