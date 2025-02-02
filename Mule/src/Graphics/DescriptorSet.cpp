@@ -8,6 +8,7 @@ namespace Mule
 {
 	DescriptorSet::DescriptorSet(WeakRef<GraphicsContext> context, const DescriptorSetDescription& description)
 		:
+		mContext(context),
 		mDevice(context->GetDevice()),
 		mDescriptorSet(VK_NULL_HANDLE),
 		mDescriptorPool(context->GetDescriptorPool())
@@ -65,6 +66,21 @@ namespace Mule
 					bufferInfo.range = VK_WHOLE_SIZE;
 
 					bufferInfos.push_back(bufferInfo);
+				}
+			}
+			break;
+			case DescriptorType::Texture:
+			{
+				count = update.Textures.size();
+				for (auto& texture : update.Textures)
+				{
+					VkDescriptorImageInfo imageInfo{};
+
+					imageInfo.imageLayout = texture->GetVulkanImage().Layout;
+					imageInfo.imageView = texture->GetImageView();
+					imageInfo.sampler = mContext->GetLinearSampler();
+
+					imageInfos.push_back(imageInfo);
 				}
 			}
 				break;

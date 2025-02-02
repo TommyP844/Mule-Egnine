@@ -143,7 +143,7 @@ namespace Mule
 			{
 				VkPipelineColorBlendAttachmentState attachmentState{};
 
-				attachmentState.blendEnable = VK_TRUE;
+				attachmentState.blendEnable = VK_FALSE;
 				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
 				attachmentState.colorBlendOp = VK_BLEND_OP_ADD;

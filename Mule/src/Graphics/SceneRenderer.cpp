@@ -1,6 +1,7 @@
 #include "Graphics/SceneRenderer.h"
 
 #include "Graphics/VertexLayout.h"
+#include "Graphics/Material.h"
 
 #include "ECS/Components.h"
 
@@ -13,6 +14,18 @@ namespace Mule
 		mFrameIndex(0),
 		mIsValid(true)
 	{
+		SPDLOG_INFO("Albedo Color Offset: {}", offsetof(GPUMaterial, AlbedoColor));
+		SPDLOG_INFO("Texture Scale Offset: {}", offsetof(GPUMaterial, TextureScale));
+		SPDLOG_INFO("Metalness Factor Offset: {}", offsetof(GPUMaterial, MetalnessFactor));
+		SPDLOG_INFO("Roughness Factor Offset: {}", offsetof(GPUMaterial, RoughnessFactor));
+		SPDLOG_INFO("AOFactor Offset: {}", offsetof(GPUMaterial, AOFactor));
+		SPDLOG_INFO("AlbedoIndex Offset: {}", offsetof(GPUMaterial, AlbedoIndex));
+		SPDLOG_INFO("NormalIndex Offset: {}", offsetof(GPUMaterial, NormalIndex));
+		SPDLOG_INFO("MetalnessIndex Offset: {}", offsetof(GPUMaterial, MetalnessIndex));
+		SPDLOG_INFO("RoughnessIndex Offset: {}", offsetof(GPUMaterial, RoughnessIndex));
+		SPDLOG_INFO("AOIndex Offset: {}", offsetof(GPUMaterial, AOIndex));
+		SPDLOG_INFO("EmissiveIndex Offset: {}", offsetof(GPUMaterial, EmissiveIndex));
+
 		VertexLayout staticVertexLayout;
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
@@ -47,7 +60,6 @@ namespace Mule
 		descriptorLayoutDesc.Binding = 0;
 		descriptorLayoutDesc.Stage = ShaderStage::Vertex;
 		descriptorLayoutDesc.Type = DescriptorType::UniformBuffer;
-
 		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
 
 		descriptorLayoutDesc.ArrayCount = 4096;
@@ -56,29 +68,44 @@ namespace Mule
 		descriptorLayoutDesc.Type = DescriptorType::Texture;
 		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
 
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 2;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::UniformBuffer;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
 		mGeometryStageLayout = mGraphicsContext->CreateDescriptorSetLayout(descriptorSetLayout);
 
 		for (int i = 0; i < 2; i++)
 		{
 			mFrameData[i].RenderingFinishedFence = mGraphicsContext->CreateFence();
 			mFrameData[i].Framebuffer = mGraphicsContext->CreateFrameBuffer(framebufferDescription);
-			mFrameData[i].Framebuffer->SetColorClearValue(0, glm::vec4(1, 0, 0, 1));
+			mFrameData[i].Framebuffer->SetColorClearValue(0, glm::vec4(0, 0, 0, 0));
 			mFrameData[i].RenderingFinishedSemaphore = mGraphicsContext->CreateSemaphore();
 			mFrameData[i].CommandPool = mGraphicsContext->GetGraphicsQueue()->CreateCommandPool();
 			mFrameData[i].SolidGeometryPassCmdBuffer = mFrameData[i].CommandPool->CreateCommandBuffer();
 			mFrameData[i].CameraBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(CameraData));
 
+			// TODO: handle dynamic material buffer size
+			mFrameData[i].MaterialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPUMaterial) * 100);
+
 			DescriptorSetDescription descriptorDesc{};
 			descriptorDesc.Layouts = { mGeometryStageLayout };
 			mFrameData[i].DescriptorSet = mGraphicsContext->CreateDescriptorSet(descriptorDesc);
 
-			DescriptorSetUpdate updateBuffer;
-			updateBuffer.ArrayElement = 0;
-			updateBuffer.Binding = 0;
-			updateBuffer.Type = DescriptorType::UniformBuffer;
-			updateBuffer.Buffers = { mFrameData[i].CameraBuffer };
+			DescriptorSetUpdate updateCameraBuffer;
+			updateCameraBuffer.ArrayElement = 0;
+			updateCameraBuffer.Binding = 0;
+			updateCameraBuffer.Type = DescriptorType::UniformBuffer;
+			updateCameraBuffer.Buffers = { mFrameData[i].CameraBuffer };
 
-			mFrameData[i].DescriptorSet->Update({ updateBuffer });
+			DescriptorSetUpdate updateMaterialBuffer;
+			updateMaterialBuffer.ArrayElement = 0;
+			updateMaterialBuffer.Binding = 2;
+			updateMaterialBuffer.Type = DescriptorType::UniformBuffer;
+			updateMaterialBuffer.Buffers = { mFrameData[i].MaterialBuffer };
+
+			mFrameData[i].DescriptorSet->Update({ updateCameraBuffer, updateMaterialBuffer });
 		}
 
 		GraphicsShaderDescription defaultGeometryDesc{};
@@ -182,6 +209,62 @@ namespace Mule
 
 			frameData.CameraBuffer->SetData(&cameraData, sizeof(cameraData));
 
+			frameData.TextureArray.Clear();
+			frameData.MaterialArray.Clear();
+
+			// TODO: so empty textures have somewhere to point
+			// frameData.TextureArray.Insert(NullAssetHandle, nullptr);
+
+			for (Ref<ITexture> texture : mAssetManager->GetAssetsOfType(AssetType::Texture))
+			{
+				uint32_t index = frameData.TextureArray.Insert(texture->Handle(), texture);
+				//SPDLOG_INFO("Texture: {}, index: {}", texture->Name(), index);
+			}
+
+			// Update texture array descriptor
+			DescriptorSetUpdate updateTextureBuffer;
+			updateTextureBuffer.ArrayElement = 0;
+			updateTextureBuffer.Binding = 1;
+			updateTextureBuffer.Type = DescriptorType::Texture;
+			
+			for (auto texture : frameData.TextureArray.GetArray())
+			{
+				updateTextureBuffer.Textures.push_back(texture);
+			}
+			frameData.DescriptorSet->Update({ updateTextureBuffer });
+
+			// TODO: so assets with no material have a default
+			//frameData.MaterialArray.Insert(NullAssetHandle, GPUMaterial());
+
+			for (Ref<Material> material : mAssetManager->GetAssetsOfType(AssetType::Material))
+			{
+				GPUMaterial gpuMaterial{};
+
+				gpuMaterial.AlbedoColor = material->AlbedoColor;
+
+				gpuMaterial.TextureScale = material->TextureScale;
+
+				gpuMaterial.MetalnessFactor = material->MetalnessFactor;
+				gpuMaterial.RoughnessFactor = material->RoughnessFactor;
+				gpuMaterial.AOFactor = material->AOFactor;
+
+				gpuMaterial.AlbedoIndex = frameData.TextureArray.QueryIndex(material->AlbedoMap);
+				gpuMaterial.NormalIndex = frameData.TextureArray.QueryIndex(material->NormalMap);
+				gpuMaterial.MetalnessIndex = frameData.TextureArray.QueryIndex(material->MetalnessMap);
+				gpuMaterial.RoughnessIndex = frameData.TextureArray.QueryIndex(material->RoughnessMap);
+				gpuMaterial.AOIndex = frameData.TextureArray.QueryIndex(material->AOMap);
+				gpuMaterial.EmissiveIndex = frameData.TextureArray.QueryIndex(material->EmissiveMap);
+
+				uint32_t index = frameData.MaterialArray.Insert(material->Handle(), gpuMaterial);
+
+				//SPDLOG_INFO("Material: {}, index: {}", material->Name(), index);
+			}
+
+
+			frameData.MaterialBuffer->SetData(
+				frameData.MaterialArray.GetArray().data(),
+				frameData.MaterialArray.GetArray().size() * sizeof(GPUMaterial));
+
 		}
 
 		// Render
@@ -205,7 +288,7 @@ namespace Mule
 					if (!mesh) continue;
 
 					glm::mat4 transform = e.GetTransformComponent().TRS();
-					uint32_t materialIndex;
+					uint32_t materialIndex = frameData.MaterialArray.QueryIndex(meshComponent.MaterialHandle);
 
 					commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
 					commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Fragment, &materialIndex, sizeof(uint32_t));

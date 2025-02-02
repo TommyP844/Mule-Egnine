@@ -46,7 +46,7 @@ namespace Mule
 
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.pNext = nullptr;
-		allocInfo.allocationSize = mSize;
+		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = context->GetMemoryTypeIndex(memRequirements.memoryTypeBits,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 			| VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -69,7 +69,7 @@ namespace Mule
 	{
 	}
 
-	void UniformBuffer::SetData(void* data, uint32_t size, uint32_t offset)
+	void UniformBuffer::SetData(const void* data, uint32_t size, uint32_t offset)
 	{
 		void* gpuData;
 		vkMapMemory(mDevice, mMemory, offset, size, 0, &gpuData);

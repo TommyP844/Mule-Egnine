@@ -4,6 +4,7 @@
 #include "RenderTypes.h"
 #include "Buffer/UniformBuffer.h"
 #include "DescriptorSetLayout.h"
+#include "Graphics/Texture/ITexture.h"
 
 #include <vector>
 
@@ -22,6 +23,7 @@ namespace Mule
 		uint32_t ArrayElement;
 		DescriptorType Type;
 		std::vector<WeakRef<UniformBuffer>> Buffers;
+		std::vector<WeakRef<ITexture>> Textures;
 	};
 
 	class DescriptorSet
@@ -34,6 +36,7 @@ namespace Mule
 
 		VkDescriptorSet GetDescriptorSet() const { return mDescriptorSet; }
 	private:
+		WeakRef<GraphicsContext> mContext;
 		VkDevice mDevice;
 		VkDescriptorPool mDescriptorPool;
 		VkDescriptorSet mDescriptorSet;

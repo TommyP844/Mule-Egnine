@@ -10,6 +10,8 @@
 #include "ECS/Scene.h"
 #include "Asset/AssetManager.h"
 
+#include "GuidArray.h"
+
 // STD
 #include <array>
 
@@ -41,6 +43,22 @@ namespace Mule
 		bool mIsValid;
 
 		Ref<DescriptorSetLayout> mGeometryStageLayout;
+
+		struct GPUMaterial
+		{
+			glm::vec4 AlbedoColor;	
+			glm::vec2 TextureScale;
+			float MetalnessFactor;
+			float RoughnessFactor;
+			float AOFactor;
+			uint32_t AlbedoIndex;
+			uint32_t NormalIndex;
+			uint32_t MetalnessIndex;
+			uint32_t RoughnessIndex;
+			uint32_t AOIndex;
+			uint32_t EmissiveIndex;
+		};
+
 		struct FrameData
 		{
 			Ref<FrameBuffer> Framebuffer;
@@ -49,10 +67,14 @@ namespace Mule
 			Ref<CommandPool> CommandPool;
 			Ref<CommandBuffer> SolidGeometryPassCmdBuffer;
 			Ref<UniformBuffer> CameraBuffer;
+			Ref<UniformBuffer> MaterialBuffer;
 			Ref<DescriptorSet> DescriptorSet;
 			bool ResizeRequired = false;
 			uint32_t ResizeWidth = 0;
 			uint32_t ResizeHeight = 0;
+
+			GuidArray<Ref<ITexture>> TextureArray;
+			GuidArray<GPUMaterial> MaterialArray;
 		};
 		std::array<FrameData, 2> mFrameData;
 		uint32_t mFrameIndex;
