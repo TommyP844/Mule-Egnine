@@ -15,7 +15,7 @@ namespace Mule
 	class ModelLoader : public IAssetLoader<Model, AssetType::Model>
 	{
 	public:
-		ModelLoader() {}
+		ModelLoader(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
 		virtual ~ModelLoader() {}
 
 		virtual Ref<Model> LoadText(const fs::path& filepath) override;
@@ -24,8 +24,6 @@ namespace Mule
 		virtual Ref<Model> LoadBinary(const Buffer& filepath) override;
 		virtual void SaveBinary(Ref<Model> asset) override;
 
-		void SetGraphicsContext(WeakRef<GraphicsContext> context) { mGraphicsContext = context; }
-		void SetAssetManager(WeakRef<AssetManager> assetManager) { mAssetManager = assetManager; }
 
 	private:
 		WeakRef<AssetManager> mAssetManager;

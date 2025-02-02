@@ -7,6 +7,16 @@
 
 namespace Mule
 {
+	enum class TextureType {
+		Type_1D,
+		Type_1DArray,
+		Type_2D,
+		Type_2DArray,
+		Type_3D,
+		Type_Cube,
+		Type_CubeArray,
+	};
+
 	class GraphicsContext;
 
 	class ITexture : public Asset<AssetType::Texture>
@@ -38,6 +48,8 @@ namespace Mule
 
 		const VulkanImage& GetVulkanImage() const { return mVulkanImage; }
 
+		TextureType GetTextureType() const { return mTextureType; }
+
 	protected:
 		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags);
 
@@ -48,5 +60,6 @@ namespace Mule
 		bool mIsDepthTexture;
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;
 		TextureFormat mFormat;
+		TextureType mTextureType;
 	};
 }

@@ -6,10 +6,6 @@
 
 #include "imgui.h"
 
-// Asset Loaders
-#include "Asset/Loader/SceneLoader.h"
-#include "Asset/Loader/ModelLoader.h"
-
 // Events
 #include "Application/Events/Event.h"
 #include "Application/Events/WindowResizeEvent.h"

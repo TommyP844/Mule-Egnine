@@ -87,17 +87,24 @@ void EditorLayer::OnAttach()
 		std::string extension = dir.path().extension().string();
 		fs::path filePath = dir.path();
 
-		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp", ".hdr" };
 		const std::set<std::string> modelExtensions = { ".gltf" };
 
-		if (imageExtensions.contains(extension))
-		{
-			mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
-		}
-		else if (modelExtensions.contains(extension))
+
+		if (modelExtensions.contains(extension))
 		{
 			mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
 		}
+		else if (imageExtensions.contains(extension))
+		{
+			// We need to chec kif the model loader, loaded a texture for us first so we dont double load the texture
+			auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
+			if (!asset)
+			{
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
+			}
+		}
+		
 	}
 
 }
@@ -137,6 +144,7 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
 			ImGui::MenuItem("Scene View", "", mSceneViewPanel.OpenPtr());
+			ImGui::MenuItem("Imgui Demo", "", &mShowDemoWindow);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -165,6 +173,7 @@ void EditorLayer::OnUIRender(float dt)
 
 	mEditorState->ClearEvents();
 
+	//ImGui::ShowDemoWindow(&mShowDemoWindow);
 	mComponentPanel.OnUIRender(dt);
 	mSceneHierarchyPanel.OnUIRender(dt);
 	mSceneViewPanel.OnUIRender(dt);

@@ -10,6 +10,13 @@
 
 namespace Mule
 {
+	ModelLoader::ModelLoader(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager)
+		:
+		mGraphicsContext(context),
+		mAssetManager(assetManager)
+	{
+	}
+
 	Ref<Model> ModelLoader::LoadText(const fs::path& filepath)
 	{
 		tinygltf::Model model;

@@ -503,9 +503,14 @@ namespace Mule
 		);
 	}
 
-	void CommandBuffer::BindPipeline(WeakRef<GraphicsShader> shader)
+	void CommandBuffer::BindGraphicsPipeline(WeakRef<GraphicsShader> shader)
 	{
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipeline());
+	}
+
+	void CommandBuffer::BindComputePipeline(WeakRef<ComputeShader> shader)
+	{
+		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->GetPipeline());
 	}
 
 	void CommandBuffer::SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size)
@@ -523,6 +528,17 @@ namespace Mule
 	{
 		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
 		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
+	}
+
+	void CommandBuffer::BindDescriptorSet(WeakRef<ComputeShader> shader, Ref<DescriptorSet> descriptorSet)
+	{
+		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
+		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
+	}
+
+	void CommandBuffer::Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ)
+	{
+		vkCmdDispatch(mCommandBuffer, workGroupsX, workGroupsY, workGroupsZ);
 	}
 
 	void CommandBuffer::BindMesh(WeakRef<Mesh> mesh)

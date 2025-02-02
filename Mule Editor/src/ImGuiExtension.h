@@ -49,8 +49,15 @@ namespace ImGuiExtension
 
 	constexpr const char* PAYLOAD_TYPE_ENTITY = "Entity";
 	constexpr const char* PAYLOAD_TYPE_EXTERNAL_FILE = "ExternalFilePath";
-	constexpr const char* PAYLOAD_TYPE_FILE_PATH = "FilePath";
-	constexpr const char* PAYLOAD_TYPE_FOLDER_PATH = "FolderPath";
+	constexpr const char* PAYLOAD_TYPE_FILE = "ExternalFilePath";
+
+	struct DragDropFile
+	{
+		char FilePath[260] = { 0 };
+		bool IsDirectory = false;
+		Mule::AssetHandle AssetHandle = Mule::NullAssetHandle;
+		Mule::AssetType AssetType = Mule::AssetType::None;
+	};
 
 	template<typename T>
 	static void DragDropSource(const char* payloadType, const T& data, std::function<void()> displayFunc = nullptr)
@@ -59,7 +66,7 @@ namespace ImGuiExtension
 		{
 			if(displayFunc)
 				displayFunc();
-			ImGui::SetDragDropPayload(payloadType, &data, sizeof(T), ImGuiCond_Once);
+			ImGui::SetDragDropPayload(payloadType, &data, sizeof(T));
 			ImGui::EndDragDropSource();
 		}
 	}
@@ -71,7 +78,7 @@ namespace ImGuiExtension
 		{
 			if (displayFunc)
 				displayFunc();
-			ImGui::SetDragDropPayload(payloadType, data.c_str(), data.size(), ImGuiCond_Once);
+			ImGui::SetDragDropPayload(payloadType, data.c_str(), data.size() + 1);
 			ImGui::EndDragDropSource();
 		}
 	}
@@ -84,7 +91,7 @@ namespace ImGuiExtension
 			if (displayFunc)
 				displayFunc();
 			std::string str = data.string();
-			ImGui::SetDragDropPayload(payloadType, str.data(), str.size() + 1, ImGuiCond_Once);
+			ImGui::SetDragDropPayload(payloadType, str.data(), str.size() + 1);
 			ImGui::EndDragDropSource();
 		}
 	}

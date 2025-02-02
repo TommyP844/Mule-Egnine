@@ -49,6 +49,23 @@ namespace Mule
 	struct SkyLightComponent
 	{
 		bool Active = true;
+		float Radiance = 1.f;
+		AssetHandle EnvironmentMap;
+	};
+
+	struct PointLightComponent
+	{
+		bool Active = true;
+		float Radiance = 1.f;
+		glm::vec3 Color = glm::vec3(1.f);
+	};
+
+	struct SpotLightComponent
+	{
+		bool Active = true;
+		float Radiance = 1.f;
+		float Angle = 45.f;
+		glm::vec3 Color = glm::vec3(1.f);
 	};
 
 	struct MeshComponent
@@ -56,10 +73,5 @@ namespace Mule
 		bool Visible = true;
 		AssetHandle MeshHandle;
 		AssetHandle MaterialHandle;
-	};
-
-	struct MeshCollectionComponent
-	{
-		std::vector<MeshComponent> Meshes;
 	};
 }

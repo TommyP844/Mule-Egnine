@@ -132,55 +132,6 @@ namespace Mule
 		mFrameIndex ^= 1;
 		FrameData& frameData = mFrameData[mFrameIndex];
 
-		frameData.RenderingFinishedFence->Wait();
-		frameData.RenderingFinishedFence->Reset();
-
-		frameData.CommandPool->Reset();
-
-		if (frameData.ResizeRequired)
-		{
-			frameData.ResizeRequired = false;
-			frameData.Framebuffer->Resize(frameData.ResizeWidth, frameData.ResizeHeight);
-		}
-
-		// Data Prep
-		{
-
-		}
-
-		// Render
-		{
-			Ref<CommandBuffer> commandBuffer = frameData.SolidGeometryPassCmdBuffer;
-			commandBuffer->Begin();
-			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
-			commandBuffer->BeginRenderPass(frameData.Framebuffer, mMainRenderPass);
-
-			commandBuffer->BindPipeline(mDefaultGeometryShader);
-
-			scene->IterateEntitiesWithComponents<MeshCollectionComponent>([&](Entity e) {
-
-				const auto& meshCollection = e.GetComponent<MeshCollectionComponent>();
-				for (const auto& meshComponent : meshCollection.Meshes)
-				{
-					if (!meshComponent.Visible) continue;
-
-					auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
-					if (!mesh) continue;
-					
-					commandBuffer->BindMesh(mesh);
-					commandBuffer->DrawMesh(mesh);
-				}
-
-				});
-
-			commandBuffer->EndRenderPass();
-			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly);
-			commandBuffer->End();
-
-			mGraphicsContext->GetGraphicsQueue()->Submit(commandBuffer, {}, { frameData.RenderingFinishedSemaphore }, frameData.RenderingFinishedFence);
-		}
-
-
 	}
 	
 	void SceneRenderer::OnEditorRender(const EditorRenderSettings& settings)
@@ -274,27 +225,26 @@ namespace Mule
 			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
 			commandBuffer->BeginRenderPass(frameData.Framebuffer, mMainRenderPass);
 
-			commandBuffer->BindPipeline(mDefaultGeometryShader);
+			commandBuffer->BindGraphicsPipeline(mDefaultGeometryShader);
 			commandBuffer->BindDescriptorSet(mDefaultGeometryShader, frameData.DescriptorSet);
 
-			settings.Scene->IterateEntitiesWithComponents<MeshCollectionComponent>([&](Entity e) {
+			settings.Scene->IterateEntitiesWithComponents<MeshComponent>([&](Entity e) {
 
-				const auto& meshCollection = e.GetComponent<MeshCollectionComponent>();
-				for (const auto& meshComponent : meshCollection.Meshes)
-				{
-					if (!meshComponent.Visible) continue;
+				const auto& meshComponent = e.GetComponent<MeshComponent>();
 
-					auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
-					if (!mesh) continue;
+				if (!meshComponent.Visible) return;
 
-					glm::mat4 transform = e.GetTransformComponent().TRS();
-					uint32_t materialIndex = frameData.MaterialArray.QueryIndex(meshComponent.MaterialHandle);
+				auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+				if (!mesh) return;
 
-					commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Fragment, &materialIndex, sizeof(uint32_t));
-					commandBuffer->BindMesh(mesh);
-					commandBuffer->DrawMesh(mesh);
-				}
+				glm::mat4 transform = e.GetTransformComponent().TRS();
+				uint32_t materialIndex = frameData.MaterialArray.QueryIndex(meshComponent.MaterialHandle);
+
+				commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Fragment, &materialIndex, sizeof(uint32_t));
+				commandBuffer->BindMesh(mesh);
+				commandBuffer->DrawMesh(mesh);
+				
 
 				});
 

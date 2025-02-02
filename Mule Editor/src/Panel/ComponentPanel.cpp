@@ -56,7 +56,9 @@ void ComponentPanel::OnUIRender(float dt)
 		{
 			if (ImGui::MenuItem("Camera", "", nullptr, !e.HasComponent<Mule::CameraComponent>())) e.AddComponent<Mule::CameraComponent>();
 			if (ImGui::MenuItem("Mesh", "", nullptr, !e.HasComponent<Mule::MeshComponent>())) e.AddComponent<Mule::MeshComponent>();
+			if (ImGui::MenuItem("Point Light", "", nullptr, !e.HasComponent<Mule::PointLightComponent>())) e.AddComponent<Mule::PointLightComponent>();
 			if (ImGui::MenuItem("Sky Light", "", nullptr, !e.HasComponent<Mule::SkyLightComponent>())) e.AddComponent<Mule::SkyLightComponent>();
+			if (ImGui::MenuItem("Spot Light", "", nullptr, !e.HasComponent<Mule::SpotLightComponent>())) e.AddComponent<Mule::SpotLightComponent>();
 
 			ImGui::EndMenu();
 		}
@@ -92,55 +94,82 @@ void ComponentPanel::OnUIRender(float dt)
 			}
 		});
 
-		if (e.HasComponent<Mule::MeshCollectionComponent>())
-		{
-			auto& meshCollection = e.GetComponent<Mule::MeshCollectionComponent>();
-			uint32_t id = 0;
-			for (auto it = meshCollection.Meshes.begin(); it != meshCollection.Meshes.end();)
+		DisplayComponent<Mule::MeshComponent>(ICON_FA_DIAGRAM_PROJECT" Mesh", e, [&](Mule::MeshComponent& mesh) {
+
+			const std::string null = "";
+
+			DisplayRow("Visible");
+			ImGui::Checkbox("##MeshVisible", &mesh.Visible);
+
+			ImGui::BeginDisabled();
+			DisplayRow("Mesh");
+			auto meshPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(mesh.MeshHandle);
+			if (meshPtr)
+				ImGui::InputText("##Mesh", (char*)meshPtr->Name().data(), meshPtr->Name().size());
+			else
+				ImGui::InputText("##Mesh", (char*)null.data(), null.size());
+
+			DisplayRow("Material");
+			auto materialPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Material>(mesh.MaterialHandle);
+			if (materialPtr)
+				ImGui::InputText("##Material", (char*)materialPtr->Name().data(), materialPtr->Name().size());
+			else
+				ImGui::InputText("##Material", (char*)null.data(), null.size());
+
+			ImGui::EndDisabled();
+			});
+
+		DisplayComponent<Mule::PointLightComponent>(ICON_FA_LIGHTBULB" Point Light", e, [&](Mule::PointLightComponent& light) {
+			DisplayRow("Active");
+			ImGui::Checkbox("##LightActive", &light.Active);
+
+			DisplayRow("Radiance");
+			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Color");
+			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			});
+
+		DisplayComponent<Mule::SkyLightComponent>(ICON_FA_SUN" Sky Light", e, [&](Mule::SkyLightComponent& light) {
+			DisplayRow("Active");
+			ImGui::Checkbox("##LightActive", &light.Active);
+
+			DisplayRow("Radiance");
+			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Environment Map");
+			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::Texture2D>(light.EnvironmentMap);
+			std::string name = "";
+			if (envMap)
+				name = envMap->Name();
+			
+			ImGui::BeginDisabled();
+			ImGui::InputText("##EnvMap", name.data(), name.size());
+			ImGui::EndDisabled();
+			ImGuiExtension::DragDropFile file;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, file))
 			{
-				id++;
-				std::string uuid = "##" + std::to_string(id);
-				std::string label = "Mesh" + uuid;
-				bool remove = false;
-				bool open = ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_CollapsingHeader);
-
-				if (ImGui::BeginPopupContextItem(label.c_str()))
+				if (file.AssetType == Mule::AssetType::Texture)
 				{
-					if (ImGui::MenuItem("Delete"))
-						remove = true;
-					ImGui::EndPopup();
+					light.EnvironmentMap = file.AssetHandle;
 				}
-
-				if (open)
-				{
-					if (ImGui::BeginTable("name", 2, ImGuiTableFlags_NoClip | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, { ImGui::GetContentRegionAvail().x, 0.f }))
-					{
-						ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch);
-						ImGui::TableSetupColumn("Data");
-
-						DisplayRow("Visible");
-						ImGui::Checkbox(("##MeshVisible" + uuid).c_str(), &it->Visible);
-
-						DisplayRow("Mesh");
-						auto mesh = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(it->MeshHandle);
-						if(mesh)
-							ImGui::Text(mesh->Name().c_str());
-						else
-							ImGui::Text("(No Mesh)");
-
-						DisplayRow("Material");
-						ImGui::Text("(No Material)");
-						
-						ImGui::EndTable();
-					}
-				}
-
-				if (remove)
-					it = meshCollection.Meshes.erase(it);
-				else
-					it++;
 			}
-		}
+			
+			});
+
+		DisplayComponent<Mule::SpotLightComponent>(ICON_FA_LIGHTBULB" Spot Light", e, [&](Mule::SpotLightComponent& light) {
+			DisplayRow("Active");
+			ImGui::Checkbox("##LightActive", &light.Active);
+
+			DisplayRow("Radiance");
+			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Angle");
+			ImGui::DragFloat("##Angle", &light.Angle, 1.f, 0.f, 360.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Color");
+			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			});
 
 		ImGui::PopStyleColor(3);
 

@@ -86,15 +86,15 @@ namespace Mule
 		UpdateProj();
 	}
 
-	void Camera::Rotate(float pitchDelta, float yawDelta)
+	void Camera::Rotate(float yawDelta, float pitchDelta)
 	{
 		mPitch = glm::clamp(mPitch + pitchDelta, -89.f, 89.f);
-		mYaw += yawDelta;
+		mYaw = fmod(mYaw + yawDelta, 360.f);
 
 		// Calculate the new direction
-		mViewDir.x = cos(glm::radians(mPitch)) * cos(mYaw);
+		mViewDir.x = cos(glm::radians(mPitch)) * cos(glm::radians(mYaw));
 		mViewDir.y = sin(glm::radians(mPitch));
-		mViewDir.z = cos(glm::radians(mPitch)) * sin(mYaw);
+		mViewDir.z = cos(glm::radians(mPitch)) * sin(glm::radians(mYaw));
 		mViewDir = glm::normalize(mViewDir);
 
 		// Recalculate the right vector
@@ -115,6 +115,7 @@ namespace Mule
 	void Camera::UpdateProj()
 	{
 		mProj = glm::perspective(glm::radians(mFOVDeg), mAspectRatio, mNearPlane, mFarPlane);
+		mProj[1][1] *= -1;
 		UpdateViewProj();
 	}
 

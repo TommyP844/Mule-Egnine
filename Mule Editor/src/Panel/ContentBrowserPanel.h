@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IPanel.h"
+#include "ImGuiExtension.h"
 
 #include "Mule.h"
 
@@ -25,19 +26,21 @@ private:
 		bool IsDirectory;
 		fs::path FilePath;
 		std::string DisplayName;
+		Mule::AssetType AssetType;
+		Mule::AssetHandle Handle = Mule::NullAssetHandle;
 	};
 
 	std::vector<DisplayFile> mVisibleFiles;
 	char mSearchBuffer[256] = { 0 };
 
 	void SetContentBrowserPath(const fs::path& path, const std::string& filter = "");
-	void DragDropFile(const fs::path& target);
 	void ClearSearchBuffer();
 
 	// Content
 	void ContentAssetDirBrowser(float width);
 	void ContentFileBrowser(float width);
 	bool FilePopContent(const DisplayFile& file);
+	void CopyDragDropFile(const ImGuiExtension::DragDropFile& file, const fs::path& newDir);
 
 	// Popups
 	void DisplayPopups();

@@ -78,12 +78,13 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 		entity.Orphan();
 		e.AddChild(entity);
 	}
-	fs::path readPath;
-	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE_PATH, readPath))
+	ImGuiExtension::DragDropFile file;
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, file))
 	{
-		if (IsModelExtension(readPath))
+		if (file.AssetType == Mule::AssetType::Model)
 		{
-			auto model = mEngineContext->GetAssetManager()->GetAssetByFilepath<Mule::Model>(readPath);
+			fs::path filepath = file.FilePath;
+			auto model = mEngineContext->GetAssetManager()->GetAssetByFilepath(filepath);
 			e.AddModel(model);
 		}
 	}

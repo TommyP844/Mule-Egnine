@@ -11,7 +11,10 @@ namespace Mule
 		Model,
 		Mesh,
 		Material,
-		Shader
+		Shader,
+		EnvironmentMap,
+
+		None
 	};
 
 	static std::string GetAssetTypeString(AssetType type)
@@ -24,6 +27,7 @@ namespace Mule
 		case AssetType::Mesh: return "Mesh";
 		case AssetType::Material: return "Material";
 		case AssetType::Shader: return "Shader";
+		case AssetType::EnvironmentMap: return "Environment Map";
 		}
 
 		return "Unknown";

@@ -46,6 +46,8 @@ void ContentBrowserPanel::ClearSearchBuffer()
 
 void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std::string& filter)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	mContentBrowserPath = path;
 	mVisibleFiles.clear();
 	for (const auto& dir : fs::directory_iterator(mContentBrowserPath))
@@ -55,6 +57,21 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 		file.FilePath = dir.path();
 		file.DisplayName = dir.path().filename().string();
 		file.TexId = dir.is_directory() ? mFolderTexture->GetImGuiID() : mFileTexture->GetImGuiID();
+		if (!dir.is_directory())
+		{
+			auto asset = assetManager->GetAssetByFilepath(dir.path());
+			if (asset)
+			{
+				file.Handle = asset->Handle();
+				file.AssetType = asset->GetType();
+				if (file.AssetType == Mule::AssetType::Texture)
+				{
+					Ref<Mule::Texture2D> texture = asset;
+					file.TexId = texture->GetImGuiID();
+				}
+			}
+
+		}
 		mVisibleFiles.push_back(file);
 	}
 
@@ -85,22 +102,6 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 	}
 }
 
-void ContentBrowserPanel::DragDropFile(const fs::path& target)
-{
-	fs::path dropPath;
-	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FOLDER_PATH, dropPath))
-	{
-		fs::path to = target / dropPath.filename();
-		fs::rename(dropPath, to);
-	}
-	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE_PATH, dropPath))
-	{
-		// TODO: update asset if needed
-		fs::path to = target / dropPath.filename();
-		fs::rename(dropPath, to);
-	}
-}
-
 void ContentBrowserPanel::ContentAssetDirBrowser(float width)
 {
 	if (ImGui::BeginChild("##Directories", { width, 0.f }, true))
@@ -115,7 +116,12 @@ void ContentBrowserPanel::ContentAssetDirBrowser(float width)
 				ClearSearchBuffer();
 				SetContentBrowserPath(dir.path());
 			}
-			DragDropFile(dir.path());
+			ImGuiExtension::DragDropFile ddf;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+			{
+				CopyDragDropFile(ddf, dir.path());
+				SetContentBrowserPath(mContentBrowserPath);
+			}
 		}
 	}
 	ImGui::EndChild();
@@ -184,7 +190,13 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 					ClearSearchBuffer();
 					SetContentBrowserPath(curPath);
 				}
-				DragDropFile(curPath);
+				ImGuiExtension::DragDropFile ddf;
+				if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+				{
+					CopyDragDropFile(ddf, curPath);
+					SetContentBrowserPath(mContentBrowserPath);
+				}
+
 				ImGui::SameLine();
 				ImGui::Text("/");
 				ImGui::SameLine();
@@ -214,26 +226,34 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 			{
 				bool doubleClicked = false;
 				ImGuiExtension::File(file.DisplayName, file.TexId, doubleClicked);
-				if (doubleClicked)
+				if (doubleClicked && file.IsDirectory)
 				{
 					SetContentBrowserPath(file.FilePath);
 					break;
 				}
-				DragDropFile(file.FilePath);
 				if (file.IsDirectory)
 				{
-					ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_FOLDER_PATH, file.FilePath, [&]() {
-						ImGui::Image(file.TexId, { 50.f, 50.f });
-						ImGui::Text(file.DisplayName.c_str());
-						});
+					ImGuiExtension::DragDropFile ddf;
+					if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+					{
+						CopyDragDropFile(ddf, file.FilePath);
+						SetContentBrowserPath(mContentBrowserPath);
+						break;
+					}
 				}
-				else
-				{
-					ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_FILE_PATH, file.FilePath, [&]() {
-						ImGui::Image(file.TexId, { 50.f, 50.f });
-						ImGui::TextWrapped(file.DisplayName.c_str());
-						});
-				}
+
+				ImGuiExtension::DragDropFile ddf;
+
+				ddf.AssetHandle = file.Handle;
+				ddf.AssetType = file.AssetType;
+				ddf.IsDirectory = file.IsDirectory;
+				std::string fileStr = file.FilePath.string();
+				memcpy(ddf.FilePath, fileStr.data(), fileStr.size());
+
+				ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf, [&]() {
+					ImGui::Image(file.TexId, {});
+					ImGui::Text(file.DisplayName.c_str());
+					});
 				if (FilePopContent(file))
 					break;
 
@@ -270,6 +290,22 @@ bool ContentBrowserPanel::FilePopContent(const DisplayFile& file)
 	}
 
 	return refresh;
+}
+
+void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& file, const fs::path& newDir)
+{
+	fs::path oldPath = file.FilePath;
+	fs::path name = oldPath.filename();
+	fs::path newPath = newDir / name;
+	fs::rename(file.FilePath, newPath);
+
+	if (file.AssetHandle != Mule::NullAssetHandle)
+	{
+		auto asset = mEngineContext->GetAssetManager()->GetAsset<Mule::IAsset>(file.AssetHandle);
+		asset->SetFilePath(newPath);
+		asset = mEngineContext->GetAssetManager()->GetAsset<Mule::IAsset>(file.AssetHandle);
+		SPDLOG_INFO("Path rename: {}, {}", asset->Handle(), asset->FilePath().string());
+	}
 }
 
 void ContentBrowserPanel::DisplayPopups()

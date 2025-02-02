@@ -9,12 +9,18 @@
 
 namespace Mule
 {
+	TextureLoader::TextureLoader(WeakRef<GraphicsContext> context)
+		:
+		mContext(context)
+	{
+	}
+
 	Ref<Texture2D> TextureLoader::LoadText(const fs::path& filepath)
 	{
 		TextureFormat format;
 		int width, height, components;
 		void* data;
-		if (filepath.extension() == ".hdr") 
+		if (filepath.extension().string() == ".hdr")
 		{
 			data = stbi_loadf(filepath.string().c_str(), &width, &height, &components, STBI_rgb_alpha);
 			format = TextureFormat::RGBA32F;
@@ -45,10 +51,5 @@ namespace Mule
 	
 	void TextureLoader::SaveBinary(Ref<Texture2D> asset)
 	{
-	}
-
-	void TextureLoader::SetContext(Ref<GraphicsContext> context)
-	{
-		mContext = context;
 	}
 }

@@ -112,22 +112,21 @@ namespace Mule
 
 		for (auto& mesh : node.GetMeshes())
 		{
-			if (!HasComponent<MeshCollectionComponent>())
-				AddComponent<MeshCollectionComponent>();
+			std::string name = mesh->Name().empty() ? "Mesh" : mesh->Name();
+			auto child = mScene->CreateEntity(name);
+			AddChild(child);
 
-			MeshCollectionComponent& meshCollection = GetComponent<MeshCollectionComponent>();
+			MeshComponent& meshComponent = child.AddComponent<MeshComponent>();
 
-			MeshComponent meshComponent;
 			meshComponent.Visible = true;
 			meshComponent.MeshHandle = mesh->Handle();
 			meshComponent.MaterialHandle = mesh->GetDefaultMaterialHandle();
-
-			meshCollection.Meshes.push_back(meshComponent);
 		}
 
 		for (const auto& childNode : node.GetChildren())
 		{
-			auto childEntity = mScene->CreateEntity(childNode.GetName());
+			std::string nodeName = childNode.GetName().empty() ? "Node" : childNode.GetName();
+			auto childEntity = mScene->CreateEntity(nodeName);
 			AddChild(childEntity);
 			childEntity.AddModelNodeRecursive(childNode);
 		}

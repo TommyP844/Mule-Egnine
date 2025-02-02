@@ -27,8 +27,8 @@ namespace Mule
 		AssetManager(const AssetManager&) = delete;
 
 		// Loaders
-		template<typename T>
-		Ref<T> RegisterLoader();
+		template<typename T, typename ... Args>
+		Ref<T> RegisterLoader(Args&&... args);
 
 		template<typename T>
 		Ref<T> LoadAsset(const fs::path& filepath);
@@ -51,8 +51,7 @@ namespace Mule
 		template<typename T>
 		WeakRef<T> GetAsset(AssetHandle);
 
-		template<typename T>
-		Ref<T> GetAssetByFilepath(const fs::path& path);
+		Ref<IAsset> GetAssetByFilepath(const fs::path& path);
 
 		std::vector<Ref<IAsset>> GetAssetsOfType(AssetType type) const;
 

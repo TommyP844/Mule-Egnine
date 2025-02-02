@@ -44,22 +44,41 @@ namespace Mule
 
 		if (width > 1 && height == 1 && depth == 1)
 		{
+			mTextureType = TextureType::Type_1D;
 			imageType = VK_IMAGE_TYPE_1D;
 			viewType = VK_IMAGE_VIEW_TYPE_1D;
 			if (layers > 1)
+			{
+				mTextureType = TextureType::Type_1DArray;
 				viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+			}
 		}
 		else if (width > 1 && height > 1 && depth == 1)
 		{
+			mTextureType = TextureType::Type_2D;
 			imageType = VK_IMAGE_TYPE_2D;
 			viewType = VK_IMAGE_VIEW_TYPE_2D;
 			if (layers > 1)
+			{
+				mTextureType = TextureType::Type_2DArray;
 				viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+			}
+			
+			if (flags & TextureFlags::CubeMap)
+			{
+				if (layers != 6)
+				{
+					SPDLOG_WARN("Attempting to create cube map with {} layers", layers);
+				}
+				viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+				mTextureType = TextureType::Type_Cube;
+			}
 		}
 		else if (width > 1 && height > 1 && depth > 1)
 		{
 			imageType = VK_IMAGE_TYPE_3D;
 			viewType = VK_IMAGE_VIEW_TYPE_3D;
+			mTextureType = TextureType::Type_3D;
 			if (layers > 1)
 			{
 				SPDLOG_WARN("3D Textures connot have layers, defaulting to 1");
@@ -77,7 +96,6 @@ namespace Mule
 		mIsDepthTexture = ((flags & TextureFlags::DepthTexture) == TextureFlags::DepthTexture);
 		VkImageAspectFlags imageAspect = mIsDepthTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;;
 
-		VkImageCreateInfo info{};
 
 		std::set<uint32_t> queueFamilyIndicexSet = {
 			mContext->GetGraphicsQueue()->GetQueueFamilyIndex(),
@@ -94,10 +112,10 @@ namespace Mule
 		else if(flags & TextureFlags::RenderTarget)
 			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		
-
+		VkImageCreateInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		info.pNext = nullptr;
-		info.flags;
+		info.flags = (flags & TextureFlags::CubeMap) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 		info.imageType = imageType;
 		info.format = (VkFormat)format;
 		info.extent.width = width;
@@ -157,7 +175,7 @@ namespace Mule
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = mips;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = layers;
+		viewCreateInfo.subresourceRange.layerCount = layers * (flags & TextureFlags::CubeMap ? 6 : 1);
 
 		result = vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &mVulkanImage.ImageView);
 		if (result != VK_SUCCESS)

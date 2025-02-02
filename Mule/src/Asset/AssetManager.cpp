@@ -36,4 +36,21 @@ namespace Mule
 		}
 		mAssets.erase(handle);
 	}
+
+	Ref<IAsset> AssetManager::GetAssetByFilepath(const fs::path& path)
+	{
+		for (auto [handle, asset] : mAssets)
+		{
+			if(asset->FilePath().empty())
+				continue;
+
+			SPDLOG_INFO("Asset: {}, {}", handle, asset->FilePath().string());
+
+			if (fs::equivalent(path, asset->FilePath()))
+			{
+				return asset;
+			}
+		}
+		return nullptr;
+	}
 }

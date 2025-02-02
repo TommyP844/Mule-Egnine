@@ -19,7 +19,8 @@ namespace Mule
 	enum class DescriptorType
 	{
 		Texture = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		UniformBuffer = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+		UniformBuffer = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		StorageImage = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
 	};
 
 	enum class ShaderStage
@@ -40,7 +41,8 @@ namespace Mule
 		GenerateMips = 1,
 		RenderTarget = 2,
 		DepthTexture = 4,
-		None = 8
+		CubeMap = 8,
+		None = 16
 	};
 
 	enum class TextureFormat : uint32_t
@@ -79,17 +81,20 @@ namespace Mule
 	{
 		switch (format)
 		{
-		case Mule::TextureFormat::R8U:
+		case TextureFormat::R8U:
 			return 1;
-		case Mule::TextureFormat::RGB8U:
+		case TextureFormat::RGB8U:
 			return 3;
-		case Mule::TextureFormat::BGRA8U:
-		case Mule::TextureFormat::RGBA8U:
-		case Mule::TextureFormat::D32F:
-		case Mule::TextureFormat::D24S8:
+		case TextureFormat::BGRA8U:
+		case TextureFormat::RGBA8U:
+		case TextureFormat::D32F:
+		case TextureFormat::D24S8:
 			return 4;
-		
-		case Mule::TextureFormat::NONE:
+		case TextureFormat::RGBA32S:
+		case TextureFormat::RGBA32U:
+		case TextureFormat::RGBA32F:
+			return 16;
+		case TextureFormat::NONE:
 		default:
 			return 0;
 		}

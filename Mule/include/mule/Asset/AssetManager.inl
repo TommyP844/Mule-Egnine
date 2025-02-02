@@ -5,14 +5,14 @@
 
 namespace Mule
 {
-	template<typename T>
-	inline Ref<T> AssetManager::RegisterLoader()
+	template<typename T, typename ... Args>
+	inline Ref<T> AssetManager::RegisterLoader(Args&&... args)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 		
 		AssetType type = T::sType;
 		SPDLOG_INFO("Loader redistered with AssetManager: {}", GetAssetTypeString(type));
-		auto loader = MakeRef<T>();
+		auto loader = MakeRef<T>(std::forward<Args>(args)...);
 		mLoaders[type] = loader;
 		return loader;
 	}
@@ -98,21 +98,5 @@ namespace Mule
 			return nullptr;
 		}
 		return iter->second;
-	}
-
-	template<typename T>
-	inline Ref<T> AssetManager::GetAssetByFilepath(const fs::path& path)
-	{
-		auto& list = mAssetTypes[T::sType];
-	
-		for (Ref<T> asset : list)
-		{
-			if (fs::equivalent(asset->FilePath(), path))
-			{
-				return asset;
-			}
-		}
-
-		return nullptr;
 	}
 }

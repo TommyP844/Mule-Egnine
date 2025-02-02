@@ -9,6 +9,7 @@
 #include "Graphics/GraphicsShader.h"
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/DescriptorSet.h"
+#include "Graphics/ComputeShader.h"
 
 #include <vulkan/vulkan.h>
 
@@ -35,10 +36,12 @@ namespace Mule
 		void TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout);
 
 		// Shader
-		void BindPipeline(WeakRef<GraphicsShader> shader);
+		void BindGraphicsPipeline(WeakRef<GraphicsShader> shader);
+		void BindComputePipeline(WeakRef<ComputeShader> shader);
 		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size);
 		void BindDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet);
-		// void BindDescriptorSet(Ref<ComputeShader> shader, Ref<DescriptorSet> descriptorSet);
+		void BindDescriptorSet(WeakRef<ComputeShader> shader, Ref<DescriptorSet> descriptorSet);
+		void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ);
 
 		// Mesh
 		void BindMesh(WeakRef<Mesh> mesh);

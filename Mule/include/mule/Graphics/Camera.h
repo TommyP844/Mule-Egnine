@@ -19,7 +19,7 @@ namespace Mule
 		void SetFOVDegrees(float degrees);
 		void SetAspectRatio(float aspectRatio);
 
-		void Rotate(float pitchDelata, float yawDelta);
+		void Rotate(float yawDelata, float pitchDelata);
 
 		// Getters
 		const glm::mat4& GetView() const { return mView; }

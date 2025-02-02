@@ -39,6 +39,7 @@ private:
 	SceneViewPanel mSceneViewPanel;
 	AssetManagerPanel mAssetManagerPanel;
 	MaterialEditorPanel mMaterialEditorPanel;
+	bool mShowDemoWindow = false;
 
 	std::future<void> mAssetLoaderThread;
 
