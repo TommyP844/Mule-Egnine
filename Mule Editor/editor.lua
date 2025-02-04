@@ -25,7 +25,6 @@ project "Mule Editor"
         "ImGui",
         "glfw",
         "spdlog",
-        "opengl32.lib",
         "Mule",
         "yaml-cpp",
         "nativefiledialog",
