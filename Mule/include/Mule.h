@@ -38,6 +38,7 @@
 #include "Graphics/Execution/GraphicsQueue.h"
 #include "Graphics/Execution/Fence.h"
 #include "Graphics/Execution/Semaphore.h"
+#include "Graphics/EnvironmentMap.h"
 
 // Events
 #include "Application/Events/Event.h"

@@ -48,6 +48,8 @@ namespace Mule
 
 	struct SkyLightComponent
 	{
+		SkyLightComponent() = default;
+		SkyLightComponent(const SkyLightComponent& other) = default;
 		bool Active = true;
 		float Radiance = 1.f;
 		AssetHandle EnvironmentMap;

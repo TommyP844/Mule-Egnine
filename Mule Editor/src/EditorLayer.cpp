@@ -13,6 +13,7 @@
 
 // Events
 #include "Event/EditMaterialEvent.h"
+#include "Event/ViewtextureEvent.h"
 
 EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	:
@@ -26,6 +27,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mContentBrowserPanel.SetContext(mEditorState, context);
 	mAssetManagerPanel.SetContext(mEditorState, context);
 	mMaterialEditorPanel.SetContext(mEditorState, context);
+	mTextureViewerPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -33,6 +35,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mContentBrowserPanel.OnAttach();
 	mAssetManagerPanel.OnAttach();
 	mMaterialEditorPanel.OnAttach();
+	mTextureViewerPanel.OnAttach();
 
 	// mAssetManagerPanel.Close();
 
@@ -87,7 +90,7 @@ void EditorLayer::OnAttach()
 		std::string extension = dir.path().extension().string();
 		fs::path filePath = dir.path();
 
-		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp", ".hdr" };
+		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
 		const std::set<std::string> modelExtensions = { ".gltf" };
 
 
@@ -103,6 +106,10 @@ void EditorLayer::OnAttach()
 			{
 				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
 			}
+		}
+		else if (extension == ".hdr")
+		{
+			mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
 		}
 		
 	}
@@ -144,7 +151,7 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
 			ImGui::MenuItem("Scene View", "", mSceneViewPanel.OpenPtr());
-			ImGui::MenuItem("Imgui Demo", "", &mShowDemoWindow);
+			ImGui::MenuItem("Texture Viewer", "", mTextureViewerPanel.OpenPtr());
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -161,6 +168,13 @@ void EditorLayer::OnUIRender(float dt)
 			mMaterialEditorPanel.SetMaterial(editMaterialEvent->GetMaterialHandle());
 		}
 			break;
+		case EditorEventType::ViewTexture:
+		{
+			Ref<ViewTextureEvent> viewTextureEvent = event;
+			mTextureViewerPanel.Open();
+			mTextureViewerPanel.SetTexture(viewTextureEvent->GetTextureHandle());
+		}
+		break;
 		}
 
 		mComponentPanel.OnEvent(event);
@@ -169,6 +183,7 @@ void EditorLayer::OnUIRender(float dt)
 		mContentBrowserPanel.OnEvent(event);
 		mAssetManagerPanel.OnEvent(event);
 		mMaterialEditorPanel.OnEvent(event);
+		mTextureViewerPanel.OnEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -180,6 +195,7 @@ void EditorLayer::OnUIRender(float dt)
 	mContentBrowserPanel.OnUIRender(dt);
 	mAssetManagerPanel.OnUIRender(dt);
 	mMaterialEditorPanel.OnUIRender(dt);
+	mTextureViewerPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

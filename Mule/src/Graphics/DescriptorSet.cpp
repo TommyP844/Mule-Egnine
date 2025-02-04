@@ -69,6 +69,7 @@ namespace Mule
 				}
 			}
 			break;
+			case DescriptorType::StorageImage:
 			case DescriptorType::Texture:
 			{
 				count = update.Textures.size();

@@ -109,5 +109,7 @@ namespace Mule
 
 	VertexBuffer::~VertexBuffer()
 	{
+		vkFreeMemory(mDevice, mMemory, nullptr);
+		vkDestroyBuffer(mDevice, mBuffer, nullptr);
 	}
 }

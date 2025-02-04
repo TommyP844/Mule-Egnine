@@ -2,6 +2,7 @@
 
 #include "Graphics/VertexLayout.h"
 #include "Graphics/Material.h"
+#include "Graphics/EnvironmentMap.h"
 
 #include "ECS/Components.h"
 
@@ -14,18 +15,6 @@ namespace Mule
 		mFrameIndex(0),
 		mIsValid(true)
 	{
-		SPDLOG_INFO("Albedo Color Offset: {}", offsetof(GPUMaterial, AlbedoColor));
-		SPDLOG_INFO("Texture Scale Offset: {}", offsetof(GPUMaterial, TextureScale));
-		SPDLOG_INFO("Metalness Factor Offset: {}", offsetof(GPUMaterial, MetalnessFactor));
-		SPDLOG_INFO("Roughness Factor Offset: {}", offsetof(GPUMaterial, RoughnessFactor));
-		SPDLOG_INFO("AOFactor Offset: {}", offsetof(GPUMaterial, AOFactor));
-		SPDLOG_INFO("AlbedoIndex Offset: {}", offsetof(GPUMaterial, AlbedoIndex));
-		SPDLOG_INFO("NormalIndex Offset: {}", offsetof(GPUMaterial, NormalIndex));
-		SPDLOG_INFO("MetalnessIndex Offset: {}", offsetof(GPUMaterial, MetalnessIndex));
-		SPDLOG_INFO("RoughnessIndex Offset: {}", offsetof(GPUMaterial, RoughnessIndex));
-		SPDLOG_INFO("AOIndex Offset: {}", offsetof(GPUMaterial, AOIndex));
-		SPDLOG_INFO("EmissiveIndex Offset: {}", offsetof(GPUMaterial, EmissiveIndex));
-
 		VertexLayout staticVertexLayout;
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
@@ -76,6 +65,98 @@ namespace Mule
 
 		mGeometryStageLayout = mGraphicsContext->CreateDescriptorSetLayout(descriptorSetLayout);
 
+#pragma region EnvironmentMap
+
+		Buffer environmentMeshVertices;
+		Buffer environmentMeshIndices;
+
+		// Allocate memory for 8 vertices (each vertex is a glm::vec3)
+		environmentMeshVertices.Allocate(sizeof(glm::vec3) * 8);
+
+		// Define the 8 vertices of the unit cube centered around the origin
+		environmentMeshVertices.As<glm::vec3>()[0] = glm::vec3(-0.5f, -0.5f, -0.5f) * 10.f; // Bottom-left-back
+		environmentMeshVertices.As<glm::vec3>()[1] = glm::vec3(0.5f, -0.5f, -0.5f) * 10.f; // Bottom-right-back
+		environmentMeshVertices.As<glm::vec3>()[2] = glm::vec3(0.5f, 0.5f, -0.5f) * 10.f; // Top-right-back
+		environmentMeshVertices.As<glm::vec3>()[3] = glm::vec3(-0.5f, 0.5f, -0.5f) * 10.f; // Top-left-back
+		environmentMeshVertices.As<glm::vec3>()[4] = glm::vec3(-0.5f, -0.5f, 0.5f) * 10.f; // Bottom-left-front
+		environmentMeshVertices.As<glm::vec3>()[5] = glm::vec3(0.5f, -0.5f, 0.5f) * 10.f; // Bottom-right-front
+		environmentMeshVertices.As<glm::vec3>()[6] = glm::vec3(0.5f, 0.5f, 0.5f) * 10.f; // Top-right-front
+		environmentMeshVertices.As<glm::vec3>()[7] = glm::vec3(-0.5f, 0.5f, 0.5f) * 10.f; // Top-left-front
+
+		// Allocate memory for 36 indices (12 triangles * 3 indices each, using uint16_t)
+		environmentMeshIndices.Allocate(sizeof(uint16_t) * 3 * 2 * 6);
+
+		// Define the indices for the 12 triangles (clockwise order)
+		uint16_t* indices = environmentMeshIndices.As<uint16_t>();
+
+		// Front face
+		indices[0] = 4; indices[1] = 5; indices[2] = 6; // Triangle 1
+		indices[3] = 4; indices[4] = 6; indices[5] = 7; // Triangle 2
+
+		// Back face
+		indices[6] = 0; indices[7] = 3; indices[8] = 2;  // Triangle 1
+		indices[9] = 0; indices[10] = 2; indices[11] = 1; // Triangle 2
+
+		// Left face
+		indices[12] = 0; indices[13] = 4; indices[14] = 7; // Triangle 1
+		indices[15] = 0; indices[16] = 7; indices[17] = 3; // Triangle 2
+
+		// Right face
+		indices[18] = 1; indices[19] = 2; indices[20] = 6; // Triangle 1
+		indices[21] = 1; indices[22] = 6; indices[23] = 5; // Triangle 2
+
+		// Bottom face
+		indices[24] = 0; indices[25] = 1; indices[26] = 5; // Triangle 1
+		indices[27] = 0; indices[28] = 5; indices[29] = 4; // Triangle 2
+
+		// Top face
+		indices[30] = 3; indices[31] = 7; indices[32] = 6; // Triangle 1
+		indices[33] = 3; indices[34] = 6; indices[35] = 2; // Triangle 2
+
+		MeshDescription environmentMeshDesc{};
+		environmentMeshDesc.Name = "Environment Cube";
+		environmentMeshDesc.Vertices = environmentMeshVertices;
+		environmentMeshDesc.VertexSize = sizeof(glm::vec3);
+		environmentMeshDesc.Indices = environmentMeshIndices;
+		environmentMeshDesc.IndexBufferType = IndexBufferType::BufferSize_16Bit;
+
+		mEnvironmentCube = MakeRef<Mesh>(mGraphicsContext, environmentMeshDesc);
+
+		environmentMeshVertices.Release();
+		environmentMeshIndices.Release();
+
+		DescriptorSetLayoutDescription environmentSetLayout{};
+
+		LayoutDescription environmentLayoutDesc;
+		environmentLayoutDesc.ArrayCount = 1;
+		environmentLayoutDesc.Binding = 0;
+		environmentLayoutDesc.Stage = ShaderStage::Fragment;
+		environmentLayoutDesc.Type = DescriptorType::Texture;
+		environmentSetLayout.Layouts.push_back(environmentLayoutDesc);
+
+		environmentLayoutDesc.ArrayCount = 1;
+		environmentLayoutDesc.Binding = 1;
+		environmentLayoutDesc.Stage = ShaderStage::Vertex;
+		environmentLayoutDesc.Type = DescriptorType::UniformBuffer;
+		environmentSetLayout.Layouts.push_back(environmentLayoutDesc);
+
+		mEnvironmentMapDescriptorSetLayout = mGraphicsContext->CreateDescriptorSetLayout(environmentSetLayout);
+
+		VertexLayout environmentLayout;
+		environmentLayout.AddAttribute(AttributeType::Vec3);
+
+		GraphicsShaderDescription environmentShaderdesc{};
+		environmentShaderdesc.SourcePath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
+		environmentShaderdesc.RenderPass = mMainRenderPass;
+		environmentShaderdesc.Subpass = 0;
+		environmentShaderdesc.VertexLayout = environmentLayout;
+		environmentShaderdesc.DescriptorLayouts = { mEnvironmentMapDescriptorSetLayout };
+		environmentShaderdesc.PushConstants = {};
+
+		mEnvironmentMapShader = context->CreateGraphicsShader(environmentShaderdesc);
+
+#pragma endregion
+
 		for (int i = 0; i < 2; i++)
 		{
 			mFrameData[i].RenderingFinishedFence = mGraphicsContext->CreateFence();
@@ -93,6 +174,10 @@ namespace Mule
 			descriptorDesc.Layouts = { mGeometryStageLayout };
 			mFrameData[i].DescriptorSet = mGraphicsContext->CreateDescriptorSet(descriptorDesc);
 
+			DescriptorSetDescription environmentDesc{};
+			environmentDesc.Layouts = { mEnvironmentMapDescriptorSetLayout };
+			mFrameData[i].EnvironmentMapDescriptorSet = mGraphicsContext->CreateDescriptorSet(environmentDesc);
+
 			DescriptorSetUpdate updateCameraBuffer;
 			updateCameraBuffer.ArrayElement = 0;
 			updateCameraBuffer.Binding = 0;
@@ -109,7 +194,7 @@ namespace Mule
 		}
 
 		GraphicsShaderDescription defaultGeometryDesc{};
-		defaultGeometryDesc.SourcePath = "../Assets/Shaders/DefaultGeometryShader.glsl";
+		defaultGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
 		defaultGeometryDesc.RenderPass = mMainRenderPass;
 		defaultGeometryDesc.Subpass = 0;
 		defaultGeometryDesc.VertexLayout = staticVertexLayout;
@@ -226,7 +311,7 @@ namespace Mule
 			commandBuffer->BeginRenderPass(frameData.Framebuffer, mMainRenderPass);
 
 			commandBuffer->BindGraphicsPipeline(mDefaultGeometryShader);
-			commandBuffer->BindDescriptorSet(mDefaultGeometryShader, frameData.DescriptorSet);
+			commandBuffer->BindGraphicsDescriptorSet(mDefaultGeometryShader, frameData.DescriptorSet);
 
 			settings.Scene->IterateEntitiesWithComponents<MeshComponent>([&](Entity e) {
 
@@ -244,9 +329,46 @@ namespace Mule
 				commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Fragment, &materialIndex, sizeof(uint32_t));
 				commandBuffer->BindMesh(mesh);
 				commandBuffer->DrawMesh(mesh);
-				
+				});
+
+			SkyLightComponent skyLight;
+			settings.Scene->IterateEntitiesWithComponents<SkyLightComponent>([&](Entity e) {
+
+				const auto& skyLightComponent = e.GetComponent<SkyLightComponent>();
+				if (skyLightComponent.Active && skyLightComponent.EnvironmentMap != NullAssetHandle)
+				{
+					skyLight = skyLightComponent;
+					return;
+				}
 
 				});
+
+			auto environmentMap = mAssetManager->GetAsset<EnvironmentMap>(skyLight.EnvironmentMap);
+			if (environmentMap)
+			{
+				auto cubeMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetCubeMapHandle());
+
+				if (cubeMap)
+				{
+					DescriptorSetUpdate environmentUpdate{};
+					environmentUpdate.ArrayElement = 0;
+					environmentUpdate.Binding = 0;
+					environmentUpdate.Textures = { cubeMap };
+					environmentUpdate.Type = DescriptorType::Texture;
+
+					DescriptorSetUpdate environmentUpdate1{};
+					environmentUpdate1.ArrayElement = 0;
+					environmentUpdate1.Binding = 1;
+					environmentUpdate1.Buffers = { frameData.CameraBuffer };
+					environmentUpdate1.Type = DescriptorType::UniformBuffer;
+
+					frameData.EnvironmentMapDescriptorSet->Update({ environmentUpdate, environmentUpdate1 });
+
+					commandBuffer->BindGraphicsPipeline(mEnvironmentMapShader);
+					commandBuffer->BindGraphicsDescriptorSet(mEnvironmentMapShader, frameData.EnvironmentMapDescriptorSet);
+					commandBuffer->BindAndDrawMesh(mEnvironmentCube, 1);
+				}
+			}
 
 			commandBuffer->EndRenderPass();
 			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly);

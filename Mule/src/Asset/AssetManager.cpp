@@ -44,8 +44,6 @@ namespace Mule
 			if(asset->FilePath().empty())
 				continue;
 
-			SPDLOG_INFO("Asset: {}, {}", handle, asset->FilePath().string());
-
 			if (fs::equivalent(path, asset->FilePath()))
 			{
 				return asset;

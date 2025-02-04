@@ -3,8 +3,10 @@
 #include "Graphics//Context/GraphicsContext.h"
 
 #include <spdlog/spdlog.h>
+#include "Graphics/imguiImpl/imgui_impl_vulkan.h"
 
 #include <set>
+
 
 namespace Mule
 
@@ -34,6 +36,25 @@ namespace Mule
 		mDevice(context->GetDevice()),
 		mIsDepthTexture(false)
 	{
+	}
+
+	ITexture::~ITexture()
+	{
+		vkDeviceWaitIdle(mDevice);
+
+		for (auto layerView : mLayerViews)
+		{
+			vkDestroyImageView(mDevice, layerView.ImageView, nullptr);
+		}
+
+		vkFreeMemory(mDevice, mVulkanImage.Memory, nullptr);
+		vkDestroyImageView(mDevice, mVulkanImage.ImageView, nullptr);
+		vkDestroyImage(mDevice, mVulkanImage.Image, nullptr);
+	}
+
+	ImTextureID ITexture::GetLayerID(int index)
+	{
+		return mLayerViews[index].Id;
 	}
 
 	void ITexture::Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags)
@@ -66,10 +87,7 @@ namespace Mule
 			
 			if (flags & TextureFlags::CubeMap)
 			{
-				if (layers != 6)
-				{
-					SPDLOG_WARN("Attempting to create cube map with {} layers", layers);
-				}
+				layers *= 6;
 				viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 				mTextureType = TextureType::Type_Cube;
 			}
@@ -111,6 +129,8 @@ namespace Mule
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if(flags & TextureFlags::RenderTarget)
 			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		if (flags & TextureFlags::SotrageImage)
+			usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
 		
 		VkImageCreateInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -166,7 +186,7 @@ namespace Mule
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.image = mVulkanImage.Image;
 		viewCreateInfo.viewType = viewType;
-		viewCreateInfo.format = (VkFormat)format; // Provided during swapchain creation
+		viewCreateInfo.format = (VkFormat)format;
 		viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -175,12 +195,36 @@ namespace Mule
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = mips;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = layers * (flags & TextureFlags::CubeMap ? 6 : 1);
+		viewCreateInfo.subresourceRange.layerCount = layers;
 
 		result = vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &mVulkanImage.ImageView);
 		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("Failed to create image view");
+		}
+
+		if (mLayers > 1)
+		{
+			for (int i = 0; i < mLayers; i++)
+			{
+				viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+				viewCreateInfo.subresourceRange.baseArrayLayer = i;
+				viewCreateInfo.subresourceRange.layerCount = 1;
+
+				VkImageView imageView;
+				result = vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &imageView);
+				if (result != VK_SUCCESS)
+				{
+					SPDLOG_ERROR("Failed to create image view for layer: {}", i);
+				}
+
+				ImTextureID id = (ImTextureID)ImGui_ImplVulkan_AddTexture(mContext->GetLinearSampler(), imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+				ImGuiLayerView layerView;
+				layerView.Id = id;
+				layerView.ImageView = imageView;
+				mLayerViews.push_back(layerView);
+			}
 		}
 
 		VkCommandBuffer commandBuffer = mContext->CreateSingleTimeCmdBuffer();
@@ -196,7 +240,7 @@ namespace Mule
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = mLayers;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
@@ -267,7 +311,7 @@ namespace Mule
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = mLayers;
 
 		VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		VkPipelineStageFlags dstStage;				

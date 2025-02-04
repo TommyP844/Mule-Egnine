@@ -45,9 +45,15 @@ void SceneViewPanel::OnUIRender(float dt)
 
 			Ref<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetCurrentFrameBuffer();
 			WeakRef<Mule::Texture2D> texture = frameBuffer->GetColorAttachment(0);
-			ImGui::Image(texture->GetImGuiID(), region);
+			ImGui::Image(texture->GetImGuiID(), region, {0, 1}, {1, 0});
 
-			// TODO: move to OnEvent
+			ImGuizmo::SetOrthographic(false);  // Set to true if using an orthographic camera
+			ImGuizmo::SetDrawlist();
+			ImGuizmo::SetRect(cursorPos.x, cursorPos.y, mWidth, mHeight);
+			glm::mat4 view = camera.GetView();
+			glm::mat4 proj = camera.GetProj();
+			glm::mat4 identity = glm::mat4(1.f);
+			ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &identity[0][0], 10.f);
 			
 			if (ImGui::IsWindowFocused())
 			{
@@ -81,35 +87,33 @@ void SceneViewPanel::OnUIRender(float dt)
 
 				static bool leftPressed = false;
 				static bool justPressed = false;
-				static glm::vec2 cursorPos = { 0, 0 };
-				if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && leftPressed == false)
+				static glm::vec2 mousePos = { 0, 0 };
+				if (!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
 				{
-					leftPressed = true;
-					justPressed = true;
-					//cursorPos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
-				}
-				else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-				{
-					leftPressed = false;
-				}
-
-				if (leftPressed)
-				{
-					glm::vec2 curPos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y};
-					glm::vec2 delta = curPos - cursorPos;
-					if (justPressed)
+					if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && leftPressed == false)
 					{
-						delta = { 0, 0 };
-						justPressed = false;
+						leftPressed = true;
+						justPressed = true;
+						//mousePos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 					}
-					cursorPos = curPos;
-					camera.Rotate(delta.x * 0.1f, delta.y * 0.1f);
-				}
+					else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+					{
+						leftPressed = false;
+					}
 
-				glm::mat4 view = camera.GetView();
-				glm::mat4 proj = camera.GetProj();
-				glm::mat4 identity = glm::identity<glm::mat4>();
-				ImGuizmo::DrawGrid(&view[0][0], &proj[0][0], &identity[0][0], 50.f);
+					if (leftPressed)
+					{
+						glm::vec2 curPos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+						glm::vec2 delta = curPos - mousePos;
+						if (justPressed)
+						{
+							delta = { 0, 0 };
+							justPressed = false;
+						}
+						mousePos = curPos;
+						camera.Rotate(delta.x * -0.1f, delta.y * -0.1f);
+					}
+				}
 
 				if (mEditorState->SelectedEntity)
 				{
@@ -127,10 +131,6 @@ void SceneViewPanel::OnUIRender(float dt)
 
 					if (operation != 0)
 					{
-						ImGuizmo::SetOrthographic(false);  // Set to true if using an orthographic camera
-						ImGuizmo::SetDrawlist();
-						ImGuizmo::SetRect(cursorPos.x, cursorPos.y, mWidth, mHeight);
-
 						Mule::TransformComponent& transform = mEditorState->SelectedEntity.GetTransformComponent();
 
 						

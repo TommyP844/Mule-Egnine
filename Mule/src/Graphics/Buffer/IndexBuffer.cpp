@@ -126,5 +126,7 @@ namespace Mule
 
 	IndexBuffer::~IndexBuffer()
 	{
+		vkFreeMemory(mDevice, mMemory, nullptr);
+		vkDestroyBuffer(mDevice, mBuffer, nullptr);
 	}
 }

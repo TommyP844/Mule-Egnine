@@ -452,6 +452,10 @@ namespace Mule
 	{
 		VkImageLayout oldLayout = texture->GetVulkanImage().Layout;
 		VkImageLayout newVkLayout = (VkImageLayout)newLayout;
+
+		if (oldLayout == newVkLayout)
+			return;
+
 		VkPipelineStageFlags srcStage = 0;
 		VkPipelineStageFlags dstStage = 0;
 		VkImageAspectFlags imageAspect = texture->IsDepthTexture() ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -471,7 +475,7 @@ namespace Mule
 		barrier.subresourceRange.layerCount = texture->GetLayerCount();
 		
 
-		if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
 			srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -479,13 +483,29 @@ namespace Mule
 			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newVkLayout ==VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
 			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_GENERAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			dstStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; // Suitable for storage images
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // Used for sampling in shaders
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		}
 		else
 		{
@@ -524,13 +544,13 @@ namespace Mule
 		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), (VkShaderStageFlags)stage, range.first, size, data);
 	}
 
-	void CommandBuffer::BindDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet)
+	void CommandBuffer::BindGraphicsDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet)
 	{
 		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
 		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
 	}
 
-	void CommandBuffer::BindDescriptorSet(WeakRef<ComputeShader> shader, Ref<DescriptorSet> descriptorSet)
+	void CommandBuffer::BindComputeDescriptorSet(WeakRef<ComputeShader> shader, Ref<DescriptorSet> descriptorSet)
 	{
 		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
 		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);

@@ -3,10 +3,10 @@
 
 namespace Mule
 {
-	TextureCube::TextureCube(WeakRef<GraphicsContext> context, void* data, uint32_t axisSize, uint32_t layers, TextureFormat format)
+	TextureCube::TextureCube(WeakRef<GraphicsContext> context, void* data, uint32_t axisSize, uint32_t layers, TextureFormat format, TextureFlags flags)
 		:
 		ITexture(context)
 	{
-		Initialize(data, axisSize, axisSize, 1, layers, 1, format, TextureFlags::CubeMap);
+		Initialize(data, axisSize, axisSize, 1, layers, 1, format, TextureFlags(TextureFlags::CubeMap | flags));
 	}
 }

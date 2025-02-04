@@ -13,7 +13,8 @@ namespace Mule
 		TransferDst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		ColorAttachment = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		DepthAttachment = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-		ShaderReadOnly = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		ShaderReadOnly = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		General = VK_IMAGE_LAYOUT_GENERAL
 	};
 
 	enum class DescriptorType
@@ -42,7 +43,8 @@ namespace Mule
 		RenderTarget = 2,
 		DepthTexture = 4,
 		CubeMap = 8,
-		None = 16
+		SotrageImage = 16,
+		None = 32
 	};
 
 	enum class TextureFormat : uint32_t
@@ -51,8 +53,12 @@ namespace Mule
 		BGRA8U = VK_FORMAT_B8G8R8A8_UNORM,
 		RGBA8U = VK_FORMAT_R8G8B8A8_UNORM,
 		RGB8U = VK_FORMAT_R8G8B8_UNORM,
+
 		D32F = VK_FORMAT_D32_SFLOAT,
 		D24S8 = VK_FORMAT_D24_UNORM_S8_UINT,
+
+		RGBA16F = VK_FORMAT_R16G16B16A16_SFLOAT,
+
 		RGBA32F = VK_FORMAT_R32G32B32A32_SFLOAT,
 		RGBA32S = VK_FORMAT_R32G32B32A32_SINT,
 		RGBA32U = VK_FORMAT_R32G32B32A32_UINT,
@@ -63,16 +69,17 @@ namespace Mule
 	{
 		switch (format)
 		{
-		case Mule::TextureFormat::R8U: return "R8U";
-		case Mule::TextureFormat::BGRA8U: return "BGRA8U";
-		case Mule::TextureFormat::RGBA8U: return "RGBA8U";
-		case Mule::TextureFormat::RGB8U: return "RGB8U";
-		case Mule::TextureFormat::D32F: return "Depth32F";
-		case Mule::TextureFormat::D24S8: return "D24S8";
-		case Mule::TextureFormat::RGBA32F: return "RGBA32F";
-		case Mule::TextureFormat::RGBA32S: return "RGBA32S";
-		case Mule::TextureFormat::RGBA32U: return "RGBA32U";
-		case Mule::TextureFormat::NONE: return "NONE";
+		case TextureFormat::R8U: return "R8U";
+		case TextureFormat::BGRA8U: return "BGRA8U";
+		case TextureFormat::RGBA8U: return "RGBA8U";
+		case TextureFormat::RGB8U: return "RGB8U";
+		case TextureFormat::D32F: return "Depth32F";
+		case TextureFormat::D24S8: return "D24S8";
+		case TextureFormat::RGBA16F: return "RGBA16F";
+		case TextureFormat::RGBA32F: return "RGBA32F";
+		case TextureFormat::RGBA32S: return "RGBA32S";
+		case TextureFormat::RGBA32U: return "RGBA32U";
+		case TextureFormat::NONE: return "NONE";
 		}
 		return "Unknown";
 	}
@@ -90,6 +97,8 @@ namespace Mule
 		case TextureFormat::D32F:
 		case TextureFormat::D24S8:
 			return 4;
+		case TextureFormat::RGBA16F:
+			return 8;
 		case TextureFormat::RGBA32S:
 		case TextureFormat::RGBA32U:
 		case TextureFormat::RGBA32F:

@@ -7,6 +7,7 @@
 #include "Graphics/RenderPass.h"
 #include "Graphics/Camera.h"
 #include "Graphics/Context/GraphicsContext.h"
+#include "Graphics/DescriptorSet.h"
 #include "ECS/Scene.h"
 #include "Asset/AssetManager.h"
 
@@ -43,6 +44,7 @@ namespace Mule
 		bool mIsValid;
 
 		Ref<DescriptorSetLayout> mGeometryStageLayout;
+		Ref<DescriptorSetLayout> mEnvironmentMapDescriptorSetLayout;
 
 		struct GPUMaterial
 		{
@@ -75,12 +77,17 @@ namespace Mule
 
 			GuidArray<Ref<ITexture>> TextureArray;
 			GuidArray<GPUMaterial> MaterialArray;
+
+			// Environment Mapping
+			Ref<Mule::DescriptorSet> EnvironmentMapDescriptorSet;
 		};
 		std::array<FrameData, 2> mFrameData;
 		uint32_t mFrameIndex;
 
 		Ref<RenderPass> mMainRenderPass;
 		Ref<GraphicsShader> mDefaultGeometryShader;
+		Ref<GraphicsShader> mEnvironmentMapShader;
+		Ref<Mesh> mEnvironmentCube;
 
 
 		struct CameraData

@@ -8,11 +8,11 @@ namespace Mule
 	template<typename T, typename ... Args>
 	inline Ref<T> AssetManager::RegisterLoader(Args&&... args)
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
-		
+		auto loader = MakeRef<T>(std::forward<Args>(args)...);
 		AssetType type = T::sType;
 		SPDLOG_INFO("Loader redistered with AssetManager: {}", GetAssetTypeString(type));
-		auto loader = MakeRef<T>(std::forward<Args>(args)...);
+
+		std::lock_guard<std::mutex> lock(mMutex);		
 		mLoaders[type] = loader;
 		return loader;
 	}

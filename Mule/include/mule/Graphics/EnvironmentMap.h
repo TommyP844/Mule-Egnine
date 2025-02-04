@@ -10,9 +10,11 @@ namespace Mule
 	class EnvironmentMap : public Asset<AssetType::EnvironmentMap>
 	{
 	public:
-		EnvironmentMap(WeakRef<GraphicsContext> context, const fs::path& environmentMapHdr);
+		EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle);
+
+		AssetHandle GetCubeMapHandle() const { return mCubemap; }
 
 	private:
-		Ref<TextureCube> mCubemap;
+		AssetHandle mCubemap;
 	};
 }

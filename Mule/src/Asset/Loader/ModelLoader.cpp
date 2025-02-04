@@ -371,6 +371,8 @@ namespace Mule
 			mAssetManager->InsertAsset(roughnessMap);
 		}
 
+		stbi_image_free(data);
+
 
 		return { roughnessMap, metallicMap };
 	}

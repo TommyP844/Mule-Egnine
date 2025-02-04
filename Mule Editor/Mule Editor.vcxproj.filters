@@ -32,6 +32,8 @@
     <ClInclude Include="src\Panel\MaterialEditorPanel.h" />
     <ClInclude Include="src\Event\IEditorEvent.h" />
     <ClInclude Include="src\Event\EditMaterialEvent.h" />
+    <ClInclude Include="src\Panel\TextureViewerPanel.h" />
+    <ClInclude Include="src\Event\ViewTextureEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\EditorLayer.cpp" />
@@ -52,6 +54,7 @@
     </ClCompile>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Panel\MaterialEditorPanel.cpp" />
+    <ClCompile Include="src\Panel\TextureViewerPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\Panel\ComponentPanel.inl" />

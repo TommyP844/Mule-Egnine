@@ -3,8 +3,10 @@
 
 namespace Mule
 {
-	EnvironmentMap::EnvironmentMap(WeakRef<GraphicsContext> context, const fs::path& environmentMapHdr)
+	EnvironmentMap::EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle)
+		:
+		Asset(filepath),
+		mCubemap(cubeMapHandle)
 	{
-
 	}
 }

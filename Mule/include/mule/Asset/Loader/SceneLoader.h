@@ -11,6 +11,7 @@ namespace Mule
 		SceneLoader() {}
 		virtual ~SceneLoader() {}
 
+
 		virtual Ref<Scene> LoadText(const fs::path& filepath) override;
 		virtual void SaveText(Ref<Scene> asset) override;
 

@@ -625,11 +625,7 @@ namespace Mule
 
 		VkFence fence;
 		VkResult result = vkCreateFence(mDevice, &info, nullptr, &fence);
-		if (result == VK_SUCCESS)
-		{
-			SPDLOG_INFO("Fence Created");
-		}
-		else
+		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("Failed to create Fence");
 		}
@@ -647,11 +643,7 @@ namespace Mule
 
 		VkSemaphore semaphore;
 		VkResult result = vkCreateSemaphore(mDevice, &info, nullptr, &semaphore);
-		if (result == VK_SUCCESS)
-		{
-			SPDLOG_INFO("Semaphore Created");
-		}
-		else
+		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("Failed to create Semaphore");
 		}

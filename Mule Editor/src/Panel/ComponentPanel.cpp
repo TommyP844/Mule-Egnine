@@ -138,7 +138,7 @@ void ComponentPanel::OnUIRender(float dt)
 			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Environment Map");
-			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::Texture2D>(light.EnvironmentMap);
+			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
 			std::string name = "";
 			if (envMap)
 				name = envMap->Name();
@@ -149,7 +149,7 @@ void ComponentPanel::OnUIRender(float dt)
 			ImGuiExtension::DragDropFile file;
 			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, file))
 			{
-				if (file.AssetType == Mule::AssetType::Texture)
+				if (file.AssetType == Mule::AssetType::EnvironmentMap)
 				{
 					light.EnvironmentMap = file.AssetHandle;
 				}

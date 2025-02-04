@@ -88,6 +88,7 @@
   <ItemGroup>
     <ClInclude Include="src\Event\EditMaterialEvent.h" />
     <ClInclude Include="src\Event\IEditorEvent.h" />
+    <ClInclude Include="src\Event\ViewTextureEvent.h" />
     <ClInclude Include="src\Panel\MaterialEditorPanel.h" />
     <ClInclude Include="src\EditorLayer.h" />
     <ClInclude Include="src\EditorState.h" />
@@ -98,6 +99,7 @@
     <ClInclude Include="src\Panel\IPanel.h" />
     <ClInclude Include="src\Panel\SceneHierarchyPanel.h" />
     <ClInclude Include="src\Panel\SceneViewPanel.h" />
+    <ClInclude Include="src\Panel\TextureViewerPanel.h" />
     <ClInclude Include="src\Popups.h" />
     <ClInclude Include="src\Util.h" />
   </ItemGroup>
@@ -110,6 +112,7 @@
     <ClCompile Include="src\Panel\SceneHierarchyPanel.cpp" />
     <ClCompile Include="src\Panel\SceneViewPanel.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Panel\TextureViewerPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Submodules\imgui\ImGui.vcxproj">

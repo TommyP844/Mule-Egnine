@@ -26,6 +26,7 @@ namespace Mule
 	class IAssetLoader : public IBaseLoader
 	{
 	public:
+
 		virtual Ref<T> LoadText(const fs::path& filepath) = 0;
 		virtual void SaveText(Ref<T> asset) = 0;
 

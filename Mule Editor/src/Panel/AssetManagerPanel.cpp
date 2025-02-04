@@ -5,6 +5,7 @@
 
 // Events
 #include "Event/EditMaterialEvent.h"
+#include "Event/ViewTextureEvent.h"
 
 AssetManagerPanel::AssetManagerPanel()
 	:
@@ -98,7 +99,13 @@ void AssetManagerPanel::DisplayAsset(WeakRef<Mule::IAsset> asset)
 			Ref<EditMaterialEvent> event = MakeRef<EditMaterialEvent>(asset->Handle());
 			mEditorState->PushEvent(event);
 		}
-			break;
+		break;
+		case Mule::AssetType::Texture:
+		{
+			Ref<ViewTextureEvent> event = MakeRef<ViewTextureEvent>(asset->Handle());
+			mEditorState->PushEvent(event);
+		}
+		break;
 		default:
 			break;
 		}

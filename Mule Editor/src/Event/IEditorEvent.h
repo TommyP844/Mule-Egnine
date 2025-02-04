@@ -2,7 +2,8 @@
 
 enum class EditorEventType
 {
-	EditMaterial
+	EditMaterial,
+	ViewTexture
 };
 
 class IEditorEvent

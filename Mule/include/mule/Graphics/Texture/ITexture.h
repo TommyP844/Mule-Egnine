@@ -5,6 +5,8 @@
 
 #include "Asset/Asset.h"
 
+#include <imgui.h>
+
 namespace Mule
 {
 	enum class TextureType {
@@ -25,13 +27,7 @@ namespace Mule
 		ITexture(WeakRef<GraphicsContext> context);
 		ITexture(WeakRef<GraphicsContext> context, const fs::path& filepath, AssetHandle handle = GenerateUUID());
 		ITexture(WeakRef<GraphicsContext> context, const std::string& name);
-		virtual ~ITexture()
-		{
-			vkDeviceWaitIdle(mDevice);
-			vkFreeMemory(mDevice, mVulkanImage.Memory, nullptr);
-			vkDestroyImageView(mDevice, mVulkanImage.ImageView, nullptr);
-			vkDestroyImage(mDevice, mVulkanImage.Image, nullptr);
-		}
+		virtual ~ITexture();
 
 		void SetImageLayout(VkImageLayout layout) { mVulkanImage.Layout = layout; }
 
@@ -50,12 +46,22 @@ namespace Mule
 
 		TextureType GetTextureType() const { return mTextureType; }
 
+		ImTextureID GetLayerID(int index);
+
 	protected:
 		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags);
 
 		WeakRef<GraphicsContext> mContext;
 		VkDevice mDevice;
 		VulkanImage mVulkanImage;
+
+		struct ImGuiLayerView
+		{
+			VkImageView ImageView;
+			ImTextureID Id;
+		};
+
+		std::vector<ImGuiLayerView> mLayerViews;
 		
 		bool mIsDepthTexture;
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;

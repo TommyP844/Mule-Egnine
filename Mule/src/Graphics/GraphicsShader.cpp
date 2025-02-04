@@ -327,7 +327,6 @@ namespace Mule
 				success = false;
 				break;
 			}
-			SPDLOG_INFO(source);
 			shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, source.c_str(), source.size(), kind, sourcePath.string().c_str(), "main", compileOptions);
 
 			shaderc_compilation_status compileStatus = shaderc_result_get_compilation_status(result);
