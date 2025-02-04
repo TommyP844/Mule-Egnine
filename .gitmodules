@@ -44,3 +44,6 @@
 [submodule "Submodules/ImGuizmo"]
 	path = Submodules/ImGuizmo
 	url = git@github.com:TommyP844/ImGuizmo.git
+[submodule "Submodules/Assimp"]
+	path = Submodules/Assimp
+	url = https://github.com/TommyP844/assimp
