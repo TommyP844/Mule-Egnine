@@ -1,5 +1,5 @@
 bin/
 obj/
-Mule Engine.vcxproj
-Mule Engine.vcxproj.filters
-Mule Engine.vcxproj.user
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
