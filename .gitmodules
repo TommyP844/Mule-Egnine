@@ -38,9 +38,6 @@
 [submodule "Submodules/nativefiledialog"]
 	path = Submodules/nativefiledialog
 	url = git@github.com:TommyP844/nativefiledialog.git
-[submodule "Submodules/tinygltf"]
-	path = Submodules/tinygltf
-	url = https://github.com/TommyP844/tinygltf
 [submodule "Submodules/ImGuizmo"]
 	path = Submodules/ImGuizmo
 	url = git@github.com:TommyP844/ImGuizmo.git
