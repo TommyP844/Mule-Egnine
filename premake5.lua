@@ -14,7 +14,7 @@ workspace "Mule"
         dir .. "/Submodules/glm",
         dir .. "/Submodules/yaml/include",
         dir .. "/Submodules/nativefiledialog/src/include",
-        dir .. "/Submodules/tinygltf",
+        dir .. "/Submodules/Assimp/include",
         dir .. "/Submodules/ImGuizmo",
         "%VULKAN_SDK%/Include"
     } 
@@ -22,13 +22,19 @@ workspace "Mule"
     debugLibs = {
         "%VULKAN_SDK%/Lib/shadercd.lib",
         "%VULKAN_SDK%/Lib/shaderc_combinedd.lib",
-        "%VULKAN_SDK%/Lib/shaderc_utild.lib"
+        "%VULKAN_SDK%/Lib/shaderc_utild.lib",
+        dir .. "/Submodules/Assimp/lib/Debug/assimp-vc143-mtd.lib",
+        dir .. "/Submodules/Assimp/lib/Debug/dracod.lib",
+        dir .. "/Submodules/Assimp/lib/Debug/dracod.lib",
+        dir .. "/Submodules/Assimp/contrib/zlib/Debug/zlibstaticd.lib",
     }
 
     releaseLibs = {
         "%VULKAN_SDK%/Lib/shaderc.lib",
         "%VULKAN_SDK%/Lib/shaderc_combined.lib",
-        "%VULKAN_SDK%/Lib/shaderc_util.lib"
+        "%VULKAN_SDK%/Lib/shaderc_util.lib",
+        dir .. "/Submodules/Assimp/lib/Release/assimp-vc143-mt.lib",
+        dir .. "/Submodules/Assimp/lib/Release/draco.lib"
     }
 
     libs = {
@@ -40,7 +46,8 @@ workspace "Mule"
         "GLM_ENABLE_EXPERIMENTAL",
         "YAML_CPP_STATIC_DEFINE",
         "VK_USE_PLATFORM_WIN32_KHR", --TODO add to windows filter
-        "GLFW_EXPOSE_NATIVE_WIN32" --TODO add to windows filter
+        "GLFW_EXPOSE_NATIVE_WIN32", --TODO add to windows filter
+        "ASSIMP_BUILD_NO_EXPORT"
     }
     
     -- Submodule
