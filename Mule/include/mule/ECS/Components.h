@@ -46,10 +46,10 @@ namespace Mule
 		Camera Camera;
 	};
 
-	struct SkyLightComponent
+	struct EnvironmentMapComponent
 	{
-		SkyLightComponent() = default;
-		SkyLightComponent(const SkyLightComponent& other) = default;
+		EnvironmentMapComponent() = default;
+		EnvironmentMapComponent(const EnvironmentMapComponent& other) = default;
 		bool Active = true;
 		float Radiance = 1.f;
 		AssetHandle EnvironmentMap;
@@ -67,6 +67,13 @@ namespace Mule
 		bool Active = true;
 		float Radiance = 1.f;
 		float Angle = 45.f;
+		glm::vec3 Color = glm::vec3(1.f);
+	};
+
+	struct DirectionalLightComponent
+	{
+		bool Active = true;
+		float Intensity = 1.f;
 		glm::vec3 Color = glm::vec3(1.f);
 	};
 

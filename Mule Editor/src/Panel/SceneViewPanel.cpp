@@ -86,33 +86,26 @@ void SceneViewPanel::OnUIRender(float dt)
 
 
 				static bool leftPressed = false;
-				static bool justPressed = false;
 				static glm::vec2 mousePos = { 0, 0 };
+
+				if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && leftPressed == false)
+					mousePos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+
 				if (!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
 				{
-					if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && leftPressed == false)
+					if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 					{
 						leftPressed = true;
-						justPressed = true;
-						//mousePos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+						glm::vec2 curPos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+						glm::vec2 delta = curPos - mousePos;
+						mousePos = curPos;
+						camera.Rotate(delta.x * -0.1f, delta.y * -0.1f);
 					}
 					else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 					{
 						leftPressed = false;
 					}
 
-					if (leftPressed)
-					{
-						glm::vec2 curPos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
-						glm::vec2 delta = curPos - mousePos;
-						if (justPressed)
-						{
-							delta = { 0, 0 };
-							justPressed = false;
-						}
-						mousePos = curPos;
-						camera.Rotate(delta.x * -0.1f, delta.y * -0.1f);
-					}
 				}
 
 				if (mEditorState->SelectedEntity)

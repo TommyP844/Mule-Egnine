@@ -5,6 +5,9 @@
 #include "Graphics/Context/GraphicsContext.h"
 #include "Asset/AssetManager.h"
 #include "Graphics/Material.h"
+#include "Graphics/Model.h"
+
+#include <assimp/scene.h>
 
 // STD
 #include <vector>
@@ -28,6 +31,9 @@ namespace Mule
 		WeakRef<AssetManager> mAssetManager;
 		WeakRef<GraphicsContext> mGraphicsContext;
 
-
+		void RecurseNodes(const aiScene* scene, const aiNode* ainode, ModelNode& node, const fs::path& filepath);
+		Ref<Mesh> LoadMesh(const aiScene* scene, const aiMesh* mesh, const fs::path& filepath);
+		Ref<Material> LoadMaterial(const aiScene* scene, const aiMaterial* material, const fs::path& filepath);
+		Ref<Texture2D> LoadTexture(const aiScene* scene, const aiTexture* texture, const fs::path& filepath);
 	};
 }

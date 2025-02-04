@@ -55,10 +55,14 @@ void ComponentPanel::OnUIRender(float dt)
 		if (ImGui::BeginMenu("Components"))
 		{
 			if (ImGui::MenuItem("Camera", "", nullptr, !e.HasComponent<Mule::CameraComponent>())) e.AddComponent<Mule::CameraComponent>();
+			if (ImGui::MenuItem("Environment Map", "", nullptr, !e.HasComponent<Mule::EnvironmentMapComponent>())) e.AddComponent<Mule::EnvironmentMapComponent>();
 			if (ImGui::MenuItem("Mesh", "", nullptr, !e.HasComponent<Mule::MeshComponent>())) e.AddComponent<Mule::MeshComponent>();
-			if (ImGui::MenuItem("Point Light", "", nullptr, !e.HasComponent<Mule::PointLightComponent>())) e.AddComponent<Mule::PointLightComponent>();
-			if (ImGui::MenuItem("Sky Light", "", nullptr, !e.HasComponent<Mule::SkyLightComponent>())) e.AddComponent<Mule::SkyLightComponent>();
-			if (ImGui::MenuItem("Spot Light", "", nullptr, !e.HasComponent<Mule::SpotLightComponent>())) e.AddComponent<Mule::SpotLightComponent>();
+			if (ImGui::BeginMenu("Light"))
+			{
+				if (ImGui::MenuItem("Directional Light", "", nullptr, !e.HasComponent<Mule::DirectionalLightComponent>())) e.AddComponent<Mule::DirectionalLightComponent>();
+				if (ImGui::MenuItem("Point Light", "", nullptr, !e.HasComponent<Mule::PointLightComponent>())) e.AddComponent<Mule::PointLightComponent>();
+				if (ImGui::MenuItem("Spot Light", "", nullptr, !e.HasComponent<Mule::SpotLightComponent>())) e.AddComponent<Mule::SpotLightComponent>();
+			}
 
 			ImGui::EndMenu();
 		}
@@ -94,6 +98,46 @@ void ComponentPanel::OnUIRender(float dt)
 			}
 		});
 
+		DisplayComponent<Mule::DirectionalLightComponent>(ICON_FA_SUN" Directional Light", e, [&](Mule::DirectionalLightComponent& light) {
+
+			DisplayRow("Active");
+			ImGui::Checkbox("##Active", &light.Active);
+
+			DisplayRow("Intensity");
+			ImGui::DragFloat("##Intensity", &light.Intensity, 1.f, 1.f, FLT_MAX);
+
+			DisplayRow("Color");
+			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+
+			});
+
+		DisplayComponent<Mule::EnvironmentMapComponent>(ICON_FA_MOUNTAIN_SUN" Environment Map", e, [&](Mule::EnvironmentMapComponent& light) {
+			DisplayRow("Active");
+			ImGui::Checkbox("##LightActive", &light.Active);
+
+			DisplayRow("Radiance");
+			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Environment Map");
+			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
+			std::string name = "";
+			if (envMap)
+				name = envMap->Name();
+
+			ImGui::BeginDisabled();
+			ImGui::InputText("##EnvMap", name.data(), name.size());
+			ImGui::EndDisabled();
+			ImGuiExtension::DragDropFile file;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, file))
+			{
+				if (file.AssetType == Mule::AssetType::EnvironmentMap)
+				{
+					light.EnvironmentMap = file.AssetHandle;
+				}
+			}
+
+			});
+
 		DisplayComponent<Mule::MeshComponent>(ICON_FA_DIAGRAM_PROJECT" Mesh", e, [&](Mule::MeshComponent& mesh) {
 
 			const std::string null = "";
@@ -128,33 +172,6 @@ void ComponentPanel::OnUIRender(float dt)
 
 			DisplayRow("Color");
 			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
-			});
-
-		DisplayComponent<Mule::SkyLightComponent>(ICON_FA_SUN" Sky Light", e, [&](Mule::SkyLightComponent& light) {
-			DisplayRow("Active");
-			ImGui::Checkbox("##LightActive", &light.Active);
-
-			DisplayRow("Radiance");
-			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-
-			DisplayRow("Environment Map");
-			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
-			std::string name = "";
-			if (envMap)
-				name = envMap->Name();
-			
-			ImGui::BeginDisabled();
-			ImGui::InputText("##EnvMap", name.data(), name.size());
-			ImGui::EndDisabled();
-			ImGuiExtension::DragDropFile file;
-			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, file))
-			{
-				if (file.AssetType == Mule::AssetType::EnvironmentMap)
-				{
-					light.EnvironmentMap = file.AssetHandle;
-				}
-			}
-			
 			});
 
 		DisplayComponent<Mule::SpotLightComponent>(ICON_FA_LIGHTBULB" Spot Light", e, [&](Mule::SpotLightComponent& light) {

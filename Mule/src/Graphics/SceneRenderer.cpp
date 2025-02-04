@@ -296,10 +296,12 @@ namespace Mule
 				//SPDLOG_INFO("Material: {}, index: {}", material->Name(), index);
 			}
 
-
-			frameData.MaterialBuffer->SetData(
-				frameData.MaterialArray.GetArray().data(),
-				frameData.MaterialArray.GetArray().size() * sizeof(GPUMaterial));
+			if (frameData.MaterialArray.GetArray().size() > 0)
+			{
+				frameData.MaterialBuffer->SetData(
+					frameData.MaterialArray.GetArray().data(),
+					frameData.MaterialArray.GetArray().size() * sizeof(GPUMaterial));
+			}
 
 		}
 
