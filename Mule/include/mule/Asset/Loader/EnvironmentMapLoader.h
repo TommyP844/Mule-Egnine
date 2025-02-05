@@ -20,10 +20,13 @@ namespace Mule
 		virtual void SaveBinary(Ref<EnvironmentMap> asset) override;
 
 	private:
+		AssetHandle mBRDFLutMap;
 		WeakRef<GraphicsContext> mContext;
 		WeakRef<AssetManager> mAssetManager;
 
 		Ref<ComputeShader> mCubeMapCompute;
+		Ref<ComputeShader> mDiffuseIBLCompute;
+		Ref<ComputeShader> mPreFilterCompute;
 		Ref<ComputeShader> mBRDFCompute;
 		Ref<DescriptorSetLayout> mCubeMapDescriptorSetLayout;
 		Ref<DescriptorSetLayout> mBRDFDescriptorSetLayout;

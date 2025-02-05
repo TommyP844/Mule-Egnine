@@ -18,9 +18,9 @@ namespace Mule
 		bool Transparent = false;
 
 		float Transparency = 1.f;
-		float MetalnessFactor = 0.f;
-		float RoughnessFactor = 0.f;
-		float AOFactor = 0.f;
+		float MetalnessFactor = 1.f;
+		float RoughnessFactor = 1.f;
+		float AOFactor = 1.f;
 
 		AssetHandle AlbedoMap = NullAssetHandle;
 		AssetHandle NormalMap = NullAssetHandle;

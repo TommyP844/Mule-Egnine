@@ -3,10 +3,13 @@
 
 namespace Mule
 {
-	EnvironmentMap::EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle)
+	EnvironmentMap::EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle, AssetHandle brdfLut, AssetHandle diffuseIBL, AssetHandle prefilterMap)
 		:
 		Asset(filepath),
-		mCubemap(cubeMapHandle)
+		mCubemap(cubeMapHandle),
+		mDiffuseIBL(diffuseIBL),
+		mBRDFLutMap(brdfLut),
+		mPreFilterMap(prefilterMap)
 	{
 	}
 }

@@ -62,6 +62,7 @@ void ComponentPanel::OnUIRender(float dt)
 				if (ImGui::MenuItem("Directional Light", "", nullptr, !e.HasComponent<Mule::DirectionalLightComponent>())) e.AddComponent<Mule::DirectionalLightComponent>();
 				if (ImGui::MenuItem("Point Light", "", nullptr, !e.HasComponent<Mule::PointLightComponent>())) e.AddComponent<Mule::PointLightComponent>();
 				if (ImGui::MenuItem("Spot Light", "", nullptr, !e.HasComponent<Mule::SpotLightComponent>())) e.AddComponent<Mule::SpotLightComponent>();
+				ImGui::EndMenu();
 			}
 
 			ImGui::EndMenu();

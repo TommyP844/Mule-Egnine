@@ -15,6 +15,29 @@ namespace Mule
 		mFrameIndex(0),
 		mIsValid(true)
 	{
+		uint8_t blackImageData[] = {
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0
+		};
+
+		mBlackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, 1, TextureFormat::RGBA8U);
+		mBlackTextureCube = MakeRef<TextureCube>(mGraphicsContext, &blackImageData[0], 2, 1, TextureFormat::RGBA8U);
+
 		VertexLayout staticVertexLayout;
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
@@ -61,6 +84,30 @@ namespace Mule
 		descriptorLayoutDesc.Binding = 2;
 		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
 		descriptorLayoutDesc.Type = DescriptorType::UniformBuffer;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 3;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::UniformBuffer;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 4;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::Texture;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 5;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::Texture;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 6;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::Texture;
 		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
 
 		mGeometryStageLayout = mGraphicsContext->CreateDescriptorSetLayout(descriptorSetLayout);
@@ -157,6 +204,7 @@ namespace Mule
 
 #pragma endregion
 
+		mFrameData.resize(2);
 		for (int i = 0; i < 2; i++)
 		{
 			mFrameData[i].RenderingFinishedFence = mGraphicsContext->CreateFence();
@@ -166,6 +214,7 @@ namespace Mule
 			mFrameData[i].CommandPool = mGraphicsContext->GetGraphicsQueue()->CreateCommandPool();
 			mFrameData[i].SolidGeometryPassCmdBuffer = mFrameData[i].CommandPool->CreateCommandBuffer();
 			mFrameData[i].CameraBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(CameraData));
+			mFrameData[i].LightBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPULightData));
 
 			// TODO: handle dynamic material buffer size
 			mFrameData[i].MaterialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPUMaterial) * 100);
@@ -190,7 +239,13 @@ namespace Mule
 			updateMaterialBuffer.Type = DescriptorType::UniformBuffer;
 			updateMaterialBuffer.Buffers = { mFrameData[i].MaterialBuffer };
 
-			mFrameData[i].DescriptorSet->Update({ updateCameraBuffer, updateMaterialBuffer });
+			DescriptorSetUpdate updateLightBuffer;
+			updateLightBuffer.ArrayElement = 0;
+			updateLightBuffer.Binding = 3;
+			updateLightBuffer.Type = DescriptorType::UniformBuffer;
+			updateLightBuffer.Buffers = { mFrameData[i].LightBuffer };
+
+			mFrameData[i].DescriptorSet->Update({ updateCameraBuffer, updateMaterialBuffer, updateLightBuffer });
 		}
 
 		GraphicsShaderDescription defaultGeometryDesc{};
@@ -236,12 +291,15 @@ namespace Mule
 			frameData.Framebuffer->Resize(frameData.ResizeWidth, frameData.ResizeHeight);
 		}
 
+		bool hasEnvironmentMap = false;
+
 		// Data Prep
 		{
 
-			CameraData cameraData;
+			CameraData cameraData{};
 			cameraData.View = settings.EditorCamera.GetView();
 			cameraData.Proj = settings.EditorCamera.GetProj();
+			cameraData.CameraPos = settings.EditorCamera.GetPosition();
 
 			frameData.CameraBuffer->SetData(&cameraData, sizeof(cameraData));
 
@@ -303,6 +361,114 @@ namespace Mule
 					frameData.MaterialArray.GetArray().size() * sizeof(GPUMaterial));
 			}
 
+			frameData.LightData.DirectionalLight.Color = glm::vec3(0.f);
+			frameData.LightData.DirectionalLight.Direction = glm::vec3(0.f);
+			frameData.LightData.DirectionalLight.Intensity = 0.f;
+
+			settings.Scene->IterateEntitiesWithComponents<DirectionalLightComponent>([&](Entity e) {
+				DirectionalLightComponent light = e.GetComponent<DirectionalLightComponent>();
+				const TransformComponent& transform = e.GetTransformComponent();
+				if (light.Active)
+				{
+					frameData.LightData.DirectionalLight.Intensity = light.Intensity;
+					frameData.LightData.DirectionalLight.Color = light.Color;
+					frameData.LightData.DirectionalLight.Direction = glm::rotate(glm::quat(glm::radians(transform.Rotation)), glm::vec3(0.f, 1.f, 0.f));
+				}
+				});
+
+			frameData.LightData.NumPointLights = 0;
+
+			settings.Scene->IterateEntitiesWithComponents<PointLightComponent>([&](Entity e) {
+				PointLightComponent light = e.GetComponent<PointLightComponent>();
+				const TransformComponent& transform = e.GetTransformComponent();
+				if (light.Active)
+				{
+					frameData.LightData.PointLights[frameData.LightData.NumPointLights].Color = light.Color;
+					frameData.LightData.PointLights[frameData.LightData.NumPointLights].Intensity = light.Radiance;
+					frameData.LightData.PointLights[frameData.LightData.NumPointLights++].Position = transform.Translation;
+				}
+				});
+
+			frameData.LightBuffer->SetData(&frameData.LightData, sizeof(GPULightData));
+
+			EnvironmentMapComponent skyLight;
+			settings.Scene->IterateEntitiesWithComponents<EnvironmentMapComponent>([&](Entity e) {
+				const auto& skyLightComponent = e.GetComponent<EnvironmentMapComponent>();
+				if (skyLightComponent.Active && skyLightComponent.EnvironmentMap != NullAssetHandle)
+				{
+					skyLight = skyLightComponent;
+					return;
+				}
+				});
+
+			// IBL
+			auto environmentMap = mAssetManager->GetAsset<EnvironmentMap>(skyLight.EnvironmentMap);
+			if (environmentMap)
+			{
+				auto cubeMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetCubeMapHandle());
+
+				if (cubeMap)
+				{
+					hasEnvironmentMap = true;
+					DescriptorSetUpdate environmentUpdate{};
+					environmentUpdate.ArrayElement = 0;
+					environmentUpdate.Binding = 0;
+					environmentUpdate.Textures = { cubeMap };
+					environmentUpdate.Type = DescriptorType::Texture;
+
+					DescriptorSetUpdate environmentUpdate1{};
+					environmentUpdate1.ArrayElement = 0;
+					environmentUpdate1.Binding = 1;
+					environmentUpdate1.Buffers = { frameData.CameraBuffer };
+					environmentUpdate1.Type = DescriptorType::UniformBuffer;
+
+					frameData.EnvironmentMapDescriptorSet->Update({ environmentUpdate, environmentUpdate1 });
+				}
+			}
+
+			WeakRef<TextureCube> irradianceMap = nullptr;
+			WeakRef<TextureCube> preFilterMap = nullptr;
+			WeakRef<Texture2D> brdfLut = nullptr;
+
+			if(environmentMap)
+			{
+				irradianceMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetDiffuseIBLMap());
+				preFilterMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetPreFilterMap());
+				brdfLut = mAssetManager->GetAsset<TextureCube>(environmentMap->GetBRDFLutMap());
+			}
+
+			if (!irradianceMap)
+			{
+				irradianceMap = mBlackTextureCube;
+			}
+			if (!preFilterMap)
+			{
+				preFilterMap = mBlackTextureCube;
+			}
+			if (!brdfLut)
+			{
+				brdfLut = mBlackTexture;
+			}
+
+			DescriptorSetUpdate updateIBL1{};
+			updateIBL1.ArrayElement = 0;
+			updateIBL1.Binding = 4;
+			updateIBL1.Type = DescriptorType::Texture;
+			updateIBL1.Textures = { irradianceMap };
+
+			DescriptorSetUpdate updateIBL2{};
+			updateIBL2.ArrayElement = 0;
+			updateIBL2.Binding = 5;
+			updateIBL2.Type = DescriptorType::Texture;
+			updateIBL2.Textures = { preFilterMap };
+
+			DescriptorSetUpdate updateIBL3{};
+			updateIBL3.ArrayElement = 0;
+			updateIBL3.Binding = 6;
+			updateIBL3.Type = DescriptorType::Texture;
+			updateIBL3.Textures = { brdfLut };
+
+			frameData.DescriptorSet->Update({ updateIBL1 , updateIBL2, updateIBL3 });
 		}
 
 		// Render
@@ -333,43 +499,11 @@ namespace Mule
 				commandBuffer->DrawMesh(mesh);
 				});
 
-			SkyLightComponent skyLight;
-			settings.Scene->IterateEntitiesWithComponents<SkyLightComponent>([&](Entity e) {
-
-				const auto& skyLightComponent = e.GetComponent<SkyLightComponent>();
-				if (skyLightComponent.Active && skyLightComponent.EnvironmentMap != NullAssetHandle)
-				{
-					skyLight = skyLightComponent;
-					return;
-				}
-
-				});
-
-			auto environmentMap = mAssetManager->GetAsset<EnvironmentMap>(skyLight.EnvironmentMap);
-			if (environmentMap)
+			if (hasEnvironmentMap)
 			{
-				auto cubeMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetCubeMapHandle());
-
-				if (cubeMap)
-				{
-					DescriptorSetUpdate environmentUpdate{};
-					environmentUpdate.ArrayElement = 0;
-					environmentUpdate.Binding = 0;
-					environmentUpdate.Textures = { cubeMap };
-					environmentUpdate.Type = DescriptorType::Texture;
-
-					DescriptorSetUpdate environmentUpdate1{};
-					environmentUpdate1.ArrayElement = 0;
-					environmentUpdate1.Binding = 1;
-					environmentUpdate1.Buffers = { frameData.CameraBuffer };
-					environmentUpdate1.Type = DescriptorType::UniformBuffer;
-
-					frameData.EnvironmentMapDescriptorSet->Update({ environmentUpdate, environmentUpdate1 });
-
-					commandBuffer->BindGraphicsPipeline(mEnvironmentMapShader);
-					commandBuffer->BindGraphicsDescriptorSet(mEnvironmentMapShader, frameData.EnvironmentMapDescriptorSet);
-					commandBuffer->BindAndDrawMesh(mEnvironmentCube, 1);
-				}
+				commandBuffer->BindGraphicsPipeline(mEnvironmentMapShader);
+				commandBuffer->BindGraphicsDescriptorSet(mEnvironmentMapShader, frameData.EnvironmentMapDescriptorSet);
+				commandBuffer->BindAndDrawMesh(mEnvironmentCube, 1);
 			}
 
 			commandBuffer->EndRenderPass();
