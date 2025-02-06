@@ -22,7 +22,7 @@ namespace Mule
 {
 	struct EditorRenderSettings
 	{
-		Ref<Scene> Scene = nullptr;
+		WeakRef<Scene> Scene = nullptr;
 		std::vector<WeakRef<Semaphore>> WaitSemaphores = {};
 		Camera EditorCamera;
 		std::vector<Entity> SelectedEntities;
@@ -34,7 +34,7 @@ namespace Mule
 		SceneRenderer(Ref<GraphicsContext> context, Ref<AssetManager> assetManager);
 		~SceneRenderer();
 
-		void OnRender(Ref<Scene> scene, std::vector<WeakRef<Semaphore>> waitSemaphore = {});
+		void OnRender(WeakRef<Scene> scene, std::vector<WeakRef<Semaphore>> waitSemaphore = {});
 		void OnEditorRender(const EditorRenderSettings& settings);
 		Ref<Semaphore> GetCurrentFrameRenderFinishedSemaphore() const { return mFrameData[mFrameIndex].RenderingFinishedSemaphore; }
 		Ref<FrameBuffer> GetCurrentFrameBuffer() const { return mFrameData[mFrameIndex].Framebuffer; }

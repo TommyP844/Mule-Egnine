@@ -10,6 +10,7 @@ namespace Mule
 
 	Entity Scene::CreateEntity(const std::string& name, const Guid& guid)
 	{
+		mModified = true;
 		entt::entity id = mRegistry.create();
 		auto& meta = AddComponent<MetaComponent>(id);
 		meta.Name = name;
@@ -22,6 +23,7 @@ namespace Mule
 
 	void Scene::DestroyEntity(entt::entity id)
 	{
+		mModified = true;
 		mRegistry.destroy(id);
 	}
 

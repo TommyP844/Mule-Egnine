@@ -14,9 +14,34 @@
 
 namespace Mule
 {
+	static Entity DeserializeEntity(YAML::Node node)
+	{
+		auto parent = node.as<Mule::Entity>();
+		for (auto child : node["Children"])
+		{
+			auto e = DeserializeEntity(child);
+			parent.AddChild(e);
+		}
+		return parent;
+	}
+
 	Ref<Scene> SceneLoader::LoadText(const fs::path& filepath)
 	{
-		return Ref<Scene>();
+		YAML::Node root = YAML::LoadFile(filepath.string());
+
+		Ref<Scene> scene = MakeRef<Scene>();
+		scene->SetFilePath(filepath);
+
+		YAML::convert<Mule::Entity>::gScene = scene;
+
+		for (auto node : root["entities"])
+		{
+			DeserializeEntity(node);
+		}
+
+		scene->ClearModified();
+
+		return scene;
 	}
 
 	void SceneLoader::SaveText(Ref<Scene> asset)

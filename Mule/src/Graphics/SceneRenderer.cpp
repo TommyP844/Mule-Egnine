@@ -266,7 +266,7 @@ namespace Mule
 	{
 	}
 
-	void SceneRenderer::OnRender(Ref<Scene> scene, std::vector<WeakRef<Semaphore>> waitSemaphore)
+	void SceneRenderer::OnRender(WeakRef<Scene> scene, std::vector<WeakRef<Semaphore>> waitSemaphore)
 	{
 		if (!mIsValid) return;
 		mFrameIndex ^= 1;

@@ -77,7 +77,7 @@ namespace Mule
 			{
 				OnRender(dt);
 
-				Ref<Scene> scene = mEngineContext->GetScene();
+				WeakRef<Scene> scene = mEngineContext->GetScene();
 				std::vector<Ref<Semaphore>> waitSemaphores;
 				if (scene)
 				{

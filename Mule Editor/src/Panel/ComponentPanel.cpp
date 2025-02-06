@@ -16,6 +16,7 @@ void ComponentPanel::OnUIRender(float dt)
 	ImGui::SetNextWindowSizeConstraints({ 500.f, 300.f }, {0.f, 0.f});
 	if (ImGui::Begin(mName.c_str(), &mIsOpen) && mEditorState->SelectedEntity)
 	{
+		bool entityModified = false;
 		Mule::Entity e = mEditorState->SelectedEntity;
 		
 		Mule::TransformComponent& transform = e.GetTransformComponent();
@@ -38,13 +39,13 @@ void ComponentPanel::OnUIRender(float dt)
 			ImGui::Separator();
 
 			DisplayRow("Translation");
-			ImGuiExtension::Vec3("Translation", transform.Translation);
+			entityModified |= ImGuiExtension::Vec3("Translation", transform.Translation);
 		
 			DisplayRow("Rotation");
-			ImGuiExtension::Vec3("Rotation", transform.Rotation);
+			entityModified |= ImGuiExtension::Vec3("Rotation", transform.Rotation);
 		
 			DisplayRow("Scale");
-			ImGuiExtension::Vec3("Scale", transform.Scale, glm::vec3(1.f));
+			entityModified |= ImGuiExtension::Vec3("Scale", transform.Scale, glm::vec3(1.f));
 		
 			ImGui::EndTable();
 		}
@@ -75,12 +76,13 @@ void ComponentPanel::OnUIRender(float dt)
 		DisplayComponent<Mule::CameraComponent>(ICON_FA_CAMERA" Camera", e, [&](Mule::CameraComponent& camera) {
 
 			DisplayRow("Primary");
-			ImGui::Checkbox("##CameraPrimary", &camera.Active);
+			entityModified |= ImGui::Checkbox("##CameraPrimary", &camera.Active);
 
 			DisplayRow("Field Of View");
 			float fov = camera.Camera.GetFOVDegrees();
 			if (ImGui::DragFloat("##CameraFOV", &fov, 0.01f, 0.01f, 359.f, "%.2f"))
 			{
+				entityModified = true;
 				camera.Camera.SetFOVDegrees(fov);
 			}
 
@@ -88,6 +90,7 @@ void ComponentPanel::OnUIRender(float dt)
 			float nearPlane = camera.Camera.GetNearPlane();
 			if (ImGui::DragFloat("##CameraNearPlane", &nearPlane, 0.05f, 0.01f, camera.Camera.GetFarPlane(), "%.2f"))
 			{
+				entityModified = true;
 				camera.Camera.SetNearPlane(nearPlane);
 			}
 
@@ -95,6 +98,7 @@ void ComponentPanel::OnUIRender(float dt)
 			float farPlane = camera.Camera.GetFarPlane();
 			if (ImGui::DragFloat("##CameraFarPlane", &farPlane, 0.05f, camera.Camera.GetNearPlane(), 0.f, "%.2f"))
 			{
+				entityModified = true;
 				camera.Camera.SetFarPlane(farPlane);
 			}
 		});
@@ -102,22 +106,22 @@ void ComponentPanel::OnUIRender(float dt)
 		DisplayComponent<Mule::DirectionalLightComponent>(ICON_FA_SUN" Directional Light", e, [&](Mule::DirectionalLightComponent& light) {
 
 			DisplayRow("Active");
-			ImGui::Checkbox("##Active", &light.Active);
+			entityModified |= ImGui::Checkbox("##Active", &light.Active);
 
 			DisplayRow("Intensity");
-			ImGui::DragFloat("##Intensity", &light.Intensity, 1.f, 1.f, FLT_MAX);
+			entityModified |= ImGui::DragFloat("##Intensity", &light.Intensity, 1.f, 1.f, FLT_MAX);
 
 			DisplayRow("Color");
-			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
 
 			});
 
-		DisplayComponent<Mule::EnvironmentMapComponent>(ICON_FA_MOUNTAIN_SUN" Environment Map", e, [&](Mule::EnvironmentMapComponent& light) {
+		DisplayComponent<Mule::EnvironmentMapComponent>(ICON_FA_SUN" Environment Map", e, [&](Mule::EnvironmentMapComponent& light) {
 			DisplayRow("Active");
-			ImGui::Checkbox("##LightActive", &light.Active);
+			entityModified |= ImGui::Checkbox("##LightActive", &light.Active);
 
 			DisplayRow("Radiance");
-			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			entityModified |= ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Environment Map");
 			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
@@ -134,6 +138,7 @@ void ComponentPanel::OnUIRender(float dt)
 				if (file.AssetType == Mule::AssetType::EnvironmentMap)
 				{
 					light.EnvironmentMap = file.AssetHandle;
+					entityModified = true;
 				}
 			}
 
@@ -144,7 +149,7 @@ void ComponentPanel::OnUIRender(float dt)
 			const std::string null = "";
 
 			DisplayRow("Visible");
-			ImGui::Checkbox("##MeshVisible", &mesh.Visible);
+			entityModified |= ImGui::Checkbox("##MeshVisible", &mesh.Visible);
 
 			ImGui::BeginDisabled();
 			DisplayRow("Mesh");
@@ -166,31 +171,33 @@ void ComponentPanel::OnUIRender(float dt)
 
 		DisplayComponent<Mule::PointLightComponent>(ICON_FA_LIGHTBULB" Point Light", e, [&](Mule::PointLightComponent& light) {
 			DisplayRow("Active");
-			ImGui::Checkbox("##LightActive", &light.Active);
+			entityModified |= ImGui::Checkbox("##LightActive", &light.Active);
 
 			DisplayRow("Radiance");
-			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			entityModified |= ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Color");
-			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
 			});
 
 		DisplayComponent<Mule::SpotLightComponent>(ICON_FA_LIGHTBULB" Spot Light", e, [&](Mule::SpotLightComponent& light) {
 			DisplayRow("Active");
-			ImGui::Checkbox("##LightActive", &light.Active);
+			entityModified |= ImGui::Checkbox("##LightActive", &light.Active);
 
 			DisplayRow("Radiance");
-			ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			entityModified |= ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Angle");
-			ImGui::DragFloat("##Angle", &light.Angle, 1.f, 0.f, 360.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			entityModified |= ImGui::DragFloat("##Angle", &light.Angle, 1.f, 0.f, 360.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Color");
-			ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
 			});
 
 		ImGui::PopStyleColor(3);
 
+		if(entityModified)
+			mEngineContext->GetScene()->SetModified();
 	}
 	ImGui::End();
 }

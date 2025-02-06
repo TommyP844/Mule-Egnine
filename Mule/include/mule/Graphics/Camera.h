@@ -11,6 +11,8 @@ namespace Mule
 		Camera();
 		~Camera(){}
 
+		void SetYaw(float yaw);
+		void SetPitch(float pitch);
 		void SetPosition(const glm::vec3& position);
 		void SetWorldUp(const glm::vec3& worldUp);
 		void SetViewDir(const glm::vec3& viewDir);
@@ -45,5 +47,6 @@ namespace Mule
 		void UpdateView();
 		void UpdateProj();
 		void UpdateViewProj();
+		void UpdateLocalVectors();
 	};
 }

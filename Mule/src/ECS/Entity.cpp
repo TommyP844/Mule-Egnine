@@ -39,6 +39,7 @@ namespace Mule
 
 	void Entity::Orphan()
 	{
+		mScene->SetModified();
 		auto& meta = GetComponent<MetaComponent>();
 		if (meta.Parent)
 		{
@@ -53,6 +54,7 @@ namespace Mule
 
 	void Entity::RemoveChild(Entity child)
 	{
+		mScene->SetModified();
 		auto& meta = GetComponent<MetaComponent>();
 		auto iter = std::find(meta.Children.begin(), meta.Children.end(), child);
 		meta.Children.erase(iter);
@@ -61,6 +63,7 @@ namespace Mule
 
 	void Entity::AddChild(Entity child)
 	{
+		mScene->SetModified();
 		auto& meta = GetComponent<MetaComponent>();
 		meta.Children.push_back(child);
 
@@ -82,6 +85,7 @@ namespace Mule
 
 	void Entity::AddModel(Ref<Model> model)
 	{
+		mScene->SetModified();
 		if (!model)
 		{
 			SPDLOG_WARN("Model is null");

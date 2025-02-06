@@ -42,6 +42,18 @@ namespace Mule
 		UpdateProj();
 	}
 
+	void Camera::SetYaw(float yaw)
+	{
+		mYaw = fmod(yaw, 360.f);
+		UpdateLocalVectors();
+	}
+
+	void Camera::SetPitch(float pitch)
+	{
+		mPitch = glm::clamp(pitch, -89.f, 89.f);
+		UpdateLocalVectors();
+	}
+
 	void Camera::SetPosition(const glm::vec3& position)
 	{
 		mPosition = position;
@@ -91,19 +103,7 @@ namespace Mule
 		mPitch = glm::clamp(mPitch + pitchDelta, -89.f, 89.f);
 		mYaw = fmod(mYaw + yawDelta, 360.f);
 
-		// Calculate the new direction
-		mViewDir.x = cos(glm::radians(mPitch)) * cos(glm::radians(mYaw));
-		mViewDir.y = sin(glm::radians(mPitch));
-		mViewDir.z = cos(glm::radians(mPitch)) * sin(glm::radians(mYaw));
-		mViewDir = glm::normalize(mViewDir);
-
-		// Recalculate the right vector
-		mRight = glm::normalize(glm::cross(mViewDir, mWorldUp));
-
-		// Recalculate the up vector
-		mUp = glm::normalize(glm::cross(mRight, mViewDir));
-
-		UpdateView();
+		UpdateLocalVectors();
 	}
 
 	void Camera::UpdateView()
@@ -122,5 +122,21 @@ namespace Mule
 	void Camera::UpdateViewProj()
 	{
 		mVP = mProj * mView;
+	}
+
+	void Camera::UpdateLocalVectors()
+	{
+		mViewDir.x = cos(glm::radians(mPitch)) * cos(glm::radians(mYaw));
+		mViewDir.y = sin(glm::radians(mPitch));
+		mViewDir.z = cos(glm::radians(mPitch)) * sin(glm::radians(mYaw));
+		mViewDir = glm::normalize(mViewDir);
+
+		// Recalculate the right vector
+		mRight = glm::normalize(glm::cross(mViewDir, mWorldUp));
+
+		// Recalculate the up vector
+		mUp = glm::normalize(glm::cross(mRight, mViewDir));
+
+		UpdateView();
 	}
 }

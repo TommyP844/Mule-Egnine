@@ -183,11 +183,11 @@ namespace ImGuiExtension
 				ret = true;
 				vector.x = resetVal.x;
 			}
-			ImGui::SameLine();
+			ImGui::SameLine(0.f, 4.f);
 			ImGui::PushItemWidth(inputWidth);
 			ret |= ImGui::DragFloat(("##X" + name).c_str(), &vector.x, 1.f, 0.f, 0.f, "%.2f");
 			ImGui::PopItemWidth();
-			ImGui::SameLine();
+			ImGui::SameLine(0.f, 4.f);
 		}
 
 		// Y
@@ -201,11 +201,11 @@ namespace ImGuiExtension
 				ret = true;
 				vector.y = resetVal.y;
 			}
-			ImGui::SameLine();
+			ImGui::SameLine(0.f, 4.f);
 			ImGui::PushItemWidth(inputWidth);
 			ret |= ImGui::DragFloat(("##Y" + name).c_str(), &vector.y, 1.f, 0.f, 0.f, "%.2f");
 			ImGui::PopItemWidth();
-			ImGui::SameLine();
+			ImGui::SameLine(0.f, 4.f);
 		}
 
 		// Z
@@ -219,7 +219,7 @@ namespace ImGuiExtension
 				ret = true;
 				vector.z = resetVal.z;
 			}
-			ImGui::SameLine();
+			ImGui::SameLine(0.f, 4.f);
 			ImGui::PushItemWidth(inputWidth);
 			ret |= ImGui::DragFloat(("##Z" + name).c_str(), &vector.z, 1.f, 0.f, 0.f, "%.2f");
 			ImGui::PopItemWidth();

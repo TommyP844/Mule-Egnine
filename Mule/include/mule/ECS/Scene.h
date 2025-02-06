@@ -31,6 +31,7 @@ namespace Mule
 		template<typename T, typename ...Args>
 		T& AddComponent(entt::entity id, Args&&... args)
 		{
+			mModified = true;
 			mRegistry.emplace<T>(id, std::forward<Args>(args)...);
 			return mRegistry.get<T>(id);
 		}
@@ -44,6 +45,7 @@ namespace Mule
 		template<typename T>
 		void RemoveComponent(entt::entity id)
 		{
+			mModified = true;
 			mRegistry.remove<T>(id);
 		}
 
@@ -57,9 +59,13 @@ namespace Mule
 
 		void OnUpdate(float dt);
 
+		void SetModified() { mModified = true; }
+		void ClearModified() { mModified = false; }
+		bool IsModified() const { return mModified; }
 
 	private:
 		entt::registry mRegistry;
+		bool mModified;
 	};
 
 }

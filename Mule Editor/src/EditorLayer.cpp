@@ -46,13 +46,6 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
-
-	// Test Code
-	auto scene = MakeRef<Mule::Scene>();
-	auto entity = scene->CreateEntity();
-	entity.AddComponent<Mule::CameraComponent>();
-	mEditorState->SelectedEntity = entity;
-	mEngineContext->SetScene(scene);
 }
 
 EditorLayer::~EditorLayer()
@@ -111,6 +104,10 @@ void EditorLayer::OnAttach()
 		{
 			mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
 		}
+		else if (extension == ".scene")
+		{
+			mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
+		}
 		
 	}
 
@@ -132,6 +129,15 @@ void EditorLayer::OnUIRender(float dt)
 		{
 			if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " New Project...", "Ctrl + Shift + N")) {}
 			if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Open Project", "Ctrl + Shift + O")) {}
+			if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK " Save", "Ctrl + S")) 
+			{
+				auto scene = mEngineContext->GetScene();
+				if (scene)
+				{
+					mEngineContext->GetAssetManager()->SaveAssetText<Mule::Scene>(scene->Handle());
+					scene->ClearModified();
+				}
+			}
 
 			ImGui::EndMenu();
 		}

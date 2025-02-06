@@ -27,8 +27,8 @@ namespace Mule
 		Ref<ImGuiContext> GetImGuiContext() const { return mImguiContext; }
 		Ref<Window> GetWindow() const { return mWindow; }
 
-		void SetScene(Ref<Scene> scene) { mScene = scene; }
-		Ref<Scene> GetScene() const { return mScene; }
+		void SetScene(WeakRef<Scene> scene) { mScene = scene; }
+		WeakRef<Scene> GetScene() const { return mScene; }
 
 	private:
 		Ref<Window> mWindow;
@@ -36,6 +36,6 @@ namespace Mule
 		Ref<AssetManager> mAssetManager;
 		Ref<SceneRenderer> mSceneRenderer;
 		Ref<ImGuiContext> mImguiContext;
-		Ref<Scene> mScene;
+		WeakRef<Scene> mScene;
 	};
 }
