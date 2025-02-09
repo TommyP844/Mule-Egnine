@@ -2,6 +2,10 @@
 
 #include <spdlog/spdlog.h>
 
+#include <yaml-cpp/yaml.h>
+
+#include <fstream>
+
 
 namespace Mule
 {
@@ -12,6 +16,53 @@ namespace Mule
 	AssetManager::~AssetManager()
 	{
 		SPDLOG_INFO("Shutting down asset manager");
+	}
+
+	void AssetManager::SaveRegistry(const fs::path& filepath)
+	{
+		YAML::Node root;
+
+		for (const auto& [handle, asset] : mAssets)
+		{
+			const fs::path& path = asset->FilePath();
+			if (fs::exists(path))
+			{
+				root[path.string()] = (uint64_t)handle;
+			}
+		}
+
+		YAML::Emitter emitter;
+		emitter << root;
+		std::ofstream file(filepath);
+		if (!file)
+		{
+			SPDLOG_ERROR("Failed to save asset registry to: {}", filepath.string());
+			return;
+		}
+		file << emitter.c_str();
+		file.close();
+	}
+
+	void AssetManager::LoadRegistry(const fs::path& filepath)
+	{
+		if (!fs::exists(filepath))
+		{
+			SPDLOG_ERROR("Failed to load Aset Registry from: {}", filepath.string());
+			return;
+		}
+		YAML::Node root = YAML::LoadFile(filepath.string());
+		for (YAML::const_iterator it = root.begin();it != root.end();++it) {
+			std::string key = it->first.as<std::string>();
+			AssetHandle value = it->second.as<uint64_t>();
+			mLoadedHandles[key] = value;
+		}
+	}
+
+	void AssetManager::UpdateAssetHandle(AssetHandle oldHandle, AssetHandle newHandle)
+	{
+		auto asset = mAssets[oldHandle];
+		asset->SetHandle(newHandle);
+		mAssets[newHandle] = asset;
 	}
 
 	std::vector<Ref<IAsset>> AssetManager::GetAssetsOfType(AssetType type) const

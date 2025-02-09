@@ -58,7 +58,13 @@ namespace Mule
 				mFilepath = mFilepath.parent_path() / mName / mFilepath.extension();
 			}
 		}
+
+		void SetHandle(AssetHandle handle)
+		{
+			mHandle = handle;
+		}
 	private:
+		friend class AssetManager;
 		AssetHandle mHandle;
 	};
 

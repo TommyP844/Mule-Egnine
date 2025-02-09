@@ -217,7 +217,8 @@ namespace Mule
 			"VK_KHR_swapchain",
 			"VK_KHR_separate_depth_stencil_layouts",
 			"VK_KHR_create_renderpass2",
-			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 		
 		float priority = 1.f;

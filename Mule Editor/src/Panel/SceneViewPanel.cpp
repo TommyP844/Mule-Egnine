@@ -56,7 +56,7 @@ void SceneViewPanel::OnUIRender(float dt)
 			texId = texture->GetImGuiID();
 		}
 
-		ImGui::Image(texId, region, {0, 1}, {1, 0});
+		ImGui::Image(texId, region);
 
 		HandleDragDrop();
 		UpdateCamera(dt);
@@ -91,11 +91,11 @@ void SceneViewPanel::UpdateCamera(float dt)
 		}
 		if (ImGui::IsKeyDown(ImGuiKey_R))
 		{
-			cameraPosition -= camera.GetWorldUp() * speed;
+			cameraPosition += camera.GetWorldUp() * speed;
 		}
 		if (ImGui::IsKeyDown(ImGuiKey_F))
 		{
-			cameraPosition += camera.GetWorldUp() * speed;
+			cameraPosition -= camera.GetWorldUp() * speed;
 		}
 		camera.SetPosition(cameraPosition);
 
@@ -114,7 +114,7 @@ void SceneViewPanel::UpdateCamera(float dt)
 				if (leftPressed && !prevLeftPressed)
 					delta = { 0, 0 };
 				mousePos = curPos;
-				camera.Rotate(delta.x * -0.1f, delta.y * -0.1f);
+				camera.Rotate(delta.x * -0.1f, delta.y * 0.1f);
 			}
 		}
 	}

@@ -30,6 +30,13 @@ namespace Mule
 		Ref<T> asset = loader->LoadText(filepath);
 		if (!asset)
 			return nullptr;
+
+		auto iter = mLoadedHandles.find(asset->FilePath());
+		if (iter != mLoadedHandles.end())
+		{
+			asset->mHandle = iter->second;
+		}
+
 		InsertAsset<T>(asset);
 		return asset;
 	}

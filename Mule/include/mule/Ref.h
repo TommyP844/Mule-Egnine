@@ -149,10 +149,6 @@ private:
 };
 
 template <typename T, typename... Args>
-concept Constructible = std::is_constructible_v<T, Args...>;
-
-template <typename T, typename... Args>
-requires Constructible<T, Args...>
 Ref<T> MakeRef(Args&&... args)
 {
     return Ref<T>(new T(std::forward<Args>(args)...));

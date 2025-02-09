@@ -473,6 +473,7 @@ namespace Mule
 
 		// Render
 		{
+
 			Ref<CommandBuffer> commandBuffer = frameData.SolidGeometryPassCmdBuffer;
 			commandBuffer->Begin();
 			commandBuffer->TranistionImageLayout(frameData.Framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);

@@ -428,9 +428,9 @@ namespace Mule
 
 		VkViewport viewport{};
 		viewport.x = 0;
-		viewport.y = 0;
+		viewport.y = framebuffer->GetHeight();
 		viewport.width = framebuffer->GetWidth();
-		viewport.height = framebuffer->GetHeight();
+		viewport.height = -framebuffer->GetHeight();
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
 		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
@@ -544,13 +544,13 @@ namespace Mule
 		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), (VkShaderStageFlags)stage, range.first, size, data);
 	}
 
-	void CommandBuffer::BindGraphicsDescriptorSet(Ref<GraphicsShader> shader, Ref<DescriptorSet> descriptorSet)
+	void CommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, WeakRef<DescriptorSet> descriptorSet)
 	{
 		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
 		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
 	}
 
-	void CommandBuffer::BindComputeDescriptorSet(WeakRef<ComputeShader> shader, Ref<DescriptorSet> descriptorSet)
+	void CommandBuffer::BindComputeDescriptorSet(WeakRef<ComputeShader> shader, WeakRef<DescriptorSet> descriptorSet)
 	{
 		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
 		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);

@@ -150,6 +150,21 @@ namespace YAML {
         }
     };
 
+    template<>
+    struct convert<fs::path> {
+        static Node encode(const fs::path& path) {
+            Node node;
+            node = path.string();
+            return node;
+        }
+
+        static bool decode(const Node& node, fs::path& path) {
+
+            path = node.as<std::string>();
+            return true;
+        }
+    };
+
 #define SERIALIZE_COMPONENT_IF_EXISTS(name, x) if(e.HasComponent<x>()) node[name] = e.GetComponent<x>();
 #define DESERIALIZE_COMPONENT_IF_EXISTS(name, x) \
     if(node[name]) { \
@@ -169,6 +184,7 @@ namespace YAML {
 
             SERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
             SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
 
             YAML::Node childNode;
             for (auto child : e.Children())
@@ -188,14 +204,13 @@ namespace YAML {
 
             DESERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
             DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
 
             return true;
         }
 
         static Ref<Mule::Scene> gScene;
     };
-
-    Ref<Mule::Scene> convert<Mule::Entity>::gScene = nullptr;
 
 #pragma region Components
 
@@ -271,6 +286,28 @@ namespace YAML {
             envMap.Active = node["Active"].as<bool>();
             envMap.Radiance = node["Radiance"].as<float>();
             envMap.EnvironmentMap = node["EnvironmentMapHandle"].as<Mule::AssetHandle>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::MeshComponent> {
+        static Node encode(const Mule::MeshComponent& mesh) {
+            Node node;
+
+            node["Visible"] = mesh.Visible;
+            node["MeshHandle"] = mesh.MeshHandle;
+            node["MaterialHandle"] = mesh.MaterialHandle;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::MeshComponent& mesh) {
+
+            mesh.Visible = node["Visible"].as<bool>();
+            mesh.MeshHandle = node["MeshHandle"].as<Mule::AssetHandle>();
+            mesh.MaterialHandle = node["MaterialHandle"].as<Mule::AssetHandle>();
 
             return true;
         }

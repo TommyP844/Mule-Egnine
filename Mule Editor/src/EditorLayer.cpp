@@ -37,7 +37,9 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mMaterialEditorPanel.OnAttach();
 	mTextureViewerPanel.OnAttach();
 
-	// mAssetManagerPanel.Close();
+	mAssetManagerPanel.Close();
+	mMaterialEditorPanel.Close();
+	mTextureViewerPanel.Close();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -46,6 +48,8 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
+
+	mEngineContext->GetAssetManager()->LoadRegistry(mEditorState->mProjectPath / "Registry.mrz");
 }
 
 EditorLayer::~EditorLayer()
@@ -76,40 +80,40 @@ void EditorLayer::OnAttach()
 	SPDLOG_INFO("Layer attached: {}", GetName());
 
 
-	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
-	{
-		if (dir.is_directory()) continue;
-
-		std::string extension = dir.path().extension().string();
-		fs::path filePath = dir.path();
-
-		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-		const std::set<std::string> modelExtensions = { ".gltf" };
-
-
-		if (modelExtensions.contains(extension))
+	mAssetLoaderThread = std::async(std::launch::async, [&]() {
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
 		{
-			mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
-		}
-		else if (imageExtensions.contains(extension))
-		{
-			// We need to chec kif the model loader, loaded a texture for us first so we dont double load the texture
-			auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
-			if (!asset)
+			if (dir.is_directory()) continue;
+
+			std::string extension = dir.path().extension().string();
+			fs::path filePath = dir.path();
+
+			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+			const std::set<std::string> modelExtensions = { ".gltf" };
+			if (modelExtensions.contains(extension))
 			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
 			}
+			else if (imageExtensions.contains(extension))
+			{
+				// We need to chec kif the model loader, loaded a texture for us first so we dont double load the texture
+				auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
+				if (!asset)
+				{
+					mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
+				}
+			}
+			else if (extension == ".hdr")
+			{
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
+			}
+			else if (extension == ".scene")
+			{
+				mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
+			}
+
 		}
-		else if (extension == ".hdr")
-		{
-			mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
-		}
-		else if (extension == ".scene")
-		{
-			mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
-		}
-		
-	}
+		});
 
 }
 
@@ -238,5 +242,6 @@ void EditorLayer::OnRender(float dt)
 
 void EditorLayer::OnDetach()
 {
+	mEngineContext->GetAssetManager()->SaveRegistry(mEditorState->mProjectPath / "Registry.mrz");
 	SPDLOG_INFO("Layer OnDetach: {}", GetName());
 }

@@ -31,5 +31,7 @@ layout(set = 0, binding = 0) uniform samplerCube cubeMap;
 
 void main()
 {
-	fragColor = vec4(texture(cubeMap, normalize(pos)).xyz, 1);
+	vec3 samplePos = pos;
+	samplePos.y *= -1;
+	fragColor = vec4(texture(cubeMap, normalize(samplePos)).xyz, 1);
 }

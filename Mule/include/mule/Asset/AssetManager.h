@@ -26,6 +26,11 @@ namespace Mule
 		~AssetManager();
 		AssetManager(const AssetManager&) = delete;
 
+		void SaveRegistry(const fs::path& filepath);
+		void LoadRegistry(const fs::path& filepath);
+
+		void UpdateAssetHandle(AssetHandle oldHandle, AssetHandle newHandle);
+
 		// Loaders
 		template<typename T, typename ... Args>
 		Ref<T> RegisterLoader(Args&&... args);
@@ -63,6 +68,8 @@ namespace Mule
 		mutable std::mutex mMutex;
 		std::unordered_map<AssetHandle, Ref<IAsset>> mAssets;
 		std::map<AssetType, std::vector<Ref<IAsset>>> mAssetTypes;
+
+		std::unordered_map<fs::path, AssetHandle> mLoadedHandles;
 
 		std::map<AssetType, Ref<IBaseLoader>> mLoaders;
 	};

@@ -255,6 +255,8 @@ namespace Mule
         prefilterMap->SetName(filename + "-PreFilterMap");
         mAssetManager->InsertAsset(prefilterMap);
 
+
+
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, prefilterMap->Handle(), NullAssetHandle);
     }
 

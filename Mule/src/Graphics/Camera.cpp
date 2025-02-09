@@ -115,7 +115,6 @@ namespace Mule
 	void Camera::UpdateProj()
 	{
 		mProj = glm::perspective(glm::radians(mFOVDeg), mAspectRatio, mNearPlane, mFarPlane);
-		mProj[1][1] *= -1;
 		UpdateViewProj();
 	}
 
