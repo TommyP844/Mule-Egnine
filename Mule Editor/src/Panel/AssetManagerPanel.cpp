@@ -81,7 +81,7 @@ void AssetManagerPanel::DisplayAsset(WeakRef<Mule::IAsset> asset)
 	const float requestedOffset = 100.f;
 	std::string name = asset->Name();
 	std::string guid = std::to_string(asset->Handle());
-	std::string path = fs::relative(asset->FilePath(), mEditorState->mAssetsPath).string();
+	std::string path = fs::relative(asset->FilePath(), mEditorContext->mAssetsPath).string();
 	std::string type = asset->GetTypeName();
 	ImGui::PushID(asset->Handle());
 
@@ -97,13 +97,13 @@ void AssetManagerPanel::DisplayAsset(WeakRef<Mule::IAsset> asset)
 		case Mule::AssetType::Material:
 		{
 			Ref<EditMaterialEvent> event = MakeRef<EditMaterialEvent>(asset->Handle());
-			mEditorState->PushEvent(event);
+			mEditorContext->PushEvent(event);
 		}
 		break;
 		case Mule::AssetType::Texture:
 		{
 			Ref<ViewTextureEvent> event = MakeRef<ViewTextureEvent>(asset->Handle());
-			mEditorState->PushEvent(event);
+			mEditorContext->PushEvent(event);
 		}
 		break;
 		default:

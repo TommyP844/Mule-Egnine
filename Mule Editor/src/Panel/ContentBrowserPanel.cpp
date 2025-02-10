@@ -19,7 +19,7 @@ void ContentBrowserPanel::OnAttach()
 {
 	mFolderTexture = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
 	mFileTexture = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
-	SetContentBrowserPath(mEditorState->mAssetsPath);
+	SetContentBrowserPath(mEditorContext->mAssetsPath);
 }
 
 void ContentBrowserPanel::OnUIRender(float dt)
@@ -107,7 +107,7 @@ void ContentBrowserPanel::ContentAssetDirBrowser(float width)
 	if (ImGui::BeginChild("##Directories", { width, 0.f }, true))
 	{
 		float width = ImGui::GetContentRegionAvail().x;
-		for (auto dir : fs::directory_iterator(mEditorState->mAssetsPath))
+		for (auto dir : fs::directory_iterator(mEditorContext->mAssetsPath))
 		{
 			if (!dir.is_directory())
 				continue;
@@ -131,7 +131,7 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 {
 	if (ImGui::BeginChild("##Files", { width, 0.f }, true))
 	{
-		ImGui::BeginDisabled(mContentBrowserPath == mEditorState->mAssetsPath);
+		ImGui::BeginDisabled(mContentBrowserPath == mEditorContext->mAssetsPath);
 		if (ImGui::Button(ICON_FA_ARROW_LEFT))
 		{
 			ClearSearchBuffer();
@@ -177,9 +177,9 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 		ImGui::Text("Filepath:");
 		ImGui::SameLine();
 
-		fs::path relativePath = fs::relative(mContentBrowserPath, mEditorState->mAssetsPath);
+		fs::path relativePath = fs::relative(mContentBrowserPath, mEditorContext->mAssetsPath);
 		relativePath = (relativePath == ".") ? "Assets" : "Assets" / relativePath;
-		fs::path curPath = mEditorState->mAssetsPath.parent_path();
+		fs::path curPath = mEditorContext->mAssetsPath.parent_path();
 		for (auto iter = relativePath.begin(); iter != relativePath.end(); iter++)
 		{
 			curPath /= *iter;

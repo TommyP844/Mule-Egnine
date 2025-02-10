@@ -3,8 +3,8 @@
 #include "Graphics/VertexLayout.h"
 #include "Graphics/Material.h"
 #include "Graphics/EnvironmentMap.h"
-
 #include "ECS/Components.h"
+#include "Asset/Loader/GraphicsShaderLoader.h"
 
 namespace Mule
 {
@@ -200,7 +200,7 @@ namespace Mule
 		environmentShaderdesc.DescriptorLayouts = { mEnvironmentMapDescriptorSetLayout };
 		environmentShaderdesc.PushConstants = {};
 
-		mEnvironmentMapShader = context->CreateGraphicsShader(environmentShaderdesc);
+		mEnvironmentMapShader = mAssetManager->LoadAsset<GraphicsShader, GraphicsShaderLoader>(environmentShaderdesc);
 
 #pragma endregion
 
@@ -259,7 +259,7 @@ namespace Mule
 			PushConstant(ShaderStage::Fragment, sizeof(uint32_t))
 		};
 
-		mDefaultGeometryShader = context->CreateGraphicsShader(defaultGeometryDesc);
+		mDefaultGeometryShader = mAssetManager->LoadAsset<GraphicsShader, GraphicsShaderLoader>(defaultGeometryDesc);
 	}
 	
 	SceneRenderer::~SceneRenderer()

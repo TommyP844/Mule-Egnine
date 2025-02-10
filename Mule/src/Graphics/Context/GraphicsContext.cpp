@@ -257,8 +257,6 @@ namespace Mule
 		vkGetDeviceQueue(mDevice, requestedQueueFamily, 0, &queue);
 
 		mGraphicsQueue = MakeRef<GraphicsQueue>(mDevice, queue, requestedQueueFamily);
-		mComputeQueue = MakeRef<GraphicsQueue>(mDevice, queue, requestedQueueFamily);
-		mTransferQueue = MakeRef<GraphicsQueue>(mDevice, queue, requestedQueueFamily);
 
 #pragma endregion
 
@@ -387,35 +385,6 @@ namespace Mule
 		}
 
 #pragma endregion
-
-#pragma region Single Time Submit Objects
-
-		VkCommandPoolCreateInfo singleTimeCommandPoolCreateInfo{};
-
-		singleTimeCommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		singleTimeCommandPoolCreateInfo.pNext = nullptr;
-		singleTimeCommandPoolCreateInfo.flags = 0;
-		singleTimeCommandPoolCreateInfo.queueFamilyIndex = mGraphicsQueue->GetQueueFamilyIndex();
-
-		result = vkCreateCommandPool(mDevice, &singleTimeCommandPoolCreateInfo, nullptr, &mSingleTimeCommandPool);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to create sisngle time command pool");
-		}
-
-		VkFenceCreateInfo singleTimeFenceCreateInfo{};
-
-		singleTimeFenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		singleTimeFenceCreateInfo.pNext = nullptr;
-		singleTimeFenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		result = vkCreateFence(mDevice, &singleTimeFenceCreateInfo, nullptr, &mSingleTimeSubmitFence);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to create sisngle time fence");
-		}
-#pragma endregion
-
 	}
 
 	GraphicsContext::~GraphicsContext()
@@ -423,8 +392,6 @@ namespace Mule
 		mFrameData.clear();
 
 		vkDestroySampler(mDevice, mLinearSampler, nullptr);
-		vkDestroyCommandPool(mDevice, mSingleTimeCommandPool, nullptr);
-		vkDestroyFence(mDevice, mSingleTimeSubmitFence, nullptr);
 
 		vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
 		vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
@@ -471,27 +438,9 @@ namespace Mule
 		return true;
 	}
 
-	void GraphicsContext::EndFrame(std::vector<WeakRef<Semaphore>> gpuFences)
+	void GraphicsContext::EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
-		std::vector<VkSemaphore> waitSemaphores;
-		for (const auto& semaphore : gpuFences)
-		{
-			waitSemaphores.emplace_back(semaphore->GetHandle());
-		}
-
-		VkResult submitResult{};
-
-		VkPresentInfoKHR info{};
-		info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		info.swapchainCount = 1;
-		info.pSwapchains = &mSwapchain;
-		info.waitSemaphoreCount = waitSemaphores.size();
-		info.pWaitSemaphores = waitSemaphores.data();
-		info.pImageIndices = &mImageIndex;
-		info.pResults = &submitResult;
-		info.pNext = nullptr;
-		
-		VkResult result = vkQueuePresentKHR(mGraphicsQueue->GetHandle(), &info);
+		mGraphicsQueue->Present(mImageIndex, mSwapchain, waitSemaphores);
 
 		mFrameIndex ^= 1;
 	}
@@ -585,11 +534,6 @@ namespace Mule
 
 			mFrameData[i].SwapchainFrameBuffer = MakeRef<SwapchainFrameBuffer>(swapchainFrameBufferDesc);
 		}
-	}
-
-	void GraphicsContext::WaitForDeviceIdle()
-	{
-		vkDeviceWaitIdle(mDevice);
 	}
 
 	Ref<DescriptorSet> GraphicsContext::CreateDescriptorSet(const DescriptorSetDescription& description)
@@ -707,9 +651,7 @@ namespace Mule
 		VkImageCreateInfo info{};
 
 		std::set<uint32_t> queueFamilyIndicexSet = {
-			mGraphicsQueue->GetQueueFamilyIndex(),
-			mComputeQueue->GetQueueFamilyIndex(),
-			mTransferQueue->GetQueueFamilyIndex()
+			mGraphicsQueue->GetQueueFamilyIndex()
 		};
 
 		std::vector<uint32_t> queueFamilyIndices;
@@ -775,92 +717,5 @@ namespace Mule
 		return vulkanImage;
 	}
 
-	VkCommandBuffer GraphicsContext::CreateSingleTimeCmdBuffer()
-	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.pNext = nullptr;
-		allocInfo.commandBufferCount = 1;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = mSingleTimeCommandPool;
-
-		VkCommandBuffer commandBuffer;
-		VkResult result = vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to allocate single time command buffer");
-		}
-
-		VkCommandBufferBeginInfo beginInfo{};
-
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to begin single time submit command buffer");
-		}
-
-		return commandBuffer;
-	}
-
-	void GraphicsContext::SubmitSingleTimeCmdBuffer(VkCommandBuffer commandBuffer)
-	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
-		VkResult result = vkEndCommandBuffer(commandBuffer);
-
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to end single time submit command buffer");
-		}
-
-		VkSubmitInfo submitInfo{};
-		VkPipelineStageFlags flags = VK_PIPELINE_STAGE_NONE_KHR;
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = &flags;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		result = vkWaitForFences(mDevice, 1, &mSingleTimeSubmitFence, VK_TRUE, UINT64_MAX);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to wait for single time submit fence");
-		}
-
-		result = vkResetFences(mDevice, 1, &mSingleTimeSubmitFence);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to reset single time submit fence");
-		}
-
-		result = vkQueueSubmit(mGraphicsQueue->GetHandle(), 1, &submitInfo, mSingleTimeSubmitFence);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to submit single time command buffer");
-		}
-	}
-
-	void GraphicsContext::WaitForSingleTimeCommands()
-	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
-		VkResult result = vkWaitForFences(mDevice, 1, &mSingleTimeSubmitFence, VK_TRUE, UINT64_MAX);
-		if (result != VK_SUCCESS)
-		{
-			SPDLOG_ERROR("Failed to wait for single time submit fence");
-		}
-	}
 
 }

@@ -41,9 +41,9 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 			}
 			if (mEntityToDelete)
 			{
-				if (mEditorState->SelectedEntity == mEntityToDelete)
+				if (mEditorContext->SelectedEntity == mEntityToDelete)
 				{
-					mEditorState->SelectedEntity = Mule::Entity();
+					mEditorContext->SelectedEntity = Mule::Entity();
 				}
 				mEntityToDelete.Destroy();
 				mEntityToDelete = Mule::Entity();
@@ -62,7 +62,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (!e.HasChildren())
 		flags |= ImGuiTreeNodeFlags_Bullet;
-	if (mEditorState->SelectedEntity == e)
+	if (mEditorContext->SelectedEntity == e)
 		flags |= ImGuiTreeNodeFlags_Selected;
 
 	unsigned int id = e.ID();
@@ -90,7 +90,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	}
 	
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-		mEditorState->SelectedEntity = e;
+		mEditorContext->SelectedEntity = e;
 
 	EntityContextMenu(e);
 	

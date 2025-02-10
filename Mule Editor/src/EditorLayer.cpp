@@ -81,6 +81,8 @@ void EditorLayer::OnAttach()
 
 
 	mAssetLoaderThread = std::async(std::launch::async, [&]() {
+		std::vector<std::future<void>> futures;
+
 		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
 		{
 			if (dir.is_directory()) continue;
@@ -88,31 +90,37 @@ void EditorLayer::OnAttach()
 			std::string extension = dir.path().extension().string();
 			fs::path filePath = dir.path();
 
-			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-			const std::set<std::string> modelExtensions = { ".gltf" };
-			if (modelExtensions.contains(extension))
-			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Model>(filePath);
-			}
-			else if (imageExtensions.contains(extension))
-			{
-				// We need to chec kif the model loader, loaded a texture for us first so we dont double load the texture
-				auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
-				if (!asset)
+			futures.push_back(std::async(std::launch::async, [=]() {
+				SPDLOG_INFO("Loading file: {}", filePath.string());
+				const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+				const std::set<std::string> modelExtensions = { ".gltf" };
+				if (modelExtensions.contains(extension))
 				{
-					mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
-				}
-			}
-			else if (extension == ".hdr")
-			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
-			}
-			else if (extension == ".scene")
-			{
-				mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
-			}
+					mEngineContext->GetAssetManager()->LoadAssetAsync<Mule::Model>(filePath);
 
+				}
+				else if (imageExtensions.contains(extension))
+				{
+					auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
+					if (!asset)
+					{
+						mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
+					}
+				}
+				else if (extension == ".hdr")
+				{
+					mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
+				}
+				else if (extension == ".scene")
+				{
+					mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
+				}
+				}));
 		}
+
+
+		for (int i = 0; i < futures.size(); i++)
+			futures[i].wait();
 		});
 
 }

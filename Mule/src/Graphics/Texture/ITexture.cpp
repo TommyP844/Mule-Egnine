@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 #include "Graphics/imguiImpl/imgui_impl_vulkan.h"
+#include "Graphics/Execution/CommandBuffer.h"
 
 #include <set>
 
@@ -116,9 +117,7 @@ namespace Mule
 
 
 		std::set<uint32_t> queueFamilyIndicexSet = {
-			mContext->GetGraphicsQueue()->GetQueueFamilyIndex(),
-			mContext->GetComputeQueue()->GetQueueFamilyIndex(),
-			mContext->GetTransferQueue()->GetQueueFamilyIndex()
+			mContext->GetGraphicsQueue()->GetQueueFamilyIndex()
 		};
 
 		std::vector<uint32_t> queueFamilyIndices;
@@ -227,7 +226,10 @@ namespace Mule
 			}
 		}
 
-		VkCommandBuffer commandBuffer = mContext->CreateSingleTimeCmdBuffer();
+		auto queue = mContext->GetGraphicsQueue();
+		auto commandPool = queue->CreateCommandPool();
+		auto commandBuffer = commandPool->CreateCommandBuffer();
+		commandBuffer->Begin();
 
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -245,7 +247,7 @@ namespace Mule
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 		vkCmdPipelineBarrier(
-			commandBuffer,
+			commandBuffer->GetHandle(),
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			0, 0, nullptr, 0, nullptr, 1, &barrier);
 
@@ -293,7 +295,7 @@ namespace Mule
 			region.imageExtent = { width, height, mDepth };
 
 			vkCmdCopyBufferToImage(
-				commandBuffer,
+				commandBuffer->GetHandle(),
 				stagingBuffer,
 				mVulkanImage.Image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -344,7 +346,7 @@ namespace Mule
 		mVulkanImage.Layout = barrier.newLayout;
 
 		vkCmdPipelineBarrier(
-			commandBuffer,
+			commandBuffer->GetHandle(),
 			srcStage,
 			dstStage,
 			0,
@@ -353,9 +355,11 @@ namespace Mule
 			1, &barrier
 		);
 
-		mContext->SubmitSingleTimeCmdBuffer(commandBuffer);
-		mContext->WaitForSingleTimeCommands();
-		vkFreeCommandBuffers(mDevice, mContext->GetSingleTimeCommandPool(), 1, &commandBuffer);
+		commandBuffer->End();
+		auto fence = mContext->CreateFence();
+		fence->Reset();
+		queue->Submit(commandBuffer, {}, {}, fence);
+		fence->Wait();
 
 		if (stagingBufferMemory)
 		{

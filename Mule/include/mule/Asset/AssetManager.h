@@ -36,7 +36,13 @@ namespace Mule
 		Ref<T> RegisterLoader(Args&&... args);
 
 		template<typename T>
+		WeakRef<T> GetLoader();
+
+		template<typename T>
 		Ref<T> LoadAsset(const fs::path& filepath);
+
+		template<typename T, typename Loader, typename ... Args>
+		Ref<T> LoadAsset(Args&&... args);
 
 		template<typename T>
 		void SaveAssetText(AssetHandle handle);

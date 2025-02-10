@@ -18,6 +18,14 @@ namespace Mule
 	}
 
 	template<typename T>
+	inline WeakRef<T> AssetManager::GetLoader()
+	{
+		constexpr AssetType type = T::sType;
+		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		return loader;
+	}
+
+	template<typename T>
 	inline Ref<T> AssetManager::LoadAsset(const fs::path& filepath)
 	{
 		constexpr AssetType type = T::sType;
@@ -28,6 +36,30 @@ namespace Mule
 			return nullptr;
 		}
 		Ref<T> asset = loader->LoadText(filepath);
+		if (!asset)
+			return nullptr;
+
+		auto iter = mLoadedHandles.find(asset->FilePath());
+		if (iter != mLoadedHandles.end())
+		{
+			asset->mHandle = iter->second;
+		}
+
+		InsertAsset<T>(asset);
+		return asset;
+	}
+
+	template<typename T, typename Loader, typename ...Args>
+	inline Ref<T> AssetManager::LoadAsset(Args && ...args)
+	{
+		constexpr AssetType type = T::sType;
+		Ref<Loader> loader = mLoaders[type];
+		if (!loader)
+		{
+			SPDLOG_WARN("No loader registered for asset type: {}", (uint32_t)type);
+			return nullptr;
+		}
+		Ref<T> asset = loader->LoadText(std::forward<Args>(args)...);
 		if (!asset)
 			return nullptr;
 

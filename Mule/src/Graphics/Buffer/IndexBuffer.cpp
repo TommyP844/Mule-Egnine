@@ -1,6 +1,7 @@
 #include "Graphics/Buffer/IndexBuffer.h"
 
 #include "Graphics/Context/GraphicsContext.h"
+#include "Graphics/Execution/CommandBuffer.h"
 
 #include <spdlog/spdlog.h>
 
@@ -19,9 +20,7 @@ namespace Mule
 		mTriangleCount(0)
 	{
 		std::set<uint32_t> uniqueQueueFamilyIndices = {
-			context->GetGraphicsQueue()->GetQueueFamilyIndex(),
-			context->GetComputeQueue()->GetQueueFamilyIndex(),
-			context->GetTransferQueue()->GetQueueFamilyIndex()
+			context->GetGraphicsQueue()->GetQueueFamilyIndex()
 		};
 
 		std::vector<uint32_t> queueFamilyIndices = std::vector<uint32_t>(uniqueQueueFamilyIndices.begin(), uniqueQueueFamilyIndices.end());
@@ -111,13 +110,20 @@ namespace Mule
 		memcpy(data, buffer.GetData(), buffer.GetSize());
 		vkUnmapMemory(mDevice, stagingMemory);
 
-		// (3) Copy from staging buffer to GPU-local buffer
-		VkCommandBuffer commandBuffer = context->CreateSingleTimeCmdBuffer();
+		auto queue = context->GetGraphicsQueue();
+		auto commandPool = queue->CreateCommandPool();
+		auto commandBuffer = commandPool->CreateCommandBuffer();
+
+		commandBuffer->Begin();
 		VkBufferCopy copyRegion{};
 		copyRegion.size = buffer.GetSize();
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer, mBuffer, 1, &copyRegion);
-		context->SubmitSingleTimeCmdBuffer(commandBuffer);
-		context->WaitForSingleTimeCommands();
+		vkCmdCopyBuffer(commandBuffer->GetHandle(), stagingBuffer, mBuffer, 1, &copyRegion);
+		commandBuffer->End();
+
+		auto fence = context->CreateFence();
+		fence->Reset();
+		queue->Submit(commandBuffer, {}, {}, fence);
+		fence->Wait();
 
 		// (4) Cleanup staging buffer
 		vkDestroyBuffer(mDevice, stagingBuffer, nullptr);

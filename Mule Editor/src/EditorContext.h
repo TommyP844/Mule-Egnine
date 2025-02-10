@@ -11,7 +11,7 @@ enum SimulationState
 	Simulation
 };
 
-class EditorState
+class EditorContext
 {
 public:
 	Mule::Entity SelectedEntity;

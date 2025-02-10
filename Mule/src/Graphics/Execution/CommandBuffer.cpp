@@ -17,7 +17,6 @@ namespace Mule
 	//TODO: remove vkDeviceWaitIdle and use a fence
 	CommandBuffer::~CommandBuffer()
 	{
-		vkDeviceWaitIdle(mDevice);
 		vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mCommandBuffer);
 	}
 
@@ -506,6 +505,14 @@ namespace Mule
 
 			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT; // Used for sampling in shaders
+
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
 		else
 		{

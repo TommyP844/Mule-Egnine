@@ -14,10 +14,10 @@ void ComponentPanel::OnUIRender(float dt)
 	if (!mIsOpen) return;
 	
 	ImGui::SetNextWindowSizeConstraints({ 500.f, 300.f }, {0.f, 0.f});
-	if (ImGui::Begin(mName.c_str(), &mIsOpen) && mEditorState->SelectedEntity)
+	if (ImGui::Begin(mName.c_str(), &mIsOpen) && mEditorContext->SelectedEntity)
 	{
 		bool entityModified = false;
-		Mule::Entity e = mEditorState->SelectedEntity;
+		Mule::Entity e = mEditorContext->SelectedEntity;
 		
 		Mule::TransformComponent& transform = e.GetTransformComponent();
 		if (ImGui::BeginTable("TRS", 2, ImGuiTableFlags_NoClip | ImGuiTableFlags_SizingFixedFit, {ImGui::GetContentRegionAvail().x, 0.f}))

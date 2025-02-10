@@ -48,7 +48,7 @@ void SceneViewPanel::OnUIRender(float dt)
 				mWidth = region.x;
 				mHeight = region.y;
 				sceneRenderer->Resize(mWidth, mHeight);
-				mEditorState->EditorRenderSettings.EditorCamera.SetAspectRatio(mWidth / mHeight);
+				mEditorContext->EditorRenderSettings.EditorCamera.SetAspectRatio(mWidth / mHeight);
 			}
 
 			Ref<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetCurrentFrameBuffer();
@@ -70,7 +70,7 @@ void SceneViewPanel::UpdateCamera(float dt)
 {
 	if (ImGui::IsWindowFocused())
 	{
-		Mule::Camera& camera = mEditorState->EditorRenderSettings.EditorCamera;
+		Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
 		glm::vec3 cameraPosition = camera.GetPosition();
 		const float speed = 10.f * dt;
 		if (ImGui::IsKeyDown(ImGuiKey_W))
@@ -132,7 +132,7 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 			mWidgetScale = !mWidgetScale;
 	}
 
-	if (mEditorState->SelectedEntity)
+	if (mEditorContext->SelectedEntity)
 	{
 		ImGuizmo::SetOrthographic(false);  // Set to true if using an orthographic camera
 		ImGuizmo::SetDrawlist();
@@ -145,8 +145,8 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 
 		if (operation != 0)
 		{
-			Mule::Camera& camera = mEditorState->EditorRenderSettings.EditorCamera;
-			Mule::TransformComponent& transform = mEditorState->SelectedEntity.GetTransformComponent();
+			Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
+			Mule::TransformComponent& transform = mEditorContext->SelectedEntity.GetTransformComponent();
 			glm::mat4 proj = camera.GetProj();
 			glm::mat4 view = camera.GetView();
 

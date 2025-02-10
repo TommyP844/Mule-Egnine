@@ -14,6 +14,11 @@ namespace Mule
 		return nullptr;
 	}
 
+	Ref<GraphicsShader> GraphicsShaderLoader::LoadText(const GraphicsShaderDescription& description)
+	{
+		return mContext->CreateGraphicsShader(description);
+	}
+
 	void GraphicsShaderLoader::SaveText(Ref<GraphicsShader> asset)
 	{
 	}

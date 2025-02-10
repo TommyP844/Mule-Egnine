@@ -15,9 +15,7 @@ namespace Mule
 		mSize(bytes)
 	{
 		std::set<uint32_t> uniqueQueueFamilyIndices = {
-			context->GetGraphicsQueue()->GetQueueFamilyIndex(),
-			context->GetComputeQueue()->GetQueueFamilyIndex(),
-			context->GetTransferQueue()->GetQueueFamilyIndex()
+			context->GetGraphicsQueue()->GetQueueFamilyIndex()
 		};
 
 		std::vector<uint32_t> queueFamilyIndices = std::vector<uint32_t>(uniqueQueueFamilyIndices.begin(), uniqueQueueFamilyIndices.end());

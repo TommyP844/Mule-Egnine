@@ -13,6 +13,7 @@ namespace Mule
 		GraphicsShaderLoader(WeakRef<GraphicsContext> context);
 		virtual ~GraphicsShaderLoader(){}
 
+		Ref<GraphicsShader> LoadText(const GraphicsShaderDescription& description);
 		virtual Ref<GraphicsShader> LoadText(const fs::path& filepath) override;
 		virtual void SaveText(Ref<GraphicsShader> asset) override;
 		virtual Ref<GraphicsShader> LoadBinary(const Buffer& buffer) override;
