@@ -514,6 +514,39 @@ namespace Mule
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;  // Shader read occurs in the fragment stage
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;         // Preparing for transfer
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT; // Previously used for reading in shaders
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT; // Now used for transfer reads
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;          // Source is a transfer operation
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;   // Destination is shader read (commonly in fragment stage)
+
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT; // Ensure transfer read is completed
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;   // Allow shader to read the image
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;  // Previously used in a shader (commonly fragment shader)
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;         // Now used for transfer operations
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;  // Ensure all shader reads are completed
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Ensure the transfer operation can safely write to the image
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;          // Previously used for transfer operations
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;   // Now will be used for shader sampling
+
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Ensure all transfer writes are completed
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;    // Allow shaders to safely read the image
+		}
+
 		else
 		{
 			SPDLOG_ERROR("Invalid layout transition");
@@ -528,6 +561,34 @@ namespace Mule
 			0, nullptr,
 			1, &barrier
 		);
+	}
+
+	void CommandBuffer::CopyTexture(WeakRef<ITexture> src, WeakRef<ITexture> dst, const TextureCopyInfo& copyInfo) const
+	{
+		VkImageCopy region{};
+		region.srcOffset.x = copyInfo.SrcOffset.x;
+		region.srcOffset.y = copyInfo.SrcOffset.y;
+		region.srcOffset.z = copyInfo.SrcOffset.z;
+		
+		region.dstOffset.x = copyInfo.DstOffset.x;
+		region.dstOffset.y = copyInfo.DstOffset.y;
+		region.dstOffset.z = copyInfo.DstOffset.z;
+
+		region.extent.width = copyInfo.Extent.x;
+		region.extent.height = copyInfo.Extent.y;
+		region.extent.depth = copyInfo.Extent.z;
+
+		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.srcSubresource.baseArrayLayer = copyInfo.SrcArrayLayer;
+		region.srcSubresource.layerCount = copyInfo.SrcArrayLayerCount;
+		region.srcSubresource.mipLevel = copyInfo.SrcMipLevel;
+
+		region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.dstSubresource.baseArrayLayer = copyInfo.DstArrayLayer;
+		region.dstSubresource.layerCount = copyInfo.DstArrayLayerCount;
+		region.dstSubresource.mipLevel = copyInfo.DstMipLevel;
+		
+		vkCmdCopyImage(mCommandBuffer, src->GetImage(), src->GetVulkanImage().Layout, dst->GetImage(), dst->GetVulkanImage().Layout, 1, &region);
 	}
 
 	void CommandBuffer::BindGraphicsPipeline(WeakRef<GraphicsShader> shader)

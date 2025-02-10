@@ -51,6 +51,8 @@ namespace Mule
 			std::map<std::string, AssetHandle> Textures;
 			std::map<std::string, AssetHandle> Materials;
 			std::map<std::string, AssetHandle> Meshes;
+			glm::vec3 Min;
+			glm::vec3 Max;
 		};
 
 		void RecurseNodes(const aiNode* ainode, ModelNode& node, LoadInfo& info);

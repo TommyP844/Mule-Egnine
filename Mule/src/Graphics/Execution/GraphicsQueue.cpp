@@ -28,12 +28,12 @@ namespace Mule
 		for (auto& signal : waitSemaphores)
 		{
 			waitSemaphoresVK.push_back(signal->GetHandle());
+			waitStages.push_back(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		}
 
 		submitInfo.waitSemaphoreCount = waitSemaphoresVK.size();
 		submitInfo.pWaitSemaphores = waitSemaphoresVK.data();
 		submitInfo.pWaitDstStageMask = waitStages.data();
-
 
 		submitInfo.pNext = nullptr;
 

@@ -35,8 +35,17 @@ namespace Mule
 			0, 0, 0, 0,		0, 0, 0, 0
 		};
 
+		uint8_t whiteImageData[] = {
+			255, 255, 255, 255,		255, 255, 255, 255,
+			255, 255, 255, 255,		255, 255, 255, 255
+		};
+
 		mBlackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, 1, TextureFormat::RGBA8U);
 		mBlackTextureCube = MakeRef<TextureCube>(mGraphicsContext, &blackImageData[0], 2, 1, TextureFormat::RGBA8U);
+		mWhiteTexture = MakeRef<Texture2D>(mGraphicsContext, &whiteImageData[0], 2, 2, 1, TextureFormat::RGBA8U);
+
+		mAssetManager->InsertAsset(mWhiteTexture);
+		mAssetManager->InsertAsset(mBlackTexture);
 
 		VertexLayout staticVertexLayout;
 		staticVertexLayout.AddAttribute(AttributeType::Vec3);
@@ -217,7 +226,7 @@ namespace Mule
 			mFrameData[i].LightBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPULightData));
 
 			// TODO: handle dynamic material buffer size
-			mFrameData[i].MaterialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPUMaterial) * 100);
+			mFrameData[i].MaterialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPUMaterial) * 1000);
 
 			DescriptorSetDescription descriptorDesc{};
 			descriptorDesc.Layouts = { mGeometryStageLayout };
@@ -294,6 +303,8 @@ namespace Mule
 		bool hasEnvironmentMap = false;
 
 		// Data Prep
+		uint32_t blackIndex = 0;
+		uint32_t whiteIndex = 0;
 		{
 
 			CameraData cameraData{};
@@ -306,6 +317,8 @@ namespace Mule
 			frameData.TextureArray.Clear();
 			frameData.MaterialArray.Clear();
 
+			blackIndex = frameData.TextureArray.Insert(mBlackTexture->Handle(), mBlackTexture);
+			whiteIndex = frameData.TextureArray.Insert(mWhiteTexture->Handle(), mWhiteTexture);
 			// TODO: so empty textures have somewhere to point
 			// frameData.TextureArray.Insert(NullAssetHandle, nullptr);
 
@@ -344,10 +357,10 @@ namespace Mule
 
 				gpuMaterial.AlbedoIndex = frameData.TextureArray.QueryIndex(material->AlbedoMap);
 				gpuMaterial.NormalIndex = frameData.TextureArray.QueryIndex(material->NormalMap);
-				gpuMaterial.MetalnessIndex = frameData.TextureArray.QueryIndex(material->MetalnessMap);
-				gpuMaterial.RoughnessIndex = frameData.TextureArray.QueryIndex(material->RoughnessMap);
-				gpuMaterial.AOIndex = frameData.TextureArray.QueryIndex(material->AOMap);
-				gpuMaterial.EmissiveIndex = frameData.TextureArray.QueryIndex(material->EmissiveMap);
+				gpuMaterial.MetalnessIndex = frameData.TextureArray.QueryIndex(material->MetalnessMap) == UINT32_MAX ? whiteIndex : frameData.TextureArray.QueryIndex(material->MetalnessMap);
+				gpuMaterial.RoughnessIndex = frameData.TextureArray.QueryIndex(material->RoughnessMap) == UINT32_MAX ? whiteIndex : frameData.TextureArray.QueryIndex(material->RoughnessMap);
+				gpuMaterial.AOIndex = frameData.TextureArray.QueryIndex(material->AOMap) == UINT32_MAX ? whiteIndex : frameData.TextureArray.QueryIndex(material->AOMap);
+				gpuMaterial.EmissiveIndex = frameData.TextureArray.QueryIndex(material->EmissiveMap) == UINT32_MAX ? blackIndex : frameData.TextureArray.QueryIndex(material->EmissiveMap);
 
 				uint32_t index = frameData.MaterialArray.Insert(material->Handle(), gpuMaterial);
 

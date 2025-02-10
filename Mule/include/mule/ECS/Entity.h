@@ -43,7 +43,7 @@ namespace Mule
 		bool HasChildren();
 		bool IsChild();
 
-		void AddModel(Ref<Model> model);
+		void AddModel(WeakRef<Model> model);
 		
 		void Destroy();
 

@@ -2,8 +2,11 @@
 
 #include "IPanel.h"
 #include "ImGuiExtension.h"
+#include "ThumbnailManager.h"
 
 #include "Mule.h"
+
+#include <set>
 
 class ContentBrowserPanel : public IPanel
 {
@@ -19,6 +22,7 @@ private:
 	Ref<Mule::Texture2D> mFolderTexture;
 	Ref<Mule::Texture2D> mFileTexture;
 	fs::path mContentBrowserPath;
+	Ref<ThumbnailManager> mThumbnailManager;
 
 	struct DisplayFile
 	{
@@ -31,6 +35,7 @@ private:
 	};
 
 	std::vector<DisplayFile> mVisibleFiles;
+	std::set<std::string> mExcludeExtensions;
 	char mSearchBuffer[256] = { 0 };
 
 	void SetContentBrowserPath(const fs::path& path, const std::string& filter = "");
@@ -45,4 +50,5 @@ private:
 	// Popups
 	void DisplayPopups();
 	bool mDisplayNewFolderPopup = false;
+	bool mDisplayFilterPopup = false;
 };

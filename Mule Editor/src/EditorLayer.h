@@ -2,7 +2,7 @@
 
 #include "Mule.h"
 #include "Ref.h"
-#include "EditorState.h"
+#include "EditorContext.h"
 #include "EngineContext.h"
 
 // Panels
@@ -31,7 +31,7 @@ public:
 	virtual void OnDetach() override;
 
 private:
-	Ref<EditorState> mEditorState;
+	Ref<EditorContext> mEditorState;
 	
 	// Panels
 	ComponentPanel mComponentPanel;

@@ -69,6 +69,8 @@ namespace Mule
 	void Camera::SetViewDir(const glm::vec3& viewDir)
 	{
 		mViewDir = glm::normalize(viewDir);
+		mYaw = glm::degrees(atan2(viewDir.z, viewDir.x));
+		mPitch = glm::degrees(asin(viewDir.y));
 		mRight = glm::normalize(glm::cross(mWorldUp, mViewDir));
 		mUp = glm::normalize(glm::cross(mRight, mViewDir));
 		UpdateView();

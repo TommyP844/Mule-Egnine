@@ -83,7 +83,7 @@ namespace Mule
 		return meta.Parent;
 	}
 
-	void Entity::AddModel(Ref<Model> model)
+	void Entity::AddModel(WeakRef<Model> model)
 	{
 		mScene->SetModified();
 		if (!model)

@@ -32,8 +32,24 @@ namespace Mule
 		void NextPass();
 		void EndRenderPass();
 
+		struct TextureCopyInfo
+		{
+			glm::ivec3 SrcOffset = glm::ivec3(0);
+			glm::ivec3 DstOffset = glm::ivec3(0);
+			glm::ivec3 Extent;
+
+			uint32_t SrcArrayLayer = 0;
+			uint32_t SrcArrayLayerCount = 1;
+
+			uint32_t DstArrayLayer = 0;
+			uint32_t DstArrayLayerCount = 1;
+
+			uint32_t SrcMipLevel = 0;
+			uint32_t DstMipLevel = 0;
+		};
 		// Texture
 		void TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout);
+		void CopyTexture(WeakRef<ITexture> src, WeakRef<ITexture> dst, const TextureCopyInfo& copyInfo) const;
 
 		// Shader
 		void BindGraphicsPipeline(WeakRef<GraphicsShader> shader);

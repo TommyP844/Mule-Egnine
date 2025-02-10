@@ -28,10 +28,11 @@ void AssetManagerPanel::OnUIRender(float dt)
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
 		Ref<Mule::AssetManager> assetManager = mEngineContext->GetAssetManager();
-		WeakRef<Mule::IAsset> searchedAsset = nullptr;
-
+		static WeakRef<Mule::IAsset> searchedAsset = nullptr;
+		static Mule::AssetType assetType = Mule::AssetType::None;
 		ImGui::Text("Search Handle"); ImGui::SameLine();
 		static char searchBuffer[256] = { 0 };
+		ImGui::PushItemWidth(200.f);
 		if (ImGui::InputText("##SearchAsset", searchBuffer, 256, ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			Mule::AssetHandle handle = std::stoull(searchBuffer);
@@ -49,6 +50,29 @@ void AssetManagerPanel::OnUIRender(float dt)
 			}
 			ImGuiExtension::PopRedButtonStyle();
 		}
+		else
+		{
+			const char* values[] = {
+				"Environment Map",
+				"Materials",
+				"Meshes",
+				"Models",
+				"Shaders",
+				"Textures",
+			};
+			static int index = 0;
+			ImGui::SameLine();
+			ImGui::PushItemWidth(150.f);
+			if (ImGui::Combo("##AssetType", &index, values, IM_ARRAYSIZE(values)))
+			{
+				if (index == 0) assetType = Mule::AssetType::EnvironmentMap;
+				if (index == 1) assetType = Mule::AssetType::Material;
+				if (index == 2) assetType = Mule::AssetType::Mesh;
+				if (index == 3) assetType = Mule::AssetType::Model;
+				if (index == 4) assetType = Mule::AssetType::Shader;
+				if (index == 5) assetType = Mule::AssetType::Texture;
+			}
+		}
 
 		ImGui::Separator();
 
@@ -62,11 +86,23 @@ void AssetManagerPanel::OnUIRender(float dt)
 			}
 			else
 			{
-				for (const auto& [handle, asset] : assetManager->GetAllAssets())
+				if (assetType == Mule::AssetType::None)
 				{
-					DisplayAsset(asset);
-					ImGui::Separator();
+					for (const auto& [handle, asset] : assetManager->GetAllAssets())
+					{
+						DisplayAsset(asset);
+						ImGui::Separator();
+					}
 				}
+				else
+				{
+					for (const auto& asset : assetManager->GetAssetsOfType(assetType))
+					{
+						DisplayAsset(asset);
+						ImGui::Separator();
+					}
+				}
+				
 			}
 			ImGui::EndDisabled();
 		}

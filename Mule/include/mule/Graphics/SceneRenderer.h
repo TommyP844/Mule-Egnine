@@ -42,6 +42,7 @@ namespace Mule
 
 	private:
 		Ref<Texture2D> mBlackTexture;
+		Ref<Texture2D> mWhiteTexture;
 		Ref<TextureCube> mBlackTextureCube;
 		Ref<GraphicsContext> mGraphicsContext;
 		Ref<AssetManager> mAssetManager;
@@ -75,16 +76,16 @@ namespace Mule
 		struct GPUMaterial
 		{
 			glm::vec4 AlbedoColor;	
-			glm::vec2 TextureScale;
-			float MetalnessFactor;
-			float RoughnessFactor;
-			float AOFactor;
-			uint32_t AlbedoIndex;
-			uint32_t NormalIndex;
-			uint32_t MetalnessIndex;
-			uint32_t RoughnessIndex;
-			uint32_t AOIndex;
-			uint32_t EmissiveIndex;
+			alignas(8) glm::vec2 TextureScale;
+			alignas(4) float MetalnessFactor;
+			alignas(4) float RoughnessFactor;
+			alignas(4) float AOFactor;
+			alignas(4) uint32_t AlbedoIndex;
+			alignas(4) uint32_t NormalIndex;
+			alignas(4) uint32_t MetalnessIndex;
+			alignas(4) uint32_t RoughnessIndex;
+			alignas(4) uint32_t AOIndex;
+			alignas(4) uint32_t EmissiveIndex;
 		};
 
 		struct FrameData

@@ -20,6 +20,13 @@ void ContentBrowserPanel::OnAttach()
 	mFolderTexture = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
 	mFileTexture = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
 	SetContentBrowserPath(mEditorContext->mAssetsPath);
+	mThumbnailManager = MakeRef<ThumbnailManager>(mEngineContext, mEditorContext);
+	mExcludeExtensions = {
+		".yml",
+		".json",
+		".md",
+		".bin"
+	};
 }
 
 void ContentBrowserPanel::OnUIRender(float dt)
@@ -52,6 +59,8 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 	mVisibleFiles.clear();
 	for (const auto& dir : fs::directory_iterator(mContentBrowserPath))
 	{
+		if (mExcludeExtensions.contains(dir.path().extension().string()))
+			continue;
 		DisplayFile file;
 		file.IsDirectory = dir.is_directory();
 		file.FilePath = dir.path();
@@ -68,6 +77,10 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 				{
 					Ref<Mule::Texture2D> texture = asset;
 					file.TexId = texture->GetImGuiID();
+				}
+				else
+				{
+					file.TexId = mThumbnailManager->GetThumbnail(asset->Handle())->GetImGuiID();
 				}
 			}
 
@@ -206,6 +219,15 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 				ImGui::Text((*iter).string().c_str());
 			}
 		}
+
+		float width = ImGui::GetContentRegionAvail().x;
+		float iconWidth = ImGui::CalcTextSize(ICON_FA_FILTER).x;
+		ImGui::SameLine(width - iconWidth);
+		if (ImGui::Button(ICON_FA_FILTER))
+		{
+			mDisplayFilterPopup = true;
+		}
+
 		ImGui::PopStyleVar();
 
 		ImGui::Separator();
@@ -316,9 +338,16 @@ void ContentBrowserPanel::DisplayPopups()
 		mDisplayNewFolderPopup = false;
 		memset(nameBuffer, 0, 256);
 		ImGui::OpenPopup("New Folder");
+		ImGui::SetNextWindowSize({ 350.f, 0.f }, ImGuiCond_Always);
+	}
+	if (mDisplayFilterPopup)
+	{
+		mDisplayFilterPopup = false;
+		ImGui::OpenPopup("Filter");
+		ImGui::SetNextWindowSize({350.f, 0.f}, ImGuiCond_Always);
 	}
 
-	ImGui::SetNextWindowSize({350.f, 0.f});
+
 	if (ImGui::BeginPopupModal("New Folder", nullptr, ImGuiWindowFlags_NoResize))
 	{
 		ImGui::Text("Name");
@@ -350,6 +379,51 @@ void ContentBrowserPanel::DisplayPopups()
 		}
 		ImGui::EndDisabled();
 
+		ImGui::EndPopup();
+	}
+
+	if (ImGui::BeginPopupModal("Filter", nullptr))
+	{
+		static char buffer[16] = { 0 };
+		if (ImGui::InputText("##FilterName", buffer, 16, ImGuiInputTextFlags_EnterReturnsTrue))
+		{
+			std::string ext = buffer;
+			mExcludeExtensions.insert(ext);
+			SetContentBrowserPath(mContentBrowserPath);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Add"))
+		{
+			std::string ext = buffer;
+			mExcludeExtensions.insert(ext);
+			SetContentBrowserPath(mContentBrowserPath);
+		}
+		if (ImGui::BeginChild("##Extensions", {ImGui::GetContentRegionAvail().x, 200.f}, ImGuiChildFlags_Borders))
+		{
+			float xWidth = ImGui::CalcTextSize(ICON_FA_X).x;
+			for (auto it = mExcludeExtensions.begin(); it != mExcludeExtensions.end(); it++)
+			{
+				ImGui::Text((*it).c_str());
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x - xWidth);
+				ImGuiExtension::PushRedButtonStyle();
+				ImGui::PushID((*it).c_str());
+				bool b = false;
+				if (ImGui::Button(ICON_FA_X))
+				{
+					b = true;
+					mExcludeExtensions.erase(*it);
+				}
+				ImGui::PopID();
+				ImGuiExtension::PopRedButtonStyle();
+				if (b)
+					break;
+			}
+		}
+		ImGui::EndChild();
+		if (ImGui::Button("Close"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
 		ImGui::EndPopup();
 	}
 

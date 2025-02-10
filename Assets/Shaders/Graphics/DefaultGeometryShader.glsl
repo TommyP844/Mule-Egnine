@@ -194,6 +194,7 @@ void main()
     float metallic = texture(textures[material.MetalnessIndex], scaledUV).r * material.MetalnessFactor;
     float roughness = texture(textures[material.RoughnessIndex], scaledUV).r * material.RoughnessFactor;
     float ao = texture(textures[material.AOIndex], scaledUV).r * material.AOFactor;
+    
 
 	vec3 V = normalize(CameraPos - FragPos);
 	vec3 lighting = vec3(0.0);

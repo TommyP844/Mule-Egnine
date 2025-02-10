@@ -37,18 +37,29 @@ namespace Mule
 		{
 			SPDLOG_ERROR("Failed to load model: {}", filepath.string());
 			return nullptr;
-		}
+		} 
 
 		Ref<Model> model = MakeRef<Model>();
 		model->SetFilePath(filepath);
 		ModelNode node;
+		
 		LoadInfo info = LoadInfo(filepath, scene);
+		info.Min.x = std::numeric_limits<float>::max();
+		info.Min.y = std::numeric_limits<float>::max();
+		info.Min.z = std::numeric_limits<float>::max();
+
+		info.Max.x = std::numeric_limits<float>::min();
+		info.Max.y = std::numeric_limits<float>::min();
+		info.Max.z = std::numeric_limits<float>::min();
+
 		fs::path metaPath = filepath.string() + ".yml";
 
 		LoadSerializationInfo(metaPath, info);
 
 		RecurseNodes(scene->mRootNode, node, info);
 		model->SetRootNode(node);
+		model->SetMin(info.Min);
+		model->SetMax(info.Max);
 
 		BuildSerializationInfo(metaPath, model);
 
@@ -105,6 +116,17 @@ namespace Mule
 			v.Tangent = toGlm(mesh->mTangents[i]);
 			v.UV = toGlm(mesh->mTextureCoords[0][i]);
 			v.Color = mesh->HasVertexColors(0) ? toGlm(mesh->mColors[0][i]) : glm::vec4(1.f);
+
+			glm::vec3 pos = v.Position;
+
+			info.Min.x = glm::min(info.Min.x, pos.x);
+			info.Min.y = glm::min(info.Min.y, pos.y);
+			info.Min.z = glm::min(info.Min.z, pos.z);
+
+			info.Max.x = glm::max(info.Max.x, pos.x);
+			info.Max.y = glm::max(info.Max.y, pos.y);
+			info.Max.z = glm::max(info.Max.z, pos.z);
+
 
 			verticePtr[i] = v;
 		}

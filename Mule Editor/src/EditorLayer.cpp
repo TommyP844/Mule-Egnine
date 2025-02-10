@@ -19,7 +19,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	:
 	ILayer(context, "Editor Layer")
 {
-	mEditorState = MakeRef<EditorState>();
+	mEditorState = MakeRef<EditorContext>();
 	
 	mSceneHierarchyPanel.SetContext(mEditorState, context);
 	mSceneViewPanel.SetContext(mEditorState, context);
