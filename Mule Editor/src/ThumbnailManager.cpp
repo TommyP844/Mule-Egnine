@@ -120,7 +120,7 @@ Ref<Mule::Texture2D> ThumbnailManager::RenderModel(WeakRef<Mule::Model> model)
 	auto framebuffer = mSceneRenderer->GetCurrentFrameBuffer();
 	auto texture = framebuffer->GetColorAttachment(0);
 
-	Ref<Mule::Texture2D> copyTexture = MakeRef<Mule::Texture2D>(mEngineContext->GetGraphicsContext(), nullptr, 256, 256, 1, texture->GetFormat());
+	Ref<Mule::Texture2D> copyTexture = MakeRef<Mule::Texture2D>(mEngineContext->GetGraphicsContext(), nullptr, 256, 256, texture->GetFormat());
 
 	auto queue = mEngineContext->GetGraphicsContext()->GetGraphicsQueue();
 	auto commandPool = queue->CreateCommandPool();
@@ -165,7 +165,7 @@ Ref<Mule::Texture2D> ThumbnailManager::RenderScene(WeakRef<Mule::Scene> scene)
 	auto framebuffer = mSceneRenderer->GetCurrentFrameBuffer();
 	auto texture = framebuffer->GetColorAttachment(0);
 
-	Ref<Mule::Texture2D> copyTexture = MakeRef<Mule::Texture2D>(mEngineContext->GetGraphicsContext(), nullptr, 256, 256, 1, texture->GetFormat());
+	Ref<Mule::Texture2D> copyTexture = MakeRef<Mule::Texture2D>(mEngineContext->GetGraphicsContext(), nullptr, 256, 256, texture->GetFormat());
 
 	auto queue = mEngineContext->GetGraphicsContext()->GetGraphicsQueue();
 	auto commandPool = queue->CreateCommandPool();

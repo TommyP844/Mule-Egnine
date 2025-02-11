@@ -167,6 +167,9 @@ namespace Mule
 
 #pragma region Logical Device
 
+		VkPhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.samplerAnisotropy = VK_TRUE; // Enable anisotropy
+
 		// Enable descriptor indexing features
 		VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
 		indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
@@ -174,6 +177,7 @@ namespace Mule
 		indexingFeatures.runtimeDescriptorArray = VK_TRUE;
 		indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 		indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+		indexingFeatures.pNext = &deviceFeatures;
 
 		// Enable separate depth-stencil layouts
 		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures{};
@@ -239,7 +243,6 @@ namespace Mule
 		deviceCreateInfo.ppEnabledExtensionNames = logicalDeviceExtensions.data();
 		deviceCreateInfo.queueCreateInfoCount = 1;
 		deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
-		//deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures; // Not needed because of the line below
 		deviceCreateInfo.pNext = &deviceFeatures2;
 
 		result = vkCreateDevice(mPhysicalDevice, &deviceCreateInfo, nullptr, &mDevice);
@@ -369,8 +372,8 @@ namespace Mule
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.mipLodBias = 0.f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		// samplerCreateInfo.maxAnisotropy;
+		samplerCreateInfo.anisotropyEnable = VK_TRUE;
+		samplerCreateInfo.maxAnisotropy = 8.f;
 		samplerCreateInfo.compareEnable = VK_FALSE;
 		// samplerCreateInfo.compareOp;
 		samplerCreateInfo.minLod = 0.f;

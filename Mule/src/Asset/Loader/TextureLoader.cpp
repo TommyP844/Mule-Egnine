@@ -37,7 +37,7 @@ namespace Mule
 			return nullptr;
 		}
 
-		auto texture = MakeRef<Texture2D>(mContext, filepath, data, width, height, 1, format, TextureFlags::None);
+		auto texture = MakeRef<Texture2D>(mContext, filepath, data, width, height, format, TextureFlags::GenerateMips);
 		stbi_image_free(data);
 		return texture;
 	}

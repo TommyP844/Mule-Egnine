@@ -27,6 +27,9 @@ namespace Mule
 
 	struct TransformComponent
 	{
+		bool InheritTranslation = true;
+		bool InheritRotation = true;
+		bool InheritScale = true;
 		glm::vec3 Translation;
 		glm::vec3 Rotation;
 		glm::vec3 Scale = glm::vec3(1.f);

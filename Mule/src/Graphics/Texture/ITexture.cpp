@@ -43,9 +43,16 @@ namespace Mule
 	{
 		vkDeviceWaitIdle(mDevice);
 
+		vkDestroySampler(mDevice, mSampler, nullptr);
+
 		for (auto layerView : mLayerViews)
 		{
 			vkDestroyImageView(mDevice, layerView.ImageView, nullptr);
+		}
+
+		for (auto mipView : mMipviews)
+		{
+			vkDestroyImageView(mDevice, mipView.ImageView, nullptr);
 		}
 
 		vkFreeMemory(mDevice, mVulkanImage.Memory, nullptr);
@@ -58,7 +65,12 @@ namespace Mule
 		return mLayerViews[index].Id;
 	}
 
-	void ITexture::Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags)
+	ImTextureID ITexture::GetMipID(int index)
+	{
+		return mMipviews[index].Id;
+	}
+
+	void ITexture::Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, TextureFormat format, TextureFlags flags)
 	{
 		// TODO: deduce image type
 		VkImageType imageType;
@@ -109,8 +121,16 @@ namespace Mule
 		mHeight = height;
 		mDepth = depth;
 		mLayers = layers;
-		mMips = mips;
 		mFormat = format;
+
+		if (TextureFlags::GenerateMips & flags)
+		{
+			mMips = glm::log2(glm::max<float>(mWidth, mHeight));
+		}
+		else
+		{
+			mMips = 1;
+		}
 
 		mIsDepthTexture = ((flags & TextureFlags::DepthTexture) == TextureFlags::DepthTexture);
 		VkImageAspectFlags imageAspect = mIsDepthTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;;
@@ -140,7 +160,7 @@ namespace Mule
 		info.extent.width = width;
 		info.extent.height = height;
 		info.extent.depth = depth;
-		info.mipLevels = mips;
+		info.mipLevels = mMips;
 		info.arrayLayers = layers;
 		info.samples = VK_SAMPLE_COUNT_1_BIT;
 		info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -192,7 +212,7 @@ namespace Mule
 		viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 		viewCreateInfo.subresourceRange.aspectMask = imageAspect;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = mips;
+		viewCreateInfo.subresourceRange.levelCount = mMips;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = layers;
 
@@ -200,6 +220,35 @@ namespace Mule
 		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("Failed to create image view");
+		}
+
+		// Sampler
+		{
+			VkSamplerCreateInfo samplerCreateInfo{};
+
+			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerCreateInfo.pNext = nullptr;
+			samplerCreateInfo.flags = 0;
+			samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+			samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+			samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			samplerCreateInfo.mipLodBias = 0.f;
+			samplerCreateInfo.anisotropyEnable = VK_TRUE;
+			samplerCreateInfo.maxAnisotropy = 16.f;
+			samplerCreateInfo.compareEnable = VK_FALSE;
+			// samplerCreateInfo.compareOp;
+			samplerCreateInfo.minLod = 0;
+			samplerCreateInfo.maxLod = mMips;
+			samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+			result = vkCreateSampler(mDevice, &samplerCreateInfo, nullptr, &mSampler);
+			if (result != VK_SUCCESS)
+			{
+				SPDLOG_ERROR("Failed to create linear sampler");
+			}
 		}
 
 		if (mLayers > 1)
@@ -217,12 +266,37 @@ namespace Mule
 					SPDLOG_ERROR("Failed to create image view for layer: {}", i);
 				}
 
-				ImTextureID id = (ImTextureID)ImGui_ImplVulkan_AddTexture(mContext->GetLinearSampler(), imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				ImTextureID id = (ImTextureID)ImGui_ImplVulkan_AddTexture(mSampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-				ImGuiLayerView layerView;
+				ImGuiView layerView;
 				layerView.Id = id;
 				layerView.ImageView = imageView;
 				mLayerViews.push_back(layerView);
+			}
+		}
+
+		if (mMips > 1)
+		{
+			for (int i = 0; i < mMips; i++)
+			{
+				viewCreateInfo.subresourceRange.baseMipLevel = i;
+				viewCreateInfo.subresourceRange.levelCount = 1;
+				viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+				viewCreateInfo.subresourceRange.layerCount = 1;
+
+				VkImageView imageView;
+				result = vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &imageView);
+				if (result != VK_SUCCESS)
+				{
+					SPDLOG_ERROR("Failed to create image view for layer: {}", i);
+				}
+
+				ImTextureID id = (ImTextureID)ImGui_ImplVulkan_AddTexture(mSampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+				ImGuiView layerView;
+				layerView.Id = id;
+				layerView.ImageView = imageView;
+				mMipviews.push_back(layerView);
 			}
 		}
 
@@ -240,7 +314,7 @@ namespace Mule
 		barrier.image = mVulkanImage.Image;
 		barrier.subresourceRange.aspectMask = imageAspect;
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = mMips;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = mLayers;
 		barrier.srcAccessMask = 0;
@@ -255,7 +329,6 @@ namespace Mule
 		VkDeviceMemory stagingBufferMemory = VK_NULL_HANDLE;
 		if (data != nullptr)
 		{
-
 			size_t size = width * height * depth * layers * GetFormatSize(mFormat);
 
 			VkBufferCreateInfo bufferCreateInfo = {};
@@ -263,7 +336,6 @@ namespace Mule
 			bufferCreateInfo.size = size;
 			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
 			
 			vkCreateBuffer(mDevice, &bufferCreateInfo, nullptr, &stagingBuffer);
 
@@ -292,7 +364,7 @@ namespace Mule
 			region.imageSubresource.baseArrayLayer = 0;
 			region.imageSubresource.layerCount = mLayers;
 			region.imageOffset = { 0, 0, 0 };
-			region.imageExtent = { width, height, mDepth };
+			region.imageExtent = { mWidth, mHeight, mDepth };
 
 			vkCmdCopyBufferToImage(
 				commandBuffer->GetHandle(),
@@ -301,65 +373,168 @@ namespace Mule
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
 				&region);
-		}
 
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = mVulkanImage.Image;
-		barrier.subresourceRange.aspectMask = imageAspect;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = mLayers;
-
-		VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		VkPipelineStageFlags dstStage;				
-
-		if (flags & TextureFlags::RenderTarget)
-		{
-			if (flags & TextureFlags::DepthTexture)
+			if (flags & TextureFlags::GenerateMips && mMips > 1)
 			{
-				barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-				barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				int32_t mipWidth = mWidth;
+				int32_t mipHeight = mHeight;
+				for (int i = 1; i < mMips; i++)
+				{
+					barrier.subresourceRange.baseMipLevel = i-1;
+					barrier.subresourceRange.levelCount = 1;
+					barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+					barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+					barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+					barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-				dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+					vkCmdPipelineBarrier(
+						commandBuffer->GetHandle(),
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+						0, nullptr,
+						0, nullptr,
+						1, &barrier);
+
+					VkImageBlit blit{};
+					blit.srcOffsets[0] = { 0, 0, 0 };
+					blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+					blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					blit.srcSubresource.mipLevel = i - 1;
+					blit.srcSubresource.baseArrayLayer = 0;
+					blit.srcSubresource.layerCount = 1;
+
+					blit.dstOffsets[0] = { 0, 0, 0 };
+					blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+					blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+					blit.dstSubresource.mipLevel = i;
+					blit.dstSubresource.baseArrayLayer = 0;
+					blit.dstSubresource.layerCount = 1;
+
+					vkCmdBlitImage(
+						commandBuffer->GetHandle(),
+						mVulkanImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						mVulkanImage.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						1, &blit,
+						VK_FILTER_LINEAR);
+
+					barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+					barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+					barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+					vkCmdPipelineBarrier(commandBuffer->GetHandle(),
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+						0, nullptr,
+						0, nullptr,
+						1, &barrier);
+
+					if (mipWidth > 1) mipWidth /= 2;
+					if (mipHeight > 1) mipHeight /= 2;
+				}
+
+				barrier.subresourceRange.baseMipLevel = mMips - 1;
+				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+				vkCmdPipelineBarrier(commandBuffer->GetHandle(),
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+					0, nullptr,
+					0, nullptr,
+					1, &barrier);
 			}
 			else
 			{
-				barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-				barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				VkImageMemoryBarrier barrier = {};
+				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				barrier.image = mVulkanImage.Image;
+				barrier.subresourceRange.aspectMask = imageAspect;
+				barrier.subresourceRange.baseMipLevel = 0;
+				barrier.subresourceRange.levelCount = mMips;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount = mLayers;
+				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-				dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				vkCmdPipelineBarrier(
+					commandBuffer->GetHandle(),
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					0, 0, nullptr, 0, nullptr, 1, &barrier);
 			}
+
+			mVulkanImage.Layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			commandBuffer->End();
+			auto fence = mContext->CreateFence();
+			fence->Reset();
+			queue->Submit(commandBuffer, {}, {}, fence);
+			fence->Wait();
 		}
 		else
 		{
-			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = mVulkanImage.Image;
+			barrier.subresourceRange.aspectMask = imageAspect;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = mMips;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = mLayers;
+
+			VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			VkPipelineStageFlags dstStage;
+
+			if (flags & TextureFlags::RenderTarget)
+			{
+				if (flags & TextureFlags::DepthTexture)
+				{
+					barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+					barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+					dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+				}
+				else
+				{
+					barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+					barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+					dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				}
+			}
+			else
+			{
+				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+				dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			}
+
+			mVulkanImage.Layout = barrier.newLayout;
+
+			vkCmdPipelineBarrier(
+				commandBuffer->GetHandle(),
+				srcStage,
+				dstStage,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+
+			commandBuffer->End();
+			auto fence = mContext->CreateFence();
+			fence->Reset();
+			queue->Submit(commandBuffer, {}, {}, fence);
+			fence->Wait();
 		}
-
-		mVulkanImage.Layout = barrier.newLayout;
-
-		vkCmdPipelineBarrier(
-			commandBuffer->GetHandle(),
-			srcStage,
-			dstStage,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
-
-		commandBuffer->End();
-		auto fence = mContext->CreateFence();
-		fence->Reset();
-		queue->Submit(commandBuffer, {}, {}, fence);
-		fence->Wait();
 
 		if (stagingBufferMemory)
 		{

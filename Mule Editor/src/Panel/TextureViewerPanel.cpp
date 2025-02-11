@@ -19,6 +19,7 @@ void TextureViewerPanel::OnUIRender(float dt)
 		else
 		{
 			static int layer = 0;
+			static int mip = 0;
 			const float offset = 100.f;
 			float width = ImGui::GetContentRegionAvail().x;
 			width = glm::min(width, 400.f);
@@ -62,21 +63,15 @@ void TextureViewerPanel::OnUIRender(float dt)
 				ImGui::PushItemWidth(width - offset);
 				ImGui::DragInt("##Layer", &layer, 1.f, 0, mTexture->GetLayerCount() - 1);
 				id = mTexture->GetLayerID(layer);
-				ImGui::SameLine();
-				ImGui::BeginDisabled(mLayerView == 0);
-				if (ImGui::Button(ICON_FA_MINUS))
-				{
-					mLayerView--;
-				}
-				ImGui::EndDisabled();
-				ImGui::SameLine();
-				ImGui::BeginDisabled(mLayerView < mTexture->GetLayerCount() - 1);
-				if (ImGui::Button(ICON_FA_PLUS))
-				{
-					mLayerView++;
-				}
-				ImGui::EndDisabled();
 			}
+			if (mTexture->GetMipCount() > 1)
+			{
+				ImGui::Text("Mip Level"); ImGui::SameLine(offset);
+				ImGui::PushItemWidth(width - offset);
+				ImGui::DragInt("##Mip", &mip, 1.f, 0, mTexture->GetMipCount() - 1);
+				id = mTexture->GetMipID(mip);
+			}
+
 			if (id != 0)
 			{
 				ImGui::Image(id, { 512, 512 });

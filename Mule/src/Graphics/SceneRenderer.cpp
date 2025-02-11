@@ -40,9 +40,9 @@ namespace Mule
 			255, 255, 255, 255,		255, 255, 255, 255
 		};
 
-		mBlackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, 1, TextureFormat::RGBA8U);
+		mBlackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, TextureFormat::RGBA8U);
 		mBlackTextureCube = MakeRef<TextureCube>(mGraphicsContext, &blackImageData[0], 2, 1, TextureFormat::RGBA8U);
-		mWhiteTexture = MakeRef<Texture2D>(mGraphicsContext, &whiteImageData[0], 2, 2, 1, TextureFormat::RGBA8U);
+		mWhiteTexture = MakeRef<Texture2D>(mGraphicsContext, &whiteImageData[0], 2, 2, TextureFormat::RGBA8U);
 
 		mAssetManager->InsertAsset(mWhiteTexture);
 		mAssetManager->InsertAsset(mBlackTexture);
@@ -505,6 +505,13 @@ namespace Mule
 				if (!mesh) return;
 
 				glm::mat4 transform = e.GetTransformComponent().TRS();
+				Entity parent = e.Parent();
+				while (parent)
+				{
+					transform = transform * parent.GetTransformComponent().TRS();
+					parent = parent.Parent();
+				}
+
 				uint32_t materialIndex = frameData.MaterialArray.QueryIndex(meshComponent.MaterialHandle);
 
 				commandBuffer->SetPushConstants(mDefaultGeometryShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));

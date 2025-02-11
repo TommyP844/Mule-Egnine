@@ -47,21 +47,25 @@ namespace Mule
 		TextureType GetTextureType() const { return mTextureType; }
 
 		ImTextureID GetLayerID(int index);
+		ImTextureID GetMipID(int index);
+		VkSampler GetSampler() const { return mSampler; }
 
 	protected:
-		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mips, TextureFormat format, TextureFlags flags);
+		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, TextureFormat format, TextureFlags flags);
 
 		WeakRef<GraphicsContext> mContext;
 		VkDevice mDevice;
 		VulkanImage mVulkanImage;
+		VkSampler mSampler;
 
-		struct ImGuiLayerView
+		struct ImGuiView
 		{
 			VkImageView ImageView;
 			ImTextureID Id;
 		};
 
-		std::vector<ImGuiLayerView> mLayerViews;
+		std::vector<ImGuiView> mLayerViews;
+		std::vector<ImGuiView> mMipviews;
 		
 		bool mIsDepthTexture;
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;

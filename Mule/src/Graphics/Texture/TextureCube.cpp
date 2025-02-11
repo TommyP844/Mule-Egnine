@@ -7,6 +7,6 @@ namespace Mule
 		:
 		ITexture(context)
 	{
-		Initialize(data, axisSize, axisSize, 1, layers, 1, format, TextureFlags(TextureFlags::CubeMap | flags));
+		Initialize(data, axisSize, axisSize, 1, layers, format, TextureFlags(TextureFlags::CubeMap | flags));
 	}
 }

@@ -82,6 +82,9 @@
 //  2016-10-18: Vulkan: Add location decorators & change to use structs as in/out in glsl, update embedded spv (produced with glslangValidator -x). Null the released resources.
 //  2016-08-27: Vulkan: Fix Vulkan example for use when a depth buffer is active.
 
+#include <mutex>
+static std::mutex mutex;
+
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 #include "Graphics/imguiImpl/imgui_impl_vulkan.h"
@@ -1195,6 +1198,7 @@ void ImGui_ImplVulkan_SetMinImageCount(uint32_t min_image_count)
 // FIXME: This is experimental in the sense that we are unsure how to best design/tackle this problem, please post to https://github.com/ocornut/imgui/pull/914 if you have suggestions.
 VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkSampler sampler, VkImageView image_view, VkImageLayout image_layout)
 {
+    std::lock_guard<std::mutex> lock(mutex);
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
     VkDescriptorPool pool = bd->DescriptorPool ? bd->DescriptorPool : v->DescriptorPool;

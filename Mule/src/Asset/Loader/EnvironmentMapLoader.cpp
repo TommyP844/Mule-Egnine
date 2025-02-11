@@ -98,7 +98,7 @@ namespace Mule
 
             mBRDFCompute = MakeRef<ComputeShader>(mContext, computeDesc);
 
-            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, 1, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
+            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
 
             auto queue = mContext->GetGraphicsQueue();
             auto fence = mContext->CreateFence();
@@ -143,7 +143,7 @@ namespace Mule
         if (data == nullptr)
             return nullptr;
 
-        Ref<Texture2D> texture = MakeRef<Texture2D>(mContext, data, width, height, 1, TextureFormat::RGBA32F);
+        Ref<Texture2D> texture = MakeRef<Texture2D>(mContext, data, width, height, TextureFormat::RGBA32F);
         stbi_image_free(data);
 
         Ref<TextureCube> cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, TextureFlags::SotrageImage);

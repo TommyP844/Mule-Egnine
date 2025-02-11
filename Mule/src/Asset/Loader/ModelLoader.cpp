@@ -237,7 +237,7 @@ namespace Mule
 						}
 					}
 
-					metallicMap = MakeRef<Texture2D>(mGraphicsContext, metallicPtr, width, height, 1, TextureFormat::RGBA8U);
+					metallicMap = MakeRef<Texture2D>(mGraphicsContext, metallicPtr, width, height, TextureFormat::RGBA8U);
 					if (metallicMap)
 					{
 						mAssetManager->InsertAsset(metallicMap);
@@ -250,7 +250,7 @@ namespace Mule
 						}
 					}
 					
-					roughnessMap = MakeRef<Texture2D>(mGraphicsContext, roughnessPtr, width, height, 1, TextureFormat::RGBA8U);
+					roughnessMap = MakeRef<Texture2D>(mGraphicsContext, roughnessPtr, width, height, TextureFormat::RGBA8U);
 					if (roughnessMap)
 					{
 						mAssetManager->InsertAsset(roughnessMap);
@@ -338,11 +338,11 @@ namespace Mule
 			if (data == nullptr)
 				return nullptr;
 			
-			tex = MakeRef<Texture2D>(mGraphicsContext, data, width, height, 1, TextureFormat::RGBA8U);
+			tex = MakeRef<Texture2D>(mGraphicsContext, data, width, height, TextureFormat::RGBA8U, TextureFlags::GenerateMips);
 		}
 		else
 		{
-			tex = MakeRef<Texture2D>(mGraphicsContext, texture->pcData, texture->mWidth, texture->mHeight, 1, TextureFormat::RGBA8U);
+			tex = MakeRef<Texture2D>(mGraphicsContext, texture->pcData, texture->mWidth, texture->mHeight, TextureFormat::RGBA8U, TextureFlags::GenerateMips);
 		}
 
 		mAssetManager->InsertAsset(tex);

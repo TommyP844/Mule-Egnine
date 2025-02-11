@@ -18,6 +18,7 @@ void SceneViewPanel::OnAttach()
 	mWidth = 0;
 	mHeight = 0;
 	mBlackImage = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	mEditorContext->EditorRenderSettings.EditorCamera.SetNearPlane(0.01);
 }
 
 void SceneViewPanel::OnUIRender(float dt)

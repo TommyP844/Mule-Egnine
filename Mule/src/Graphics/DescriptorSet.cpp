@@ -79,7 +79,7 @@ namespace Mule
 
 					imageInfo.imageLayout = texture->GetVulkanImage().Layout;
 					imageInfo.imageView = texture->GetImageView();
-					imageInfo.sampler = mContext->GetLinearSampler();
+					imageInfo.sampler = texture->GetSampler();
 
 					imageInfos.push_back(imageInfo);
 				}
