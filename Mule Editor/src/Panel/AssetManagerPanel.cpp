@@ -7,6 +7,8 @@
 #include "Event/EditMaterialEvent.h"
 #include "Event/ViewTextureEvent.h"
 
+#include <regex>
+
 AssetManagerPanel::AssetManagerPanel()
 	:
 	IPanel("Asset Manager")
@@ -39,6 +41,10 @@ void AssetManagerPanel::OnUIRender(float dt)
 			searchedAsset = assetManager->GetAsset<Mule::IAsset>(handle);
 		}
 
+		static char nameBuffer[256] = { 0 };
+		ImGui::Text("Name"); ImGui::SameLine();
+		ImGui::InputText("##Name", nameBuffer, 256, ImGuiInputTextFlags_EnterReturnsTrue);
+
 
 		if (searchedAsset)
 		{
@@ -53,6 +59,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 		else
 		{
 			const char* values[] = {
+				"All",
 				"Environment Map",
 				"Materials",
 				"Meshes",
@@ -65,12 +72,13 @@ void AssetManagerPanel::OnUIRender(float dt)
 			ImGui::PushItemWidth(150.f);
 			if (ImGui::Combo("##AssetType", &index, values, IM_ARRAYSIZE(values)))
 			{
-				if (index == 0) assetType = Mule::AssetType::EnvironmentMap;
-				if (index == 1) assetType = Mule::AssetType::Material;
-				if (index == 2) assetType = Mule::AssetType::Mesh;
-				if (index == 3) assetType = Mule::AssetType::Model;
-				if (index == 4) assetType = Mule::AssetType::Shader;
-				if (index == 5) assetType = Mule::AssetType::Texture;
+				if (index == 0) assetType = Mule::AssetType::None;
+				if (index == 1) assetType = Mule::AssetType::EnvironmentMap;
+				if (index == 2) assetType = Mule::AssetType::Material;
+				if (index == 3) assetType = Mule::AssetType::Mesh;
+				if (index == 4) assetType = Mule::AssetType::Model;
+				if (index == 5) assetType = Mule::AssetType::Shader;
+				if (index == 6) assetType = Mule::AssetType::Texture;
 			}
 		}
 
@@ -90,6 +98,13 @@ void AssetManagerPanel::OnUIRender(float dt)
 				{
 					for (const auto& [handle, asset] : assetManager->GetAllAssets())
 					{
+						if (strlen(nameBuffer) > 0)
+						{
+							std::regex regex = std::regex(std::string(nameBuffer), std::regex_constants::icase);
+							bool match = std::regex_search(asset->Name(), regex);
+							if(!match)
+								continue;
+						}
 						DisplayAsset(asset);
 						ImGui::Separator();
 					}
