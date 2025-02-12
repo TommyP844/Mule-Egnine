@@ -119,6 +119,12 @@ namespace Mule
 		descriptorLayoutDesc.Type = DescriptorType::Texture;
 		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
 
+		descriptorLayoutDesc.ArrayCount = 1;
+		descriptorLayoutDesc.Binding = 7;
+		descriptorLayoutDesc.Stage = ShaderStage::Fragment;
+		descriptorLayoutDesc.Type = DescriptorType::UniformBuffer;
+		descriptorSetLayout.Layouts.push_back(descriptorLayoutDesc);
+
 		mGeometryStageLayout = mGraphicsContext->CreateDescriptorSetLayout(descriptorSetLayout);
 
 #pragma region EnvironmentMap
@@ -224,6 +230,7 @@ namespace Mule
 			mFrameData[i].SolidGeometryPassCmdBuffer = mFrameData[i].CommandPool->CreateCommandBuffer();
 			mFrameData[i].CameraBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(CameraData));
 			mFrameData[i].LightBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPULightData));
+			mFrameData[i].SceneSettings = mGraphicsContext->CreateUniformBuffer(sizeof(SceneRendererSettings));
 
 			// TODO: handle dynamic material buffer size
 			mFrameData[i].MaterialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPUMaterial) * 1000);
@@ -254,7 +261,13 @@ namespace Mule
 			updateLightBuffer.Type = DescriptorType::UniformBuffer;
 			updateLightBuffer.Buffers = { mFrameData[i].LightBuffer };
 
-			mFrameData[i].DescriptorSet->Update({ updateCameraBuffer, updateMaterialBuffer, updateLightBuffer });
+			DescriptorSetUpdate updateSettingsBuffer;
+			updateSettingsBuffer.ArrayElement = 0;
+			updateSettingsBuffer.Binding = 7;
+			updateSettingsBuffer.Type = DescriptorType::UniformBuffer;
+			updateSettingsBuffer.Buffers = { mFrameData[i].SceneSettings };
+
+			mFrameData[i].DescriptorSet->Update({ updateCameraBuffer, updateMaterialBuffer, updateLightBuffer, updateSettingsBuffer });
 		}
 
 		GraphicsShaderDescription defaultGeometryDesc{};
@@ -306,6 +319,7 @@ namespace Mule
 		uint32_t blackIndex = 0;
 		uint32_t whiteIndex = 0;
 		{
+			frameData.SceneSettings->SetData(&mSettings, sizeof(SceneRendererSettings));
 
 			CameraData cameraData{};
 			cameraData.View = settings.EditorCamera.GetView();
@@ -419,7 +433,10 @@ namespace Mule
 			if (environmentMap)
 			{
 				auto cubeMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetCubeMapHandle());
-
+				if (skyLight.DisplayIrradianceMap)
+				{
+					cubeMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetDiffuseIBLMap());
+				}
 				if (cubeMap)
 				{
 					hasEnvironmentMap = true;

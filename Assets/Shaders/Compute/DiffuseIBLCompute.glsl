@@ -51,46 +51,28 @@ void main() {
 
     // Normalize the direction vector
     dir = normalize(dir);
-    vec3 irradiance = vec3(0);
-    uint sampleCount = 0;
-    // Sample the hemisphere around the normal (using spherical coordinates)
-    for (float phi = 0; phi < 360; phi += 0.5) {
-        for (float theta = 67.5; theta < 112.5; theta += 0.5) {
-            // Convert spherical to cartesian coordinates for sampling direction
-            float phiRad = radians(phi);
-            float thetaRad = radians(theta);
-            vec3 sampleVec = vec3(
-                sin(thetaRad) * cos(phiRad),
-                cos(thetaRad),
-                sin(thetaRad) * sin(phiRad)
-            );
+    vec3 irradiance = vec3(0.0);  
 
-            mat3 rotationMatrix = mat3(
-                cross(vec3(0.0, 1.0, 0.0), dir),  // X-axis rotation
-                cross(vec3(1.0, 0.0, 0.0), dir),  // Y-axis rotation
-                dir                                    // Z-axis is the normal
-            );
+    vec3 up    = vec3(0.0, 1.0, 0.0);
+    vec3 right = normalize(cross(up, dir));
+    up         = normalize(cross(dir, right));
 
-            sampleVec = normalize(rotationMatrix * sampleVec);
-
-            // Cosine-weighted sample (Lambertian reflection model)
-            float cosTheta = max(dot(sampleVec, dir), 0.0); // Cosine of angle between normal and light direction
-            if (cosTheta > 0.0) {
-                // Sample the environment map at this direction (the sampleVec is a 3D direction)
-                vec3 envColor = texture(envMap, sampleVec).rgb;
-
-                // Accumulate the irradiance with cosine-weighted contribution
-                irradiance += envColor * cosTheta;
-                sampleCount++;
-            }
+    float sampleDelta = 0.01;
+    float nrSamples = 0.0; 
+    for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
+    {
+        for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)
+        {
+            // spherical to cartesian (in tangent space)
+            vec3 tangentSample = vec3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
+            // tangent space to world
+            vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * dir; 
+    
+            irradiance += texture(envMap, sampleVec).rgb * cos(theta) * sin(theta);
+            nrSamples++;
         }
     }
-
-    // Avoid division by zero
-    if (sampleCount > 0) {
-        irradiance /= float(sampleCount); // Normalize by the number of samples
-        irradiance *= PI; // Multiply by PI for correct irradiance scaling
-    }
+    irradiance = PI * irradiance * (1.0 / float(nrSamples));
 
 
     // Store the result in the irradiance map

@@ -13,6 +13,7 @@
 #include "Panel/AssetManagerPanel.h"
 #include "Panel/MaterialEditorPanel.h"
 #include "Panel/TextureViewerPanel.h"
+#include "Panel/SceneRendererSettingsPanel.h"
 
 // STD
 #include <future>
@@ -41,6 +42,7 @@ private:
 	AssetManagerPanel mAssetManagerPanel;
 	MaterialEditorPanel mMaterialEditorPanel;
 	TextureViewerPanel mTextureViewerPanel;
+	SceneRendererSettingsPanel mSceneRendererSettingsPanel;
 	bool mShowDemoWindow = false;
 
 	std::future<void> mAssetLoaderThread;

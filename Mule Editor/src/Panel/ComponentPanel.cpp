@@ -142,6 +142,9 @@ void ComponentPanel::OnUIRender(float dt)
 				}
 			}
 
+			DisplayRow("Display Irradiance");
+			ImGui::Checkbox("##DisplayIrradiance", &light.DisplayIrradianceMap);
+
 			});
 
 		DisplayComponent<Mule::MeshComponent>(ICON_FA_DIAGRAM_PROJECT" Mesh", e, [&](Mule::MeshComponent& mesh) {

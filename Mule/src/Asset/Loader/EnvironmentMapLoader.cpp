@@ -257,7 +257,7 @@ namespace Mule
 
 
 
-        return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, prefilterMap->Handle(), NullAssetHandle);
+        return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
     }
 
     void EnvironmentMapLoader::SaveText(Ref<EnvironmentMap> asset)

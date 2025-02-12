@@ -28,6 +28,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mAssetManagerPanel.SetContext(mEditorState, context);
 	mMaterialEditorPanel.SetContext(mEditorState, context);
 	mTextureViewerPanel.SetContext(mEditorState, context);
+	mSceneRendererSettingsPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -36,6 +37,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mAssetManagerPanel.OnAttach();
 	mMaterialEditorPanel.OnAttach();
 	mTextureViewerPanel.OnAttach();
+	mSceneRendererSettingsPanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
@@ -202,6 +204,7 @@ void EditorLayer::OnUIRender(float dt)
 		mAssetManagerPanel.OnEvent(event);
 		mMaterialEditorPanel.OnEvent(event);
 		mTextureViewerPanel.OnEvent(event);
+		mSceneRendererSettingsPanel.OnEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -214,6 +217,7 @@ void EditorLayer::OnUIRender(float dt)
 	mAssetManagerPanel.OnUIRender(dt);
 	mMaterialEditorPanel.OnUIRender(dt);
 	mTextureViewerPanel.OnUIRender(dt);
+	mSceneRendererSettingsPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

@@ -55,7 +55,8 @@ namespace Mule
 		EnvironmentMapComponent(const EnvironmentMapComponent& other) = default;
 		bool Active = true;
 		float Radiance = 1.f;
-		AssetHandle EnvironmentMap;
+		AssetHandle EnvironmentMap = NullAssetHandle;
+		bool DisplayIrradianceMap = false;
 	};
 
 	struct PointLightComponent

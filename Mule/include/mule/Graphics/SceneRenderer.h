@@ -20,6 +20,12 @@
 
 namespace Mule
 {
+	struct SceneRendererSettings
+	{
+		float Gamma = 2.2f;
+		float Exposure = 1.f;
+	};
+
 	struct EditorRenderSettings
 	{
 		WeakRef<Scene> Scene = nullptr;
@@ -40,6 +46,7 @@ namespace Mule
 		Ref<FrameBuffer> GetCurrentFrameBuffer() const { return mFrameData[mFrameIndex].Framebuffer; }
 		void Resize(uint32_t width, uint32_t height);
 
+		SceneRendererSettings& GetSettings() { return mSettings; }
 	private:
 		Ref<Texture2D> mBlackTexture;
 		Ref<Texture2D> mWhiteTexture;
@@ -50,6 +57,7 @@ namespace Mule
 
 		Ref<DescriptorSetLayout> mGeometryStageLayout;
 		Ref<DescriptorSetLayout> mEnvironmentMapDescriptorSetLayout;
+		SceneRendererSettings mSettings;
 
 		struct GPULightData
 		{
@@ -101,6 +109,7 @@ namespace Mule
 			Ref<UniformBuffer> CameraBuffer;
 			Ref<UniformBuffer> MaterialBuffer;
 			Ref<UniformBuffer> LightBuffer;
+			Ref<UniformBuffer> SceneSettings;
 
 			Ref<Mule::DescriptorSet> EnvironmentMapDescriptorSet;
 			Ref<DescriptorSet> DescriptorSet;

@@ -46,6 +46,12 @@ layout(location = 6) in vec3 FragPos;
 
 layout(location = 0) out vec4 FragColor;
 
+struct RenderSetting
+{
+    float Gamma;
+    float Exposure;
+};
+
 struct Material 
 {
 	vec4 AlbedoColor;
@@ -94,6 +100,10 @@ layout(binding = 2) uniform UniformBufferObject {
 layout(binding = 3) uniform LightBuffer {
 	LightData LightData;
 } lights;
+
+layout(binding = 7) uniform SettingsBuffer {
+	RenderSetting Settings;
+} settings;
 
 layout(push_constant) uniform PushConstantBlock {
     layout(offset = 64) uint materialIndex;
@@ -209,7 +219,11 @@ void main()
 	lighting *= ao;
 	vec3 reflectionDir = reflect(V, normal);
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 ambientLighting = diffuseIBL(normal, albedo, ao) + specularIBL(reflectionDir, roughness, F0, normal, V);
+	vec3 ambientLighting = diffuseIBL(normal, albedo, ao);// + specularIBL(reflectionDir, roughness, F0, normal, V);
 
-	FragColor = vec4(ambientLighting + lighting, 1.0);
+    vec3 hdrColor = ambientLighting + lighting;
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * settings.Settings.Exposure);
+    mapped = pow(mapped, vec3(1.0 / settings.Settings.Gamma));
+
+	FragColor = vec4(mapped, 1.0);
 }
