@@ -74,7 +74,7 @@ namespace Mule
 			framebufferDesc.DepthAttachment = { TextureFormat::D32F };
 			framebufferDesc.Width = frameData.Width;
 			framebufferDesc.Height = frameData.Height;
-			framebufferDesc.LayerCount = frameData.CascadeCount;
+			framebufferDesc.LayerCount = 1;
 			framebufferDesc.RenderPass = mRenderPass;
 
 			DescriptorSetLayoutDescription DSLD{
@@ -187,7 +187,17 @@ namespace Mule
 
 				auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
 				if (!mesh) continue;
-				glm::mat4 transform = frameData.LightCameras[i] * e.GetTransformComponent().TRS();
+				glm::mat4 transform = e.GetTransformComponent().TRS();
+				Entity parent = e.Parent();
+				while (parent)
+				{
+					transform *= parent.GetTransformComponent().TRS();
+					Entity p = e.Parent();
+					if (p.ID() == parent.ID())
+						break;
+					parent = e.Parent();
+				}
+				transform = frameData.LightCameras[i] * e.GetTransformComponent().TRS();
 
 				cmd->SetPushConstants(mShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
 				cmd->BindAndDrawMesh(mesh, 1);

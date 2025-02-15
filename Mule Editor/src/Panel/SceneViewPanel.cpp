@@ -55,6 +55,12 @@ void SceneViewPanel::OnUIRender(float dt)
 			Ref<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetCurrentFrameBuffer();
 			WeakRef<Mule::Texture2D> texture = frameBuffer->GetColorAttachment(0);
 			texId = texture->GetImGuiID();
+
+			auto& sceneRendererSettings = sceneRenderer->GetSettings();
+			if (sceneRendererSettings.ViewCascadedShadowMaps)
+			{
+				texId = sceneRenderer->GetShadowPass()->GetFB()[sceneRendererSettings.CascadeIndex]->GetDepthAttachment()->GetImGuiID();
+			}
 		}
 
 		ImGui::Image(texId, region);

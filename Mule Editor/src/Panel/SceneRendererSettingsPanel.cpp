@@ -32,26 +32,20 @@ void SceneRendererSettingsPanel::OnUIRender(float dt)
 		ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
 		ImGui::Checkbox("##ShadowEnable", &settings.EnableShadows);
 
-		const char* framebuffers[] = {
-			"Default",
-			"Shadow Map"
-		};
+		ImGui::SeparatorText("Debug");
 
-		ImGui::Text("Framebuffer");
+		ImGui::Text("View Cascades");
 		ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
+		ImGui::Checkbox("##ViewCascades", &settings.ViewCascadedShadowMaps);
 
-		static const char* preview = framebuffers[0];
-		if (ImGui::BeginCombo("##FB", preview))
+		if (settings.ViewCascadedShadowMaps)
 		{
-			for (int i = 0; i < IM_ARRAYSIZE(framebuffers); i++)
-			{
-				bool selected = preview == framebuffers[i];
-				if (ImGui::Selectable(framebuffers[i], &selected))
-				{
-					preview = framebuffers[i];
-				}
-			}
-			ImGui::EndCombo();
+			ImGui::Text("Cascade Index");
+			ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
+			uint32_t max = mEngineContext->GetSceneRenderer()->GetShadowPass()->GetCascadeCount() - 1;
+			int index = settings.CascadeIndex;
+			ImGui::DragInt("##CascadeIndex", &index, 1.f, 0, max, "%d", ImGuiSliderFlags_WrapAround);
+			settings.CascadeIndex = index;
 		}
 	}
 	ImGui::End();

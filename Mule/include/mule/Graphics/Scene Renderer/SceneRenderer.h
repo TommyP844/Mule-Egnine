@@ -31,6 +31,10 @@ namespace Mule
 		bool EnableShadows = true;
 		float Gamma = 2.2f;
 		float Exposure = 1.f;
+
+		// Temp
+		bool ViewCascadedShadowMaps = false;
+		uint32_t CascadeIndex = 0;
 	};
 
 	struct EditorRenderSettings
@@ -60,6 +64,8 @@ namespace Mule
 		Ref<Semaphore> GetCurrentFrameRenderFinishedSemaphore() const { return mGeometryPass->GetSemaphore(); }
 		Ref<FrameBuffer> GetCurrentFrameBuffer() const { return mGeometryPass->GetFB(); }
 		void Resize(uint32_t width, uint32_t height);
+
+		WeakRef<ShadowPass> GetShadowPass() const { return mShadowPass; }
 
 		SceneRendererSettings& GetSettings() { return mSettings; }
 	private:

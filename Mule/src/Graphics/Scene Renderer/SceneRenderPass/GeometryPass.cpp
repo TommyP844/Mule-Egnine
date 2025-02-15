@@ -248,6 +248,15 @@ namespace Mule
 				materialIndex = 0;
 
 			glm::mat4 transform = e.GetTransformComponent().TRS();
+			Entity parent = e.Parent();
+			while (parent)
+			{
+				transform *= parent.GetTransformComponent().TRS();
+				Entity p = e.Parent();
+				if (p.ID() == parent.ID())
+					break;
+				parent = e.Parent();
+			}
 
 			// set push constants
 			uint32_t fragmentConstants[] = {
