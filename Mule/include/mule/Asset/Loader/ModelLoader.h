@@ -18,10 +18,12 @@ namespace YAML
 
 namespace Mule
 {
+	class EngineContext;
+
 	class ModelLoader : public IAssetLoader<Model, AssetType::Model>
 	{
 	public:
-		ModelLoader(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
+		ModelLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
 		virtual ~ModelLoader() {}
 
 		Ref<Model> LoadText(const fs::path& filepath) override;
@@ -31,7 +33,7 @@ namespace Mule
 		void SaveBinary(Ref<Model> asset) override;
 
 	private:
-		WeakRef<AssetManager> mAssetManager;
+		WeakRef<EngineContext> mEngineContext;
 		WeakRef<GraphicsContext> mGraphicsContext;
 
 		struct LoadInfo
@@ -58,8 +60,8 @@ namespace Mule
 		void RecurseNodes(const aiNode* ainode, ModelNode& node, LoadInfo& info);
 		Ref<Mesh> LoadMesh(const aiMesh* mesh, LoadInfo& info);
 		Ref<Material> LoadMaterial(const aiMaterial* material, LoadInfo& info);
-		Ref<Texture2D> LoadTexture(const aiTexture* texture);
-		Ref<Texture2D> LoadTexture(const aiMaterial* material, const std::vector<aiTextureType>& textureTypes, LoadInfo& info);
+		WeakRef<Texture2D> LoadTexture(const aiTexture* texture);
+		WeakRef<Texture2D> LoadTexture(const aiMaterial* material, const std::vector<aiTextureType>& textureTypes, LoadInfo& info);
 		std::string CreateAssetName(std::string name, LoadInfo& info, AssetType assetType);
 
 		void LoadSerializationInfo(const fs::path& metaPath, LoadInfo& info);

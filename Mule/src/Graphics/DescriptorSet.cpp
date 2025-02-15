@@ -11,7 +11,8 @@ namespace Mule
 		mContext(context),
 		mDevice(context->GetDevice()),
 		mDescriptorSet(VK_NULL_HANDLE),
-		mDescriptorPool(context->GetDescriptorPool())
+		mDescriptorPool(context->GetDescriptorPool()),
+		mDescriptorSetLayouts(description.Layouts)
 	{
 		std::vector<VkDescriptorSetLayout> layouts;
 		for (const auto& setLayout : description.Layouts)

@@ -26,9 +26,9 @@ namespace Mule
 		uint32_t Width;
 		uint32_t Height;
 		uint32_t LayerCount = 1;
+		Ref<RenderPass> RenderPass = nullptr;
 		std::vector<AttachmentDesc> Attachments;
 		AttachmentDesc DepthAttachment;
-		Ref<RenderPass> RenderPass = nullptr;
 	};
 
 	class FrameBuffer

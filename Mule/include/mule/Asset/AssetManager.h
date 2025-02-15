@@ -54,9 +54,6 @@ namespace Mule
 		void InsertAsset(Ref<T> asset);
 
 		template<typename T>
-		Ref<T> FindAsset(const fs::path& filepath);
-
-		template<typename T>
 		std::future<Ref<T>> LoadAssetAsync(const fs::path& filepath);
 
 		template<typename T>

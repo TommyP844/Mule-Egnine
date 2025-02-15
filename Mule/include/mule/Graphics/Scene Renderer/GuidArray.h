@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <queue>
 
 namespace Mule
 {
@@ -20,7 +21,6 @@ namespace Mule
 
 		void Clear()
 		{
-			mSizePtr = 0;
 			mIndices.clear();
 			mArray.clear();
 		}
@@ -30,9 +30,23 @@ namespace Mule
 			uint32_t index = QueryIndex(handle);
 			if (index != UINT_MAX)
 				return index;
-			mArray.push_back(value);
-			mIndices[handle] = mSizePtr++;
-			return mSizePtr - 1;
+			if (!mFreeIndices.empty())
+			{
+				uint32_t index = mFreeIndices.front();
+				mFreeIndices.pop();
+				mIndices[handle] = index;
+				mArray[index] = value;
+				return index;
+			}
+			else
+			{
+				mArray.push_back(value);
+				uint32_t index = mArray.size() - 1;
+				mIndices[handle] = index;
+				return index;
+			}
+			// Should never happen
+			return -1;
 		}
 
 		uint32_t QueryIndex(AssetHandle handle)
@@ -43,6 +57,16 @@ namespace Mule
 			if (iter == mIndices.end())
 				return UINT32_MAX;
 			return iter->second;
+		}
+
+		void Remove(AssetHandle handle)
+		{
+			auto iter = mIndices.find(handle);
+			if (iter == mIndices.end())
+				return;
+
+			mFreeIndices.push(iter->second);
+			mIndices.erase(iter);
 		}
 
 		const T& Query(AssetHandle handle)
@@ -59,8 +83,9 @@ namespace Mule
 		const std::vector<T>& GetArray() const { return mArray; }
 
 	private:
-		uint32_t mSizePtr;
 		std::unordered_map<AssetHandle, uint32_t> mIndices;
 		std::vector<T> mArray;
+		std::queue<uint32_t> mFreeIndices;
+		
 	};
 }

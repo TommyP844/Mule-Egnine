@@ -19,6 +19,17 @@ namespace Mule
 
 	struct DescriptorSetUpdate
 	{
+		DescriptorSetUpdate() = default;
+		DescriptorSetUpdate(const DescriptorSetUpdate& other) = default;
+		DescriptorSetUpdate(uint32_t binding, DescriptorType type, uint32_t arrayElement, const std::vector<WeakRef<ITexture>>& textures,
+				const std::vector<WeakRef<UniformBuffer>>& buffers)
+			:
+			Binding(binding),
+			ArrayElement(arrayElement),
+			Type(type),
+			Buffers(buffers),
+			Textures(textures)
+		{}
 		uint32_t Binding;
 		uint32_t ArrayElement;
 		DescriptorType Type;
@@ -35,10 +46,12 @@ namespace Mule
 		void Update(const std::vector<DescriptorSetUpdate>& updates);
 
 		VkDescriptorSet GetDescriptorSet() const { return mDescriptorSet; }
+		const std::vector<WeakRef<DescriptorSetLayout>>& GetDescriptorSetLayouts() const { return mDescriptorSetLayouts; }
 	private:
 		WeakRef<GraphicsContext> mContext;
 		VkDevice mDevice;
 		VkDescriptorPool mDescriptorPool;
 		VkDescriptorSet mDescriptorSet;
+		std::vector<WeakRef<DescriptorSetLayout>> mDescriptorSetLayouts;
 	};
 }

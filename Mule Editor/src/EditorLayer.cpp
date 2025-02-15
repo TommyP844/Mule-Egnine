@@ -50,8 +50,6 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Font Awesome/fa-solid-900.ttf", 18.f, &fontConfig, &icon_ranges[0]);
 	ImGui::GetIO().Fonts->Build();
-
-	mEngineContext->GetAssetManager()->LoadRegistry(mEditorState->mProjectPath / "Registry.mrz");
 }
 
 EditorLayer::~EditorLayer()
@@ -81,10 +79,8 @@ void EditorLayer::OnAttach()
 {
 	SPDLOG_INFO("Layer attached: {}", GetName());
 
-
 	mAssetLoaderThread = std::async(std::launch::async, [&]() {
 		std::vector<std::future<void>> futures;
-
 		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
 		{
 			if (dir.is_directory()) continue;
@@ -92,39 +88,39 @@ void EditorLayer::OnAttach()
 			std::string extension = dir.path().extension().string();
 			fs::path filePath = dir.path();
 
-			futures.push_back(std::async(std::launch::async, [=]() {
-				SPDLOG_INFO("Loading file: {}", filePath.string());
-				const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-				const std::set<std::string> modelExtensions = { ".gltf" };
-				if (modelExtensions.contains(extension))
+			SPDLOG_INFO("Loading file: {}", filePath.string());
+			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+			const std::set<std::string> modelExtensions = { ".gltf" };
+			if (modelExtensions.contains(extension))
+			{
+				futures.push_back(std::async(std::launch::async, [=]() {
+					mEngineContext->LoadAsset<Mule::Model>(filePath);
+					}));
+			}
+			else if (imageExtensions.contains(extension))
+			{
+				auto asset = mEngineContext->GetAssetByFilepath(dir.path());
+				if (!asset)
 				{
-					mEngineContext->GetAssetManager()->LoadAssetAsync<Mule::Model>(filePath);
-
+					futures.push_back(std::async(std::launch::async, [=]() {
+						mEngineContext->LoadAsset<Mule::Texture2D>(filePath);
+						}));
 				}
-				else if (imageExtensions.contains(extension))
-				{
-					auto asset = mEngineContext->GetAssetManager()->GetAssetByFilepath(dir.path());
-					if (!asset)
-					{
-						mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>(filePath);
-					}
-				}
-				else if (extension == ".hdr")
-				{
-					mEngineContext->GetAssetManager()->LoadAsset<Mule::EnvironmentMap>(filePath);
-				}
-				else if (extension == ".scene")
-				{
-					mEngineContext->GetAssetManager()->LoadAsset<Mule::Scene>(filePath);
-				}
-				}));
+			}
+			else if (extension == ".hdr")
+			{
+				futures.push_back(std::async(std::launch::async, [=]() {
+					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
+					}));
+			}
+			else if (extension == ".scene")
+			{
+				futures.push_back(std::async(std::launch::async, [=]() {
+					mEngineContext->LoadAsset<Mule::Scene>(filePath);
+					}));
+			}
 		}
-
-
-		for (int i = 0; i < futures.size(); i++)
-			futures[i].wait();
 		});
-
 }
 
 void EditorLayer::OnUpdate(float dt)
@@ -148,7 +144,7 @@ void EditorLayer::OnUIRender(float dt)
 				auto scene = mEngineContext->GetScene();
 				if (scene)
 				{
-					mEngineContext->GetAssetManager()->SaveAssetText<Mule::Scene>(scene->Handle());
+					mEngineContext->SaveAssetText<Mule::Scene>(scene->Handle());
 					scene->ClearModified();
 				}
 			}
@@ -222,7 +218,7 @@ void EditorLayer::OnUIRender(float dt)
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
 		scene->SetFilePath(filepath);
-		mEngineContext->GetAssetManager()->InsertAsset(scene);
+		mEngineContext->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
 		});
 }
@@ -254,6 +250,5 @@ void EditorLayer::OnRender(float dt)
 
 void EditorLayer::OnDetach()
 {
-	mEngineContext->GetAssetManager()->SaveRegistry(mEditorState->mProjectPath / "Registry.mrz");
 	SPDLOG_INFO("Layer OnDetach: {}", GetName());
 }

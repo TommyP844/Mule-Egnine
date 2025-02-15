@@ -19,9 +19,15 @@ namespace fs = std::filesystem;
 
 namespace Mule
 {
+	enum class CullMode {
+		Back = VK_CULL_MODE_BACK_BIT,
+		Front = VK_CULL_MODE_FRONT_BIT,
+		None = VK_CULL_MODE_NONE
+	};
+
 	struct PushConstant
 	{
-		PushConstant(){}
+		PushConstant() = default;
 		PushConstant(ShaderStage stage, uint32_t size)
 			:
 			Stage(stage),
@@ -39,6 +45,7 @@ namespace Mule
 		VertexLayout VertexLayout;
 		std::vector<WeakRef<DescriptorSetLayout>> DescriptorLayouts;
 		std::vector<PushConstant> PushConstants;
+		CullMode CulleMode = CullMode::Back;
 	};
 
 	class GraphicsShader : public Asset<AssetType::Shader>

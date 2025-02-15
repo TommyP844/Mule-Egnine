@@ -20,6 +20,11 @@ namespace Mule
 		vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mCommandBuffer);
 	}
 
+	void CommandBuffer::Reset()
+	{
+		vkResetCommandBuffer(mCommandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+	}
+
 	void CommandBuffer::Begin()
 	{
 		VkCommandBufferBeginInfo beginInfo{};
@@ -546,6 +551,22 @@ namespace Mule
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Ensure all transfer writes are completed
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;    // Allow shaders to safely read the image
 		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;  // Ensures depth writes are completed
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;      // Prepares for shader sampling
+
+			barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // Ensure depth writes finish
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;                    // Allow shaders to read depth
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;      // Ensure shaders are done reading
+			dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT; // Prepare for depth writes
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;      // Ensure all shader reads are finished
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // Allow depth writing
+		}
 
 		else
 		{
@@ -612,10 +633,15 @@ namespace Mule
 		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), (VkShaderStageFlags)stage, range.first, size, data);
 	}
 
-	void CommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, WeakRef<DescriptorSet> descriptorSet)
+	void CommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, const std::vector<WeakRef<DescriptorSet>>& descriptorSets)
 	{
-		VkDescriptorSet descriptorSetPtr = descriptorSet->GetDescriptorSet();
-		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &descriptorSetPtr, 0, nullptr);
+		std::vector<VkDescriptorSet> sets;
+		for (auto set : descriptorSets)
+		{
+			sets.push_back(set->GetDescriptorSet());
+		}
+		
+		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, sets.size(), sets.data(), 0, nullptr);
 	}
 
 	void CommandBuffer::BindComputeDescriptorSet(WeakRef<ComputeShader> shader, WeakRef<DescriptorSet> descriptorSet)

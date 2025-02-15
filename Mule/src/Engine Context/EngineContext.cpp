@@ -1,0 +1,134 @@
+#include "Engine Context/EngineContext.h"
+#include "Engine Context/EngineAssets.h"
+
+// Asset Loaders
+#include "Asset/Loader/ModelLoader.h"
+#include "Asset/Loader/SceneLoader.h"
+#include "Asset/Loader/TextureLoader.h"
+#include "Asset/Loader/EnvironmentMapLoader.h"
+#include "Asset/Loader/GraphicsShaderLoader.h"
+
+
+namespace Mule
+{
+	EngineContext::EngineContext(EngineContextDescription& description)
+		:
+		mFilePath(description.ProjectPath)
+	{
+		mWindow = MakeRef<Window>(description.WindowName);
+
+		description.GraphicsDescription.Window = mWindow;
+		mGraphicsContext = MakeRef<GraphicsContext>(description.GraphicsDescription);
+
+		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
+
+		mAssetManager = MakeRef<AssetManager>();
+		
+		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
+
+		mAssetManager->RegisterLoader<SceneLoader>();
+		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
+		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
+		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);
+		mAssetManager->RegisterLoader<GraphicsShaderLoader>(mGraphicsContext);
+
+		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
+
+
+		// Engine Assets		
+		uint8_t blackImageData[] = {
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0,
+
+			0, 0, 0, 0,		0, 0, 0, 0,
+			0, 0, 0, 0,		0, 0, 0, 0
+		};
+
+		uint8_t whiteImageData[] = {
+			255, 255, 255, 255,		255, 255, 255, 255,
+			255, 255, 255, 255,		255, 255, 255, 255
+		};
+
+		auto blackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, TextureFormat::RGBA8U);
+		blackTexture->SetHandle(MULE_BLACK_TEXTURE_HANDLE);
+		InsertAsset(blackTexture);
+
+		auto blackTextureCube = MakeRef<TextureCube>(mGraphicsContext, &blackImageData[0], 2, 1, TextureFormat::RGBA8U);
+		blackTextureCube->SetHandle(MULE_BLACK_TEXTURE_CUBE_HANDLE);
+		InsertAsset(blackTextureCube);
+
+		auto whiteTexture = MakeRef<Texture2D>(mGraphicsContext, &whiteImageData[0], 2, 2, TextureFormat::RGBA8U);
+		whiteTexture->SetHandle(MULE_WHITE_TEXTURE_HANDLE);
+		InsertAsset(whiteTexture);
+
+		mSceneRenderer->RefreshEngineObjects();
+
+		auto model = LoadAsset<Model>("../Assets/Meshes/Cube.obj");
+		auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+
+		UpdateAssetHandle(mesh->Handle(), MULE_CUBE_MESH_HANDLE);
+	}
+
+	EngineContext::~EngineContext()
+	{
+		mAssetManager->SaveRegistry(mFilePath / "Registry.mrz");
+
+		mImguiContext = nullptr;
+		mSceneRenderer = nullptr;
+		mAssetManager = nullptr;
+		mGraphicsContext = nullptr;
+	}
+
+	void EngineContext::RemoveAsset(AssetHandle handle)
+	{
+		auto asset = mAssetManager->GetAsset<IAsset>(handle);
+		switch (asset->GetType())
+		{
+		case AssetType::Texture:
+			mSceneRenderer->RemoveTexture(handle);
+			break;
+		case AssetType::Material:
+			mSceneRenderer->RemoveMaterial(handle);
+			break;
+		case AssetType::EnvironmentMap:
+			WeakRef<EnvironmentMap> envMap = asset;
+			mSceneRenderer->RemoveTexture(envMap->GetCubeMapHandle());
+			mSceneRenderer->RemoveTexture(envMap->GetDiffuseIBLMap());
+			mSceneRenderer->RemoveTexture(envMap->GetPreFilterMap());
+			break;
+		}
+		mAssetManager->RemoveAsset(handle);
+	}
+
+	std::vector<Ref<IAsset>> EngineContext::GetAssetsOfType(AssetType type) const
+	{
+		return mAssetManager->GetAssetsOfType(type);
+	}
+
+	const std::unordered_map<AssetHandle, Ref<IAsset>>& EngineContext::GetAllAssets() const
+	{
+		return mAssetManager->GetAllAssets();
+	}
+
+	Ref<IAsset> EngineContext::GetAssetByFilepath(const fs::path& path)
+	{
+		return mAssetManager->GetAssetByFilepath(path);
+	}
+
+	void EngineContext::UpdateAssetHandle(AssetHandle oldHandle, AssetHandle newHandle)
+	{
+		mAssetManager->UpdateAssetHandle(oldHandle, newHandle);
+	}
+}

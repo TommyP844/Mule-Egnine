@@ -17,7 +17,7 @@ void SceneViewPanel::OnAttach()
 {
 	mWidth = 0;
 	mHeight = 0;
-	mBlackImage = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	mBlackImage = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
 	mEditorContext->EditorRenderSettings.EditorCamera.SetNearPlane(0.01);
 }
 
@@ -175,7 +175,7 @@ void SceneViewPanel::HandleDragDrop()
 		{
 		case Mule::AssetType::Scene:
 		{
-			auto scene = mEngineContext->GetAssetManager()->GetAsset<Mule::Scene>(ddf.AssetHandle);
+			auto scene = mEngineContext->GetAsset<Mule::Scene>(ddf.AssetHandle);
 			mEngineContext->SetScene(scene);
 		}
 			break;

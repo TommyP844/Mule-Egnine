@@ -9,10 +9,12 @@
 
 namespace Mule
 {
+	class EngineContext;
+
 	class EnvironmentMapLoader : public IAssetLoader<EnvironmentMap, AssetType::EnvironmentMap>
 	{
 	public:
-		EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
+		EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
 
 		virtual Ref<EnvironmentMap> LoadText(const fs::path& filepath) override;
 		virtual void SaveText(Ref<EnvironmentMap> asset) override;
@@ -22,7 +24,7 @@ namespace Mule
 	private:
 		AssetHandle mBRDFLutMap;
 		WeakRef<GraphicsContext> mContext;
-		WeakRef<AssetManager> mAssetManager;
+		WeakRef<EngineContext> mEngineContext;
 
 		Ref<ComputeShader> mCubeMapCompute;
 		Ref<ComputeShader> mDiffuseIBLCompute;

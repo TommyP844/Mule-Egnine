@@ -106,19 +106,6 @@ namespace Mule
 	}
 
 	template<typename T>
-	inline Ref<T> AssetManager::FindAsset(const fs::path& filepath)
-	{
-		auto& list = mAssetTypes[T::sType];
-		for (Ref<T> asset : list)
-		{
-			if (asset->FilePath() == filepath)
-				return asset;
-		}
-
-		return nullptr;
-	}
-
-	template<typename T>
 	inline std::future<Ref<T>> AssetManager::LoadAssetAsync(const fs::path& filepath)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);

@@ -2,7 +2,7 @@
 
 void MaterialEditorPanel::OnAttach()
 {
-	mBlackTexture = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	mBlackTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
 }
 
 void MaterialEditorPanel::OnUIRender(float dt)
@@ -91,12 +91,12 @@ void MaterialEditorPanel::OnEvent(Ref<IEditorEvent> event)
 
 void MaterialEditorPanel::SetMaterial(Mule::AssetHandle materialHandle)
 {
-	mMaterial = mEngineContext->GetAssetManager()->GetAsset<Mule::Material>(materialHandle);
+	mMaterial = mEngineContext->GetAsset<Mule::Material>(materialHandle);
 }
 
 void MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& textureHandle)
 {
-	WeakRef<Mule::Texture2D> texture = mEngineContext->GetAssetManager()->GetAsset<Mule::Texture2D>(textureHandle);
+	WeakRef<Mule::Texture2D> texture = mEngineContext->GetAsset<Mule::Texture2D>(textureHandle);
 
 	ImGui::PushID(name);
 

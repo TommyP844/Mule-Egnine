@@ -185,6 +185,8 @@ namespace YAML {
             SERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
             SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
             SERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
 
             YAML::Node childNode;
             for (auto child : e.Children())
@@ -205,6 +207,8 @@ namespace YAML {
             DESERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
             DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
             DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
 
             return true;
         }
@@ -308,6 +312,50 @@ namespace YAML {
             mesh.Visible = node["Visible"].as<bool>();
             mesh.MeshHandle = node["MeshHandle"].as<Mule::AssetHandle>();
             mesh.MaterialHandle = node["MaterialHandle"].as<Mule::AssetHandle>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::DirectionalLightComponent> {
+        static Node encode(const Mule::DirectionalLightComponent& light) {
+            Node node;
+
+            node["Active"] = light.Active;
+            node["Color"] = light.Color;
+            node["Intensity"] = light.Intensity;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::DirectionalLightComponent& light) {
+
+            light.Active = node["Active"].as<bool>();
+            light.Color = node["Color"].as<glm::vec3>();
+            light.Intensity = node["Intensity"].as<float>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::PointLightComponent> {
+        static Node encode(const Mule::PointLightComponent& light) {
+            Node node;
+
+            node["Active"] = light.Active;
+            node["Color"] = light.Color;
+            node["Radiance"] = light.Radiance;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::PointLightComponent& light) {
+
+            light.Active = node["Active"].as<bool>();
+            light.Color = node["Color"].as<glm::vec3>();
+            light.Radiance = node["Radiance"].as<float>();
 
             return true;
         }

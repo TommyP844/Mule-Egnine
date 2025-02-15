@@ -29,7 +29,6 @@ void AssetManagerPanel::OnUIRender(float dt)
 
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
-		Ref<Mule::AssetManager> assetManager = mEngineContext->GetAssetManager();
 		static WeakRef<Mule::IAsset> searchedAsset = nullptr;
 		static Mule::AssetType assetType = Mule::AssetType::None;
 		ImGui::Text("Search Handle"); ImGui::SameLine();
@@ -38,7 +37,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 		if (ImGui::InputText("##SearchAsset", searchBuffer, 256, ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			Mule::AssetHandle handle = std::stoull(searchBuffer);
-			searchedAsset = assetManager->GetAsset<Mule::IAsset>(handle);
+			searchedAsset = mEngineContext->GetAsset<Mule::IAsset>(handle);
 		}
 
 		static char nameBuffer[256] = { 0 };
@@ -96,7 +95,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 			{
 				if (assetType == Mule::AssetType::None)
 				{
-					for (const auto& [handle, asset] : assetManager->GetAllAssets())
+					for (const auto& [handle, asset] : mEngineContext->GetAllAssets())
 					{
 						if (strlen(nameBuffer) > 0)
 						{
@@ -111,7 +110,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 				}
 				else
 				{
-					for (const auto& asset : assetManager->GetAssetsOfType(assetType))
+					for (const auto& asset : mEngineContext->GetAssetsOfType(assetType))
 					{
 						DisplayAsset(asset);
 						ImGui::Separator();

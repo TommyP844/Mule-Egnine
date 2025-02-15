@@ -20,6 +20,7 @@ namespace Mule
 	public:
 		CommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
 		~CommandBuffer();
+		void Reset();
 		void Begin();
 		void End();
 
@@ -55,7 +56,7 @@ namespace Mule
 		void BindGraphicsPipeline(WeakRef<GraphicsShader> shader);
 		void BindComputePipeline(WeakRef<ComputeShader> shader);
 		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size);
-		void BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, WeakRef<DescriptorSet> descriptorSet);
+		void BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, const std::vector<WeakRef<DescriptorSet>>& descriptorSets);
 		void BindComputeDescriptorSet(WeakRef<ComputeShader> shader, WeakRef<DescriptorSet> descriptorSet);
 		void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ);
 

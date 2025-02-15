@@ -16,7 +16,7 @@ private:
 	float mWidth, mHeight;
 	bool mWidgetTranslation, mWidgetRotation, mWidgetScale;
 
-	Ref<Mule::Texture2D> mBlackImage;
+	WeakRef<Mule::Texture2D> mBlackImage;
 
 	void UpdateCamera(float dt);
 	void UpdateGizmos(ImVec2 cursorPos);

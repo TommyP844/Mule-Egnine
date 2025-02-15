@@ -4,7 +4,7 @@
 
 namespace Mule
 {
-	void GraphicsQueue::Submit(Ref<CommandBuffer> commandbuffer, const std::vector<Ref<Semaphore>>& waitSemaphores, const std::vector<Ref<Semaphore>>& signalSemaphores, Ref<Fence> fence)
+	void GraphicsQueue::Submit(Ref<CommandBuffer> commandbuffer, const std::vector<WeakRef<Semaphore>>& waitSemaphores, const std::vector<WeakRef<Semaphore>>& signalSemaphores, Ref<Fence> fence)
 	{
 		VkCommandBuffer buffer = commandbuffer->GetHandle();
 

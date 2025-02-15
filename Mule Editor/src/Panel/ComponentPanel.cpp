@@ -124,7 +124,7 @@ void ComponentPanel::OnUIRender(float dt)
 			entityModified |= ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Environment Map");
-			auto envMap = mEngineContext->GetAssetManager()->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
+			auto envMap = mEngineContext->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
 			std::string name = "";
 			if (envMap)
 				name = envMap->Name();
@@ -156,14 +156,14 @@ void ComponentPanel::OnUIRender(float dt)
 
 			ImGui::BeginDisabled();
 			DisplayRow("Mesh");
-			auto meshPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Mesh>(mesh.MeshHandle);
+			auto meshPtr = mEngineContext->GetAsset<Mule::Mesh>(mesh.MeshHandle);
 			if (meshPtr)
 				ImGui::InputText("##Mesh", (char*)meshPtr->Name().data(), meshPtr->Name().size());
 			else
 				ImGui::InputText("##Mesh", (char*)null.data(), null.size());
 
 			DisplayRow("Material");
-			auto materialPtr = mEngineContext->GetAssetManager()->GetAsset<Mule::Material>(mesh.MaterialHandle);
+			auto materialPtr = mEngineContext->GetAsset<Mule::Material>(mesh.MaterialHandle);
 			if (materialPtr)
 				ImGui::InputText("##Material", (char*)materialPtr->Name().data(), materialPtr->Name().size());
 			else

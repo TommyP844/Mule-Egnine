@@ -4,6 +4,7 @@
 #include "Graphics/Execution/CommandPool.h"
 #include "Graphics/Execution/GraphicsQueue.h"
 #include "Graphics/Texture/Texture2D.h"
+#include "Engine Context/EngineContext.h"
 
 #include <stb/stb_image.h>
 
@@ -12,10 +13,10 @@
 
 namespace Mule
 {
-    EnvironmentMapLoader::EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager)
+    EnvironmentMapLoader::EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
         :
         mContext(context),
-        mAssetManager(assetManager)
+        mEngineContext(engineContext)
     {
         // Cube map descriptor
         {
@@ -126,7 +127,7 @@ namespace Mule
             queue->Submit(commandBuffer, {}, {}, fence);
             fence->Wait();
 
-            mAssetManager->InsertAsset(brdfImage);
+            mEngineContext->InsertAsset(brdfImage);
             mBRDFLutMap = brdfImage->Handle();
         }
     }
@@ -182,7 +183,7 @@ namespace Mule
         queue->Submit(commandBuffer, {}, {}, fence);
         fence->Wait();
 
-        mAssetManager->InsertAsset(cubeMap);
+        mEngineContext->InsertAsset(cubeMap);
 
         Ref<TextureCube> irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
 
@@ -217,7 +218,7 @@ namespace Mule
 
         std::string filename = filepath.filename().replace_extension().string();
         irradianceMap->SetName(filename + "-IrradianceMap");
-        mAssetManager->InsertAsset(irradianceMap);
+        mEngineContext->InsertAsset(irradianceMap);
 
 
         Ref<TextureCube> prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
@@ -253,9 +254,7 @@ namespace Mule
 
         filename = filepath.filename().replace_extension().string();
         prefilterMap->SetName(filename + "-PreFilterMap");
-        mAssetManager->InsertAsset(prefilterMap);
-
-
+        mEngineContext->InsertAsset(prefilterMap);
 
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
     }

@@ -74,14 +74,14 @@ namespace Mule
 
 		for (auto attachmentDesc : mDesc.Attachments)
 		{
-			Ref<Texture2D> attachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, attachmentDesc.Format, TextureFlags::RenderTarget);
+			Ref<Texture2D> attachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, attachmentDesc.Format, TextureFlags::RenderTarget);
 			mColorAttachments.push_back(attachment);
 			framebufferViews.push_back(attachment->GetImageView());
 		}
 
 		if (mDesc.DepthAttachment.Format != TextureFormat::NONE)
 		{
-			mDepthAttachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.DepthAttachment.Format, (TextureFlags)(TextureFlags::RenderTarget | TextureFlags::DepthTexture));
+			mDepthAttachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, mDesc.DepthAttachment.Format, (TextureFlags)(TextureFlags::RenderTarget | TextureFlags::DepthTexture));
 			framebufferViews.push_back(mDepthAttachment->GetImageView());
 		}
 

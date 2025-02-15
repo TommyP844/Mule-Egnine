@@ -19,7 +19,7 @@ namespace Mule
 		~ImGuiContext();
 
 		void NewFrame();
-		void EndFrame(const std::vector<Ref<Semaphore>>& waitSemaphores = {});
+		void EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores = {});
 		void Resize(uint32_t width, uint32_t height);
 
 		Ref<Semaphore> GetRenderSemaphore() const { return mFrameData[mFrameIndex].Semaphore; }

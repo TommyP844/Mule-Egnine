@@ -28,6 +28,9 @@ namespace Mule
 		template<typename ...Components>
 		void IterateEntitiesWithComponents(std::function<void(Entity)> func);
 
+		template<typename ...Components>
+		auto Iterate();
+
 		template<typename T, typename ...Args>
 		T& AddComponent(entt::entity id, Args&&... args)
 		{

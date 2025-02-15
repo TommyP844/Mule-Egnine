@@ -177,7 +177,7 @@ namespace Mule
 		indexingFeatures.runtimeDescriptorArray = VK_TRUE;
 		indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 		indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-		indexingFeatures.pNext = &deviceFeatures;
+		//indexingFeatures.pNext = &deviceFeatures;
 
 		// Enable separate depth-stencil layouts
 		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures{};

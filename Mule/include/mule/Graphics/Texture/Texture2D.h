@@ -21,6 +21,7 @@ namespace Mule
 	{
 	public:
 		explicit Texture2D(WeakRef<GraphicsContext> context, void* data, int width, int height, TextureFormat format, TextureFlags flags = TextureFlags::GenerateMips);
+		explicit Texture2D(WeakRef<GraphicsContext> context, void* data, int width, int height, int layers, TextureFormat format, TextureFlags flags = TextureFlags::GenerateMips);
 		explicit Texture2D(WeakRef<GraphicsContext> context, const std::string& name, void* data, int width, int height, TextureFormat format, TextureFlags flags = TextureFlags::GenerateMips);
 		explicit Texture2D(WeakRef<GraphicsContext> context, const fs::path& filepath, void* data, int width, int height, TextureFormat format, TextureFlags flags = TextureFlags::GenerateMips);
 		virtual ~Texture2D();

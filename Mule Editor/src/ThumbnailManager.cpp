@@ -6,10 +6,10 @@ ThumbnailManager::ThumbnailManager(WeakRef<Mule::EngineContext> context, WeakRef
 	mEditorContext(editorContext),
 	mRunning(true)
 {
-	mLoadingImage = mEngineContext->GetAssetManager()->LoadAsset<Mule::Texture2D>("../Assets/Textures/Loading.png");
-	mRenderThread = std::thread(&ThumbnailManager::Renderthread, this);
-	mSceneRenderer = MakeRef<Mule::SceneRenderer>(mEngineContext->GetGraphicsContext(), mEngineContext->GetAssetManager());
-	mSceneRenderer->Resize(256, 256);
+	mLoadingImage = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Loading.png");
+	//mRenderThread = std::thread(&ThumbnailManager::Renderthread, this);
+	//mSceneRenderer = MakeRef<Mule::SceneRenderer>(mEngineContext->GetGraphicsContext(), mEngineContext->GetAssetManager());
+	//mSceneRenderer->Resize(256, 256);
 	mCamera.SetAspectRatio(1.f);
 }
 
@@ -54,7 +54,7 @@ void ThumbnailManager::Renderthread()
 			}
 		}
 
-		WeakRef<Mule::IAsset> asset = mEngineContext->GetAssetManager()->GetAsset<Mule::IAsset>(handle);
+		WeakRef<Mule::IAsset> asset = mEngineContext->GetAsset<Mule::IAsset>(handle);
 		if (!asset)
 		{
 			mAssetsToRender.erase(handle);

@@ -125,6 +125,14 @@ namespace Mule
 
 	struct LayoutDescription
 	{
+		LayoutDescription(){}
+		LayoutDescription(uint32_t binding, DescriptorType type, ShaderStage stage, uint32_t arrayCount = 1)
+			:
+			Binding(binding),
+			Type(type),
+			Stage(stage),
+			ArrayCount(arrayCount)
+		{}
 		uint32_t Binding;
 		DescriptorType Type;
 		ShaderStage Stage;

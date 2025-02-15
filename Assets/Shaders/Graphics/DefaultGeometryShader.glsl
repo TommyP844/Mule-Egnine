@@ -10,47 +10,48 @@ layout(location = 4) in vec4 color;
 
 layout(location = 0) out vec2 _uv;
 layout(location = 1) out mat3 _tbn;
-layout(location = 5) out vec3 _cameraPos;
-layout(location = 6) out vec3 _fragPos;
+layout(location = 5) out vec3 _fragPos;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 view;
-    mat4 proj;
-	vec3 cameraPos;
-} ubo;
+struct CameraData
+{
+    mat4 View;
+    mat4 Proj;
+	vec3 Pos;
+    float FarPlane;
+};
+
+layout(binding = 0) uniform CameraBuffer {
+    CameraData Camera;
+};
 
 layout(push_constant) uniform PushConstantBlock {
     mat4 transform;
-} pc;
+};
 
 void main()
 {
-	vec3 T = normalize(vec3(pc.transform * vec4(tangent, 0.0)));
-    vec3 N = normalize(vec3(pc.transform * vec4(normal, 0.0)));
+	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
+    vec3 N = normalize(vec3(transform * vec4(normal, 0.0)));
     vec3 B = cross(N, T);
     _tbn = mat3(T, B, N);
 	_uv = uv;
-	_cameraPos = ubo.cameraPos;
-	_fragPos = (pc.transform * vec4(position, 1)).xyz;
-	gl_Position = ubo.proj * ubo.view * vec4(_fragPos, 1);
+	_fragPos = (transform * vec4(position, 1)).xyz;
+	gl_Position = Camera.Proj * Camera.View * vec4(_fragPos, 1);
 }
 
 #FRAGMENT
 #version 460 core
 #extension GL_EXT_nonuniform_qualifier : enable
 
+#define MAX_CASCADES 10
+#define MAX_MATERIALS 1000
+#define MAX_POINT_LIGHTS 1024
+
 layout(location = 0) in vec2 uv;
 layout(location = 1) in mat3 TBN;
-layout(location = 5) in vec3 CameraPos;
-layout(location = 6) in vec3 FragPos;
+layout(location = 5) in vec3 FragPos;
 
 layout(location = 0) out vec4 FragColor;
-
-struct RenderSetting
-{
-    float Gamma;
-    float Exposure;
-};
 
 struct Material 
 {
@@ -84,30 +85,46 @@ struct PointLight
 struct LightData
 {
 	DirectionalLight DirectionalLight;
-	PointLight PointLights[1024];
+	PointLight PointLights[MAX_POINT_LIGHTS];
 	uint NumPointLights;
 };
 
-layout(set = 0, binding = 1) uniform sampler2D textures[];
+struct CameraData
+{
+    mat4 View;
+    mat4 Proj;
+	vec3 Pos;
+    float FarPlane;
+};
+
+layout(binding = 0) uniform CameraBuffer {
+    CameraData Camera;
+};
+
+layout(binding = 1) uniform MaterialBuffer {
+    Material materials[MAX_MATERIALS];
+};
+
+layout(binding = 2) uniform LightBuffer {
+	LightData Lights;
+};
+
+layout(binding = 3) uniform ShadowCameraBuffer {
+	mat4 ShadowCameras[MAX_CASCADES];
+    float CascadeDistances[MAX_CASCADES];
+};
+
 layout(set = 0, binding = 4) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 5) uniform samplerCube prefilteredMap;
 layout(set = 0, binding = 6) uniform sampler2D brdfLUT;
+layout(set = 0, binding = 7) uniform sampler2D shadowMaps[MAX_CASCADES];
 
-layout(binding = 2) uniform UniformBufferObject {
-    Material materials[100];
-} materials;
-
-layout(binding = 3) uniform LightBuffer {
-	LightData LightData;
-} lights;
-
-layout(binding = 7) uniform SettingsBuffer {
-	RenderSetting Settings;
-} settings;
+layout(set = 1, binding = 0) uniform sampler2D textures[];
 
 layout(push_constant) uniform PushConstantBlock {
-    layout(offset = 64) uint materialIndex;
-} pc;
+    layout(offset = 64) uint MaterialIndex;
+    layout(offset = 68) uint NumCascades;
+};
 
 // Fresnel-Schlick Approximation
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
@@ -192,9 +209,10 @@ vec3 specularIBL(vec3 R, float roughness, vec3 F0, vec3 N, vec3 V) {
     return prefilteredColor * (F0 * brdf.x + brdf.y);
 }
 
+
 void main()
 {
-	Material material = materials.materials[pc.materialIndex];
+	Material material = materials[MaterialIndex];
 
 	vec2 scaledUV = uv * material.TextureScale;
 
@@ -205,15 +223,13 @@ void main()
     float roughness = texture(textures[material.RoughnessIndex], scaledUV).r * material.RoughnessFactor;
     float ao = texture(textures[material.AOIndex], scaledUV).r * material.AOFactor;
     
-
-	vec3 V = normalize(CameraPos - FragPos);
+	vec3 V = normalize(Camera.Pos - FragPos);
 	vec3 lighting = vec3(0.0);
 
-	lighting += computeDirectionalLight(albedo, normal, V, lights.LightData.DirectionalLight, metallic, roughness);
-
-	for(int i = 0; i < lights.LightData.NumPointLights; i++)
+	lighting += computeDirectionalLight(albedo, normal, V, Lights.DirectionalLight, metallic, roughness);
+	for(int i = 0; i < Lights.NumPointLights; i++)
 	{
-		lighting += computePointLight(albedo, normal, V, lights.LightData.PointLights[i], metallic, roughness);
+		lighting += computePointLight(albedo, normal, V, Lights.PointLights[i], metallic, roughness);
 	}
 
 	lighting *= ao;
@@ -222,8 +238,8 @@ void main()
 	vec3 ambientLighting = diffuseIBL(normal, albedo, ao);// + specularIBL(reflectionDir, roughness, F0, normal, V);
 
     vec3 hdrColor = ambientLighting + lighting;
-    vec3 mapped = vec3(1.0) - exp(-hdrColor * settings.Settings.Exposure);
-    mapped = pow(mapped, vec3(1.0 / settings.Settings.Gamma));
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * 0.9);
+    mapped = pow(mapped, vec3(1.0 / 2.2));
 
 	FragColor = vec4(mapped, 1.0);
 }

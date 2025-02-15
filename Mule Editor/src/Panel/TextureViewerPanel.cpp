@@ -87,7 +87,7 @@ void TextureViewerPanel::OnEvent(Ref<IEditorEvent> event)
 
 void TextureViewerPanel::SetTexture(Mule::AssetHandle textureHandle)
 {
-	auto texture = mEngineContext->GetAssetManager()->GetAsset<Mule::ITexture>(textureHandle);
+	auto texture = mEngineContext->GetAsset<Mule::ITexture>(textureHandle);
 	mTexture = texture;
 	mLayerView = 0;
 }

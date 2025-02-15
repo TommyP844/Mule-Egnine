@@ -78,7 +78,7 @@ namespace Mule
 				OnRender(dt);
 
 				WeakRef<Scene> scene = mEngineContext->GetScene();
-				std::vector<Ref<Semaphore>> waitSemaphores;
+				std::vector<WeakRef<Semaphore>> waitSemaphores;
 				if (scene)
 				{
 					waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
@@ -86,6 +86,14 @@ namespace Mule
 
 				imguiContext->NewFrame();
 				OnUIRender(dt);
+
+				if (ImGui::Begin("Frame Rate"))
+				{
+					ImGui::Text("FPS: %.2f", 1.f / dt);
+					ImGui::Text("Frame Time: %.3f", dt);
+				}
+				ImGui::End();
+
 				imguiContext->EndFrame({ waitSemaphores });
 
 				graphicsContext->EndFrame({ imguiContext->GetRenderSemaphore() });

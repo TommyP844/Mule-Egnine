@@ -86,5 +86,6 @@ namespace Mule
 		bool Visible = true;
 		AssetHandle MeshHandle;
 		AssetHandle MaterialHandle;
+		bool CastsShadows = true;
 	};
 }

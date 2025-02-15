@@ -19,8 +19,8 @@ public:
 	virtual void OnEvent(Ref<IEditorEvent> event) override {}
 
 private:
-	Ref<Mule::Texture2D> mFolderTexture;
-	Ref<Mule::Texture2D> mFileTexture;
+	WeakRef<Mule::Texture2D> mFolderTexture;
+	WeakRef<Mule::Texture2D> mFileTexture;
 	fs::path mContentBrowserPath;
 	Ref<ThumbnailManager> mThumbnailManager;
 

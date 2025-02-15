@@ -132,7 +132,7 @@ namespace Mule
 		ImGuizmo::BeginFrame();
 	}
 
-	void ImGuiContext::EndFrame(const std::vector<Ref<Semaphore>>& waitSemaphores)
+	void ImGuiContext::EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
 		FrameData& frameData = mFrameData[mFrameIndex];
 		mFrameBuffer->SetClearValue(0, glm::vec4(0.f, 0.f, 0.f, 1.f));
