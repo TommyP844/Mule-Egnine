@@ -209,6 +209,35 @@ vec3 specularIBL(vec3 R, float roughness, vec3 F0, vec3 N, vec3 V) {
     return prefilteredColor * (F0 * brdf.x + brdf.y);
 }
 
+float calculateShadow()
+{
+    vec4 viewPos = Camera.View * vec4(FragPos, 1);
+    uint cascadeIndex = NumCascades - 1;
+    for (uint i = 1; i < NumCascades; i++) {
+        if (viewPos.z < CascadeDistances[i]) {
+            cascadeIndex = i;
+        }
+    }
+
+    vec4 lightSpacePos = ShadowCameras[cascadeIndex] * vec4(FragPos, 1);
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float currentDepth = projCoords.z;
+
+    float shadow = 0.0;
+    float bias = 0.005;  // Helps reduce shadow acne
+    vec2 texelSize = 1.0 / textureSize(shadowMaps[cascadeIndex], 0);
+
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            float sampleDepth = texture(shadowMaps[cascadeIndex], projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > sampleDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;  // Average result
+
+    return shadow;
+}
 
 void main()
 {
@@ -227,6 +256,8 @@ void main()
 	vec3 lighting = vec3(0.0);
 
 	lighting += computeDirectionalLight(albedo, normal, V, Lights.DirectionalLight, metallic, roughness);
+    float shadow = 1.0 - calculateShadow();
+    lighting *= shadow;
 	for(int i = 0; i < Lights.NumPointLights; i++)
 	{
 		lighting += computePointLight(albedo, normal, V, Lights.PointLights[i], metallic, roughness);

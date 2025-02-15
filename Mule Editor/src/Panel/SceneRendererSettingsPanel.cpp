@@ -44,7 +44,7 @@ void SceneRendererSettingsPanel::OnUIRender(float dt)
 			ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
 			uint32_t max = mEngineContext->GetSceneRenderer()->GetShadowPass()->GetCascadeCount() - 1;
 			int index = settings.CascadeIndex;
-			ImGui::DragInt("##CascadeIndex", &index, 1.f, 0, max, "%d", ImGuiSliderFlags_WrapAround);
+			ImGui::DragInt("##CascadeIndex", &index, 9.01f, 0, max, "%d");
 			settings.CascadeIndex = index;
 		}
 	}
