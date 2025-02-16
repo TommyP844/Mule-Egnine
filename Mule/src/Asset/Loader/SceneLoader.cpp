@@ -28,7 +28,7 @@ namespace Mule
 	Ref<Scene> SceneLoader::LoadText(const fs::path& filepath)
 	{
 		YAML::Node root = YAML::LoadFile(filepath.string());
-
+		
 		Ref<Scene> scene = MakeRef<Scene>();
 		scene->SetFilePath(filepath);
 

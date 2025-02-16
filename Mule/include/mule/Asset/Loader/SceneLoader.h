@@ -17,5 +17,6 @@ namespace Mule
 
 		virtual Ref<Scene> LoadBinary(const Buffer& filepath) override;
 		virtual void SaveBinary(Ref<Scene> asset) override;
+
 	};
 }

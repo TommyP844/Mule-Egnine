@@ -24,7 +24,8 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 			{
 				if (ImGui::MenuItem("Create Entity"))
 				{
-					mEngineContext->GetScene()->CreateEntity();
+					auto entity = mEngineContext->GetScene()->CreateEntity();
+					mEditorContext->SelectedEntity = entity;
 				}
 				ImGui::EndPopup();
 			}

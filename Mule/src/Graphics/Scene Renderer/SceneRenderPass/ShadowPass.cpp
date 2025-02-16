@@ -31,7 +31,6 @@ namespace Mule
 			mFrameData[i].Fence = mGraphicsContext->CreateFence();
 			mFrameData[i].Semaphore = mGraphicsContext->CreateSemaphore();
 			mFrameData[i].CommandBuffer = mCommandPool->CreateCommandBuffer();
-			mFrameData[i].CameraBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPU::GPUCamera) * MAX_CASCADES);
 		}
 
 		VertexLayout staticVertexLayout;
@@ -49,6 +48,7 @@ namespace Mule
 		shaderDesc.PushConstants = {
 			PushConstant(ShaderStage::Vertex, sizeof(glm::mat4))
 		};
+		shaderDesc.CulleMode = CullMode::Front;
 
 		mShader = mGraphicsContext->CreateGraphicsShader(shaderDesc);
 	}
@@ -89,8 +89,8 @@ namespace Mule
 				frameData.FrameBuffers[j] = mGraphicsContext->CreateFrameBuffer(framebufferDesc);
 			}
 
-			frameData.CascadeDistances.resize(frameData.CascadeCount + 1);
-			frameData.LightCameras.resize(frameData.CascadeCount + 1);
+			frameData.CascadeDistances.resize(frameData.CascadeCount);
+			frameData.LightCameras.resize(frameData.CascadeCount);
 		}
 		
 
@@ -105,6 +105,8 @@ namespace Mule
 			glm::quat rotation = glm::quat(glm::radians(e.GetTransformComponent().Rotation));
 			direction = rotation * glm::vec4(0, -1, 0, 0);
 			direction = glm::normalize(direction);
+			//TODO: remove
+			direction = glm::normalize(glm::vec3(-0.2f, -1.f, -0.1f));
 			break;
 		}
 
@@ -124,48 +126,73 @@ namespace Mule
 		float farClip = camera.GetFarPlane();
 		float lambda = 0.75f;
 
-		for (int i = 0; i <= frameData.CascadeCount; i++) {
+		for (int i = 1; i <= frameData.CascadeCount; i++) {
 			float fi = float(i) / float(frameData.CascadeCount);
 			float logSplit = nearClip * powf(farClip / nearClip, fi);
 			float linearSplit = nearClip + (farClip - nearClip) * fi;
-			frameData.CascadeDistances[i] = lambda * logSplit + (1.0f - lambda) * linearSplit;
+			frameData.CascadeDistances[i-1] = lambda * logSplit + (1.0f - lambda) * linearSplit;
 		}
 
 		for (uint32_t i = 0; i < frameData.CascadeCount; i++)
 		{
-			nearClip = frameData.CascadeDistances[i];
-			farClip = frameData.CascadeDistances[i + 1];
-			std::array<glm::vec3, 8> frustumCorners = GetFrustumCornersWorldSpace(camera.GetView(), nearClip, farClip, camera.GetAspectRatio(), camera.GetFOVDegrees());
+			farClip = frameData.CascadeDistances[i];
+			
+			std::vector<glm::vec4> frustumCorners = {
+				// Near Plane
+				{ -1,  1, 0, 1 }, { 1,  1, 0, 1 },
+				{ -1, -1, 0, 1 }, { 1, -1, 0, 1 },
+				// Far Plane
+				{ -1,  1, 1, 1 }, { 1,  1, 1, 1 },
+				{ -1, -1, 1, 1 }, { 1, -1, 1, 1 }
+			};
 
-			glm::vec3 center = glm::vec3(0);
-			for (const auto& corner : frustumCorners) {
-				center += corner;
+			glm::mat4 projection = glm::perspective(glm::radians(camera.GetFOVDegrees()), camera.GetAspectRatio(), nearClip, farClip);
+			glm::mat4 invVP = glm::inverse(projection * camera.GetView());
+			glm::vec3 frustumCenter(0.0f);
+			for (int j = 0; j < 8; j++) {
+				frustumCorners[j] = invVP * frustumCorners[j];
+				frustumCorners[j] /= frustumCorners[j].w;
+				frustumCenter += glm::vec3(frustumCorners[j]);
 			}
-			center /= 8.0f;
+			frustumCenter /= 8.0f;
 
-			// make sure direction is NOT {0, -1, 0} or glm::lookAt returns garbage
-			glm::mat4 lightView = glm::lookAt(center, center + direction, glm::vec3(0, 1, 0));
+			nearClip = farClip;
 
-			float minX = std::numeric_limits<float>::max(), maxX = std::numeric_limits<float>::lowest();
-			float minY = std::numeric_limits<float>::max(), maxY = std::numeric_limits<float>::lowest();
-			float minZ = std::numeric_limits<float>::max(), maxZ = std::numeric_limits<float>::lowest();
+			glm::mat4 lightView = glm::lookAt(frustumCenter + direction, frustumCenter, glm::vec3(0, 1, 0));
+
+			glm::vec3 minExtents(std::numeric_limits<float>::max());
+			glm::vec3 maxExtents(std::numeric_limits<float>::lowest());
 
 			for (const auto& corner : frustumCorners) {
-				glm::vec3 transformed = glm::vec3(lightView * glm::vec4(corner, 1.0f));
-				minX = std::min(minX, transformed.x);
-				maxX = std::max(maxX, transformed.x);
-				minY = std::min(minY, transformed.y);
-				maxY = std::max(maxY, transformed.y);
-				minZ = std::min(minZ, transformed.z);
-				maxZ = std::max(maxZ, transformed.z);
+				glm::vec4 transformed = lightView * corner;
+
+				minExtents = glm::min(minExtents, glm::vec3(transformed));
+				maxExtents = glm::max(maxExtents, glm::vec3(transformed));
 			}
 
-			glm::mat4 lightProj = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+			if (minExtents.z < 0)
+			{
+				minExtents.z *= zMult;
+			}
+			else
+			{
+				minExtents.z /= zMult;
+			}
+			if (maxExtents.z < 0)
+			{
+				maxExtents.z /= zMult;
+			}
+			else
+			{
+				maxExtents.z *= zMult;
+			}
+
+			glm::mat4 lightProj = glm::ortho(minExtents.x, maxExtents.x,
+				minExtents.y, maxExtents.y,
+				minExtents.z, maxExtents.z);
 
 			frameData.LightCameras[i] = lightProj * lightView;
 		}
-
-		frameData.CameraBuffer->SetData(&frameData.LightCameras[0], sizeof(GPU::GPUCamera) * frameData.LightCameras.size());
 
 		Ref<CommandBuffer> cmd = frameData.CommandBuffer;
 		
@@ -250,7 +277,7 @@ namespace Mule
 
 		for (int i = 0; i < 8; i++) {
 			glm::vec4 corner = invVP * ndcCorners[i];
-			corners[i] = glm::vec3(corner) / corner.w;
+			corners[i] = corner / corner.w;
 		}
 		return corners;
 	}

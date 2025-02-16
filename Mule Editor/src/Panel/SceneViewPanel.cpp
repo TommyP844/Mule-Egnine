@@ -33,11 +33,10 @@ void SceneViewPanel::OnUIRender(float dt)
 		flags |= ImGuiWindowFlags_UnsavedDocument;
 	}
 
-	ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 	if (ImGui::Begin(mName.c_str(), &mIsOpen, flags))
 	{
+		ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 		ImVec2 region = ImGui::GetContentRegionAvail();
 		ImTextureID texId = mBlackImage->GetImGuiID();
 		if (scene)
@@ -183,6 +182,30 @@ void SceneViewPanel::HandleDragDrop()
 		{
 			auto scene = mEngineContext->GetAsset<Mule::Scene>(ddf.AssetHandle);
 			mEngineContext->SetScene(scene);
+			mEditorContext->SelectedEntity = Mule::Entity();
+		}
+			break;
+		}
+	}
+
+	ImGuiExtension::DragDropAsset dda;
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_ASSET, dda))
+	{
+		switch (dda.AssetType)
+		{
+		case Mule::AssetType::Mesh:
+		{
+			auto scene = mEngineContext->GetScene();
+			if (scene)
+			{
+				auto entity = scene->CreateEntity();
+				auto& meshComponent = entity.AddComponent<Mule::MeshComponent>();
+				meshComponent.MeshHandle = dda.AssetHandle;				
+				auto& transform = entity.GetTransformComponent();
+				Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
+				transform.Translation = camera.GetPosition() + camera.GetForwardDir() * 20.f;
+				mEditorContext->SelectedEntity = entity;
+			}
 		}
 			break;
 		}

@@ -75,10 +75,47 @@ namespace Mule
 
 		mSceneRenderer->RefreshEngineObjects();
 
-		auto model = LoadAsset<Model>("../Assets/Meshes/Cube.obj");
-		auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+		// Cube
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cube.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_CUBE_MESH_HANDLE);
+		}
 
-		UpdateAssetHandle(mesh->Handle(), MULE_CUBE_MESH_HANDLE);
+		// Sphere
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Sphere.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_SPHERE_MESH_HANDLE);
+		}
+
+		// Cylinder
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cylinder.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_CYLINDER_MESH_HANDLE);
+		}
+
+		// Cone
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cone.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_CONE_MESH_HANDLE);
+		}
+
+		// Plane
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Plane.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_PLANE_MESH_HANDLE);
+		}
+
+		// Torus
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Torus.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_TORUS_MESH_HANDLE);
+		}
 	}
 
 	EngineContext::~EngineContext()

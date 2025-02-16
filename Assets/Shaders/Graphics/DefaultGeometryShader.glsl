@@ -211,18 +211,21 @@ vec3 specularIBL(vec3 R, float roughness, vec3 F0, vec3 N, vec3 V) {
 
 float calculateShadow()
 {
-    vec4 viewPos = Camera.View * vec4(FragPos, 1);
-    uint cascadeIndex = NumCascades - 1;
-    for (uint i = 1; i < NumCascades; i++) {
+    vec4 viewPos = Camera.View * vec4(FragPos, 1.0);
+    uint cascadeIndex = NumCascades-1;
+    for (uint i = 0; i < NumCascades; i++) {
         if (viewPos.z < CascadeDistances[i]) {
             cascadeIndex = i;
+            break;
         }
     }
 
-    vec4 lightSpacePos = ShadowCameras[cascadeIndex] * vec4(FragPos, 1);
+    vec4 lightSpacePos = ShadowCameras[cascadeIndex] * vec4(FragPos, 1.0);
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     projCoords = projCoords * 0.5 + 0.5;
     float currentDepth = projCoords.z;
+
+    if(currentDepth >= 1.0) return 1.0;
 
     float shadow = 0.0;
     float bias = 0.005;  // Helps reduce shadow acne
@@ -236,7 +239,7 @@ float calculateShadow()
     }
     shadow /= 9.0;  // Average result
 
-    return shadow;
+    return 1.0 - shadow;
 }
 
 void main()
@@ -256,8 +259,7 @@ void main()
 	vec3 lighting = vec3(0.0);
 
 	lighting += computeDirectionalLight(albedo, normal, V, Lights.DirectionalLight, metallic, roughness);
-    float shadow = 1.0 - calculateShadow();
-    lighting *= shadow;
+    lighting *= calculateShadow();
 	for(int i = 0; i < Lights.NumPointLights; i++)
 	{
 		lighting += computePointLight(albedo, normal, V, Lights.PointLights[i], metallic, roughness);

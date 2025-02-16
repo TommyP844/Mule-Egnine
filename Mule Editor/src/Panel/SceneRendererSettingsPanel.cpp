@@ -29,14 +29,18 @@ void SceneRendererSettingsPanel::OnUIRender(float dt)
 		ImGui::DragFloat("##Gamma", &settings.Gamma, 0.01f, 0.01f, 10.f);
 
 		ImGui::Text("Enable Shadows");
-		ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
+		ImGui::SameLine(offset);
 		ImGui::Checkbox("##ShadowEnable", &settings.EnableShadows);
 
 		ImGui::SeparatorText("Debug");
 
 		ImGui::Text("View Cascades");
-		ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
+		ImGui::SameLine(offset);
 		ImGui::Checkbox("##ViewCascades", &settings.ViewCascadedShadowMaps);
+
+		ImGui::Text("zMult");
+		ImGui::SameLine(offset); ImGui::PushItemWidth(200.f);
+		ImGui::DragFloat("##ZMult", &sceneRenderer->GetShadowPass()->zMult);
 
 		if (settings.ViewCascadedShadowMaps)
 		{

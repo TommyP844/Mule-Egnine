@@ -29,6 +29,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mMaterialEditorPanel.SetContext(mEditorState, context);
 	mTextureViewerPanel.SetContext(mEditorState, context);
 	mSceneRendererSettingsPanel.SetContext(mEditorState, context);
+	mPrimitiveObjectPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -38,6 +39,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mMaterialEditorPanel.OnAttach();
 	mTextureViewerPanel.OnAttach();
 	mSceneRendererSettingsPanel.OnAttach();
+	mPrimitiveObjectPanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
@@ -113,14 +115,15 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
 					}));
 			}
-			else if (extension == ".scene")
-			{
-				futures.push_back(std::async(std::launch::async, [=]() {
-					mEngineContext->LoadAsset<Mule::Scene>(filePath);
-					}));
-			}
 		}
 		});
+
+	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+	{
+		fs::path filepath = dir.path();
+		if(filepath.extension().string() == ".scene")
+			mEngineContext->LoadAsset<Mule::Scene>(filepath);
+	}
 }
 
 void EditorLayer::OnUpdate(float dt)
@@ -201,6 +204,7 @@ void EditorLayer::OnUIRender(float dt)
 		mMaterialEditorPanel.OnEvent(event);
 		mTextureViewerPanel.OnEvent(event);
 		mSceneRendererSettingsPanel.OnEvent(event);
+		mPrimitiveObjectPanel.OnEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -214,6 +218,7 @@ void EditorLayer::OnUIRender(float dt)
 	mMaterialEditorPanel.OnUIRender(dt);
 	mTextureViewerPanel.OnUIRender(dt);
 	mSceneRendererSettingsPanel.OnUIRender(dt);
+	mPrimitiveObjectPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

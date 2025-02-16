@@ -39,6 +39,7 @@ namespace Mule
 		void SetCascadeCount(uint32_t count);
 		void SetCascadeSize(uint32_t width, uint32_t height);
 
+		float zMult = 5.f;
 	private:
 		const uint32_t MAX_CASCADES = 10;
 		WeakRef<GraphicsContext> mGraphicsContext;

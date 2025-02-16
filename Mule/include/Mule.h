@@ -47,3 +47,4 @@
 
 // Engine
 #include "Engine Context/EngineContext.h"
+#include "Engine Context/EngineAssets.h"

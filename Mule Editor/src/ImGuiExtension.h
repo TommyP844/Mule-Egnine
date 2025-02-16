@@ -50,6 +50,7 @@ namespace ImGuiExtension
 	constexpr const char* PAYLOAD_TYPE_ENTITY = "Entity";
 	constexpr const char* PAYLOAD_TYPE_EXTERNAL_FILE = "ExternalFilePath";
 	constexpr const char* PAYLOAD_TYPE_FILE = "ExternalFilePath";
+	constexpr const char* PAYLOAD_TYPE_ASSET = "Asset";
 
 	struct DragDropFile
 	{
@@ -57,6 +58,12 @@ namespace ImGuiExtension
 		bool IsDirectory = false;
 		Mule::AssetHandle AssetHandle = Mule::NullAssetHandle;
 		Mule::AssetType AssetType = Mule::AssetType::None;
+	};
+
+	struct DragDropAsset
+	{
+		Mule::AssetHandle AssetHandle;
+		Mule::AssetType AssetType;
 	};
 
 	template<typename T>
