@@ -17,7 +17,6 @@ struct CameraData
     mat4 View;
     mat4 Proj;
 	vec3 Pos;
-    float FarPlane;
 };
 
 layout(binding = 0) uniform CameraBuffer {
@@ -28,6 +27,12 @@ layout(push_constant) uniform PushConstantBlock {
     mat4 transform;
 };
 
+const mat4 bias = mat4( 
+  0.5, 0.0, 0.0, 0.0,
+  0.0, 0.5, 0.0, 0.0,
+  0.0, 0.0, 1.0, 0.0,
+  0.5, 0.5, 0.0, 1.0 );
+
 void main()
 {
 	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
@@ -35,8 +40,8 @@ void main()
     vec3 B = cross(N, T);
     _tbn = mat3(T, B, N);
 	_uv = uv;
-	_fragPos = (transform * vec4(position, 1)).xyz;
-	gl_Position = Camera.Proj * Camera.View * vec4(_fragPos, 1);
+	_fragPos = (transform * vec4(position, 1.0)).xyz;
+	gl_Position = Camera.Proj * Camera.View * transform * vec4(position, 1);
 }
 
 #FRAGMENT
@@ -46,6 +51,8 @@ void main()
 #define MAX_CASCADES 10
 #define MAX_MATERIALS 1000
 #define MAX_POINT_LIGHTS 1024
+
+#define PI 3.1415926535897932384626433832795
 
 layout(location = 0) in vec2 uv;
 layout(location = 1) in mat3 TBN;
@@ -94,7 +101,6 @@ struct CameraData
     mat4 View;
     mat4 Proj;
 	vec3 Pos;
-    float FarPlane;
 };
 
 layout(binding = 0) uniform CameraBuffer {
@@ -109,15 +115,9 @@ layout(binding = 2) uniform LightBuffer {
 	LightData Lights;
 };
 
-layout(binding = 3) uniform ShadowCameraBuffer {
-	mat4 ShadowCameras[MAX_CASCADES];
-    float CascadeDistances[MAX_CASCADES];
-};
-
 layout(set = 0, binding = 4) uniform samplerCube irradianceMap;
 layout(set = 0, binding = 5) uniform samplerCube prefilteredMap;
 layout(set = 0, binding = 6) uniform sampler2D brdfLUT;
-layout(set = 0, binding = 7) uniform sampler2D shadowMaps[MAX_CASCADES];
 
 layout(set = 1, binding = 0) uniform sampler2D textures[];
 
@@ -126,121 +126,84 @@ layout(push_constant) uniform PushConstantBlock {
     layout(offset = 68) uint NumCascades;
 };
 
-// Fresnel-Schlick Approximation
-vec3 fresnelSchlick(float cosTheta, vec3 F0) {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
 
-// GGX Normal Distribution Function (NDF)
-float distributionGGX(vec3 N, vec3 H, float roughness) {
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH * NdotH;
-
-    float num = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = 3.14159265 * denom * denom;
-
-    return num / denom;
-}
-
-// Schlick-GGX Geometry Function
-float geometrySchlickGGX(float NdotV, float roughness) {
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
-}
-
-// Smith Geometry Function for Both View & Light
-float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx1 = geometrySchlickGGX(NdotV, roughness);
-    float ggx2 = geometrySchlickGGX(NdotL, roughness);
-    return ggx1 * ggx2;
-}
-
-vec3 computePBR(vec3 albedo, vec3 normal, vec3 V, vec3 L, vec3 lightColor, float intensity, float metallic, float roughness) {
-    vec3 H = normalize(V + L);
-    float NDF = distributionGGX(normal, H, roughness);
-    float G = geometrySmith(normal, V, L, roughness);
-
-    // Base Reflectivity (Fresnel-Schlick Approximation)
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
-    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    // Cook-Torrance BRDF
-    vec3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(normal, V), 0.0) * max(dot(normal, L), 0.0) + 0.0001;
-    vec3 specular = numerator / denominator;
-
-    // Diffuse Component (Lambertian Reflection)
-    vec3 kd = (1.0 - F) * (1.0 - metallic);
-    vec3 diffuse = kd * albedo / 3.14159265;
-
-    // Final Light Contribution
-    float NdotL = max(dot(normal, L), 0.0);
-    return (diffuse + specular) * lightColor * intensity * NdotL;
-}
-
-vec3 computeDirectionalLight(vec3 albedo, vec3 normal, vec3 V, DirectionalLight light, float metallic, float roughness) {
-    vec3 L = normalize(-light.Direction);
-    return computePBR(albedo, normal, V, L, light.Color, light.Intensity, metallic, roughness);
-}
-
-vec3 computePointLight(vec3 albedo, vec3 normal, vec3 V, PointLight light, float metallic, float roughness) {
-    vec3 L = normalize(light.Position - FragPos);
-	float distance = length(FragPos - light.Position);
-	float attenuation = 1.0 / (distance * distance);
-    return computePBR(albedo, normal, V, L, light.Color, light.Intensity * attenuation, metallic, roughness);
-}
-
-vec3 diffuseIBL(vec3 normal, vec3 albedo, float ao) {
-    vec3 irradiance = texture(irradianceMap, normal).rgb;
-    return irradiance * albedo * ao;
-}
-
-vec3 specularIBL(vec3 R, float roughness, vec3 F0, vec3 N, vec3 V) {
-    float mipLevel = roughness * 1; // MAX_MIP_LEVEL Adjusted for roughness
-    vec3 prefilteredColor = textureLod(prefilteredMap, R, mipLevel).rgb;
-
-    vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-    return prefilteredColor * (F0 * brdf.x + brdf.y);
-}
-
-float calculateShadow()
+// From http://filmicgames.com/archives/75
+vec3 Uncharted2Tonemap(vec3 x)
 {
-    vec4 viewPos = Camera.View * vec4(FragPos, 1.0);
-    uint cascadeIndex = NumCascades-1;
-    for (uint i = 0; i < NumCascades; i++) {
-        if (viewPos.z < CascadeDistances[i]) {
-            cascadeIndex = i;
-            break;
-        }
-    }
-
-    vec4 lightSpacePos = ShadowCameras[cascadeIndex] * vec4(FragPos, 1.0);
-    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    float currentDepth = projCoords.z;
-
-    if(currentDepth >= 1.0) return 1.0;
-
-    float shadow = 0.0;
-    float bias = 0.005;  // Helps reduce shadow acne
-    vec2 texelSize = 1.0 / textureSize(shadowMaps[cascadeIndex], 0);
-
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            float sampleDepth = texture(shadowMaps[cascadeIndex], projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += currentDepth - bias > sampleDepth ? 1.0 : 0.0;
-        }
-    }
-    shadow /= 9.0;  // Average result
-
-    return 1.0 - shadow;
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
+
+// Normal Distribution function --------------------------------------
+float D_GGX(float dotNH, float roughness)
+{
+	float alpha = roughness * roughness;
+	float alpha2 = alpha * alpha;
+	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+	return (alpha2)/(PI * denom*denom); 
+}
+
+// Geometric Shadowing function --------------------------------------
+float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
+{
+	float r = (roughness + 1.0);
+	float k = (r*r) / 8.0;
+	float GL = dotNL / (dotNL * (1.0 - k) + k);
+	float GV = dotNV / (dotNV * (1.0 - k) + k);
+	return GL * GV;
+}
+
+// Fresnel function ----------------------------------------------------
+vec3 F_Schlick(float cosTheta, vec3 F0)
+{
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 prefilteredReflection(vec3 R, float roughness)
+{
+	const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+	float lod = roughness * MAX_REFLECTION_LOD;
+	float lodf = floor(lod);
+	float lodc = ceil(lod);
+	vec3 a = textureLod(prefilteredMap, R, lodf).rgb;
+	vec3 b = textureLod(prefilteredMap, R, lodc).rgb;
+	return mix(a, b, lod - lodf);
+}
+
+vec3 specularContribution(vec3 albedo, vec3 lightColor, vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float roughness)
+{
+	// Precalculate vectors and dot products	
+	vec3 H = normalize (V + L);
+	float dotNH = clamp(dot(N, H), 0.0, 1.0);
+	float dotNV = clamp(dot(N, V), 0.0, 1.0);
+	float dotNL = clamp(dot(N, L), 0.0, 1.0);
+
+	vec3 color = vec3(0.0);
+
+	if (dotNL > 0.0) {
+		// D = Normal distribution (Distribution of the microfacets)
+		float D = D_GGX(dotNH, roughness); 
+		// G = Geometric shadowing term (Microfacets shadowing)
+		float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
+		// F = Fresnel factor (Reflectance depending on angle of incidence)
+		vec3 F = F_Schlick(dotNV, F0);		
+		vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);		
+		vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);			
+		color += (kD * albedo / PI + spec) * dotNL;
+	}
+
+	return color;
+}
+
 
 void main()
 {
@@ -249,30 +212,51 @@ void main()
 	vec2 scaledUV = uv * material.TextureScale;
 
 	vec3 albedo = material.AlbedoColor.xyz * texture(textures[material.AlbedoIndex], scaledUV).rgb;
-    vec3 normal = texture(textures[material.NormalIndex], scaledUV).rgb * 2.0 - 1.0; // Convert to [-1,1]
-    normal = normalize(TBN * normal);
+    vec3 N = texture(textures[material.NormalIndex], scaledUV).rgb * 2.0 - 1.0; // Convert to [-1,1]
+    N = normalize(TBN * N);
     float metallic = texture(textures[material.MetalnessIndex], scaledUV).r * material.MetalnessFactor;
     float roughness = texture(textures[material.RoughnessIndex], scaledUV).r * material.RoughnessFactor;
     float ao = texture(textures[material.AOIndex], scaledUV).r * material.AOFactor;
     
 	vec3 V = normalize(Camera.Pos - FragPos);
-	vec3 lighting = vec3(0.0);
 
-	lighting += computeDirectionalLight(albedo, normal, V, Lights.DirectionalLight, metallic, roughness);
-    lighting *= calculateShadow();
-	for(int i = 0; i < Lights.NumPointLights; i++)
-	{
-		lighting += computePointLight(albedo, normal, V, Lights.PointLights[i], metallic, roughness);
+	vec3 F0 = vec3(0.04); 
+	F0 = mix(F0, albedo, metallic);
+
+	vec3 Lo = vec3(0.0);
+	for(int i = 0; i < Lights.NumPointLights; i++) {
+		vec3 L = normalize(Lights.PointLights[i].Position - FragPos);
+		float D = length(Lights.PointLights[i].Position - FragPos);
+		vec3 luminance = specularContribution(albedo, Lights.PointLights[i].Color, L, V, N, F0, metallic, roughness);
+		Lo += (luminance * Lights.PointLights[i].Intensity) / (D*D);
 	}
+	vec3 luminance = specularContribution(albedo, Lights.DirectionalLight.Color, Lights.DirectionalLight.Direction, V, N, F0, metallic, roughness);
+	Lo += luminance * Lights.DirectionalLight.Intensity;
+	
+	vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	//vec3 reflection = prefilteredReflection(R, roughness).rgb;	
+	vec3 irradiance = texture(irradianceMap, N).rgb;
 
-	lighting *= ao;
-	vec3 reflectionDir = reflect(V, normal);
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 ambientLighting = diffuseIBL(normal, albedo, ao);// + specularIBL(reflectionDir, roughness, F0, normal, V);
+	// Diffuse based on irradiance
+	vec3 diffuse = irradiance * albedo;	
 
-    vec3 hdrColor = ambientLighting + lighting;
-    vec3 mapped = vec3(1.0) - exp(-hdrColor * 0.9);
-    mapped = pow(mapped, vec3(1.0 / 2.2));
+	vec3 F = F_SchlickR(max(dot(N, V), 0.0), F0, roughness);
 
-	FragColor = vec4(mapped, 1.0);
+	// Specular reflectance
+	vec3 specular = vec3(0);//reflection * (F * brdf.x + brdf.y);
+
+	// Ambient part
+	vec3 kD = 1.0 - F;
+	kD *= 1.0 - metallic;	  
+	vec3 ambient = (kD * diffuse + specular);
+	
+	vec3 color = ambient + Lo;
+
+	// Tone mapping
+	color = Uncharted2Tonemap(color * 0.7);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	// Gamma correction
+	color = pow(color, vec3(1.0f / 2.2));
+
+	FragColor = vec4(color, 1.0);
 }

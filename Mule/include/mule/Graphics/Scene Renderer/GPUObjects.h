@@ -4,11 +4,6 @@
 
 namespace Mule::GPU
 {
-	struct GPUCascadedShadowData
-	{
-		alignas(16) glm::mat4 LightMatices[10];
-		alignas(4) float CascadeSplits[10];
-	};
 
 	struct GPUCamera
 	{

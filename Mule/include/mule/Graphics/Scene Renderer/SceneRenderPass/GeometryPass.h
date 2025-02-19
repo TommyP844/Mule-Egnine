@@ -85,9 +85,6 @@ namespace Mule
 			
 			Ref<CommandBuffer> CommandBuffer;
 			
-			Ref<UniformBuffer> LightCameraBuffer;
-			Ref<UniformBuffer> CascadeDistances;
-
 			Ref<DescriptorSet> GeometryDescriptorSet;
 			Ref<DescriptorSet> BindlessTextureDS;
 			Ref<DescriptorSet> EnvironmentDS;

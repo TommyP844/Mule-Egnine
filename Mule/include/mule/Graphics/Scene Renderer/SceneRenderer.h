@@ -19,7 +19,6 @@
 
 // Scene Render Passes
 #include "SceneRenderPass/GeometryPass.h"
-#include "SceneRenderPass/ShadowPass.h"
 
 // STD
 #include <vector>
@@ -31,7 +30,6 @@ namespace Mule
 		bool EnableShadows = true;
 		float Gamma = 2.2f;
 		float Exposure = 1.f;
-
 		// Temp
 		bool ViewCascadedShadowMaps = false;
 		uint32_t CascadeIndex = 0;
@@ -65,8 +63,6 @@ namespace Mule
 		Ref<FrameBuffer> GetCurrentFrameBuffer() const { return mGeometryPass->GetFB(); }
 		void Resize(uint32_t width, uint32_t height);
 
-		WeakRef<ShadowPass> GetShadowPass() const { return mShadowPass; }
-
 		SceneRendererSettings& GetSettings() { return mSettings; }
 	private:
 		std::mutex mMutex;
@@ -87,7 +83,6 @@ namespace Mule
 
 		// Render Passes
 		Ref<GeometryPass> mGeometryPass;
-		Ref<ShadowPass> mShadowPass;
 
 		struct FrameData;
 		std::vector<FrameData> mFrameData;

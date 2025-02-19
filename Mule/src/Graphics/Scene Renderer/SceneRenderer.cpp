@@ -62,11 +62,6 @@ namespace Mule
 		};
 
 		mGeometryPass = MakeRef<GeometryPass>(mGraphicsContext, geometryInitInfo);
-		
-		ShadowPassInitInfo shadowInitInfo{
-			.AssetManager = mAssetManager
-		};
-		mShadowPass = MakeRef<ShadowPass>(mGraphicsContext, shadowInitInfo);
 	}
 	
 	SceneRenderer::~SceneRenderer()
@@ -144,7 +139,6 @@ namespace Mule
 	{
 		mFrameIndex ^= 1;
 		FrameData& frameData = mFrameData[mFrameIndex];
-		mShadowPass->NextFrame();
 		mGeometryPass->NextFrame();
 
 		// TODO: revisit this: this only works because when the geometry fence passes it prettyt much garuntees shadows are finished
@@ -161,27 +155,11 @@ namespace Mule
 
 		// Scene Render Passes
 		std::vector<WeakRef<Semaphore>> semaphores;
-		bool didShadowsRender = false;
-		if (mSettings.EnableShadows)
-		{
-			mShadowPass->Render(settings.Scene, {}, settings.EditorCamera);
-			if (mShadowPass->DidRender())
-			{
-				semaphores.push_back(mShadowPass->GetSemaphore());
-				didShadowsRender = true;
-			}
-		}
 
 		GeometryPassRenderInfo geometryRenderInfo{};
 		geometryRenderInfo.Scene = settings.Scene;
 		geometryRenderInfo.WaitSemaphores = semaphores;
-		geometryRenderInfo.RenderShadows = didShadowsRender;
-		if (didShadowsRender)
-		{
-			geometryRenderInfo.ShadowBuffers = mShadowPass->GetFB();
-			geometryRenderInfo.CascadeDistances = mShadowPass->GetCascadeDistances();
-			geometryRenderInfo.LightCameras = mShadowPass->GetLightCameras();
-		}
+		geometryRenderInfo.RenderShadows = false;
 
 		mGeometryPass->Render(geometryRenderInfo);
 

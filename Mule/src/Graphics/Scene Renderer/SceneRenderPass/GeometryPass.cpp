@@ -22,11 +22,9 @@ namespace Mule
 			LayoutDescription(0, DescriptorType::UniformBuffer, (ShaderStage)((uint32_t)ShaderStage::Vertex | (uint32_t)ShaderStage::Fragment)),	// Camera Buffer
 			LayoutDescription(1, DescriptorType::UniformBuffer, ShaderStage::Fragment),																// Material Buffer
 			LayoutDescription(2, DescriptorType::UniformBuffer, ShaderStage::Fragment),																// Light Buffer
-			LayoutDescription(3, DescriptorType::UniformBuffer, ShaderStage::Fragment),																// Shadow Camera Buffer
 			LayoutDescription(4, DescriptorType::Texture, ShaderStage::Fragment),																	// Irradiance Map
 			LayoutDescription(5, DescriptorType::Texture, ShaderStage::Fragment),																	// Pre Filter Cube Map
 			LayoutDescription(6, DescriptorType::Texture, ShaderStage::Fragment),																	// BRDF Lut
-			LayoutDescription(7, DescriptorType::Texture, ShaderStage::Fragment, 10)																// Shadow map array
 		};
 		mGeometryDescriptorSetLayout = mGraphicsContext->CreateDescriptorSetLayout(descriptorSetLayout);
 
@@ -68,7 +66,6 @@ namespace Mule
 			mFrameData[i].CommandBuffer = mCommandPool->CreateCommandBuffer();
 			mFrameData[i].FrameBuffer = mGraphicsContext->CreateFrameBuffer(framebufferDescription);
 			mFrameData[i].FrameBuffer->SetColorClearValue(0, glm::vec4(0));
-			mFrameData[i].LightCameraBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPU::GPUCascadedShadowData));
 			mFrameData[i].BindlessTextureDS = initInfo.FrameInfo[i].BindlessTextureDS;
 
 			DescriptorSetDescription descriptorSetDesc{
@@ -81,7 +78,6 @@ namespace Mule
 				DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { initInfo.FrameInfo[i].CameraBuffer }),	// Camera Buffer
 				DescriptorSetUpdate(1, DescriptorType::UniformBuffer, 0, {}, { initInfo.FrameInfo[i].MaterialBuffer }),	// Material Buffer
 				DescriptorSetUpdate(2, DescriptorType::UniformBuffer, 0, {}, { initInfo.FrameInfo[i].LightBuffer }),	// Light Buffer
-				DescriptorSetUpdate(3, DescriptorType::UniformBuffer, 0, {}, { mFrameData[i].LightCameraBuffer })		// Shadow Camera Buffer
 			};
 
 			mFrameData[i].GeometryDescriptorSet->Update(geometryDSU);
@@ -201,26 +197,6 @@ namespace Mule
 			};
 
 			frameData.GeometryDescriptorSet->Update(geometryDSU);
-		}
-
-		std::vector<DescriptorSetUpdate> geometryDSU;
-		if (renderInfo.RenderShadows)
-		{
-			for (int i = 0; i < renderInfo.ShadowBuffers.size(); i++)
-			{
-				DescriptorSetUpdate DSU(7, DescriptorType::Texture, i, { renderInfo.ShadowBuffers[i]->GetDepthAttachment()}, {});
-				geometryDSU.push_back(DSU);
-			}
-			frameData.GeometryDescriptorSet->Update(geometryDSU);
-
-			GPU::GPUCascadedShadowData shadowData{};
-			for (int i = 0; i < renderInfo.LightCameras.size(); i++)
-			{
-				shadowData.LightMatices[i] = renderInfo.LightCameras[i];
-				shadowData.CascadeSplits[i] = renderInfo.CascadeDistances[i];
-			}
-
-			frameData.LightCameraBuffer->SetData(&shadowData, sizeof(shadowData));
 		}
 
 		Ref<CommandBuffer> cmd = frameData.CommandBuffer;
