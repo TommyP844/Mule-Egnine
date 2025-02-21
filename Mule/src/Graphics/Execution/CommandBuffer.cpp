@@ -567,6 +567,30 @@ namespace Mule
 			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;      // Ensure all shader reads are finished
 			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // Allow depth writing
 		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_GENERAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;  // Ensure color writes are finished
+			dstStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;           // Prepare for compute shader access
+
+			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;  // Ensure all writes are finished
+			barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT; // Allow compute shader access
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newVkLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;       // Ensure compute shader writes are finished
+			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;      // Prepare for fragment shader read
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;    // Ensure compute shader writes are finished
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;     // Allow fragment shader to read
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newVkLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;       // Ensure compute shader writes are finished
+			dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Prepare for color attachment output
+
+			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;    // Ensure compute shader writes are finished
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Ensure proper writes to color attachment
+			}
 
 		else
 		{
@@ -631,6 +655,11 @@ namespace Mule
 			SPDLOG_WARN("Attempting to push a constant that is to large for shader: {}, and stage: {}", shader->Name(), (uint32_t)stage);
 		}
 		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), (VkShaderStageFlags)stage, range.first, size, data);
+	}
+
+	void CommandBuffer::SetPushConstants(WeakRef<ComputeShader> shader, void* data, uint32_t size)
+	{
+		vkCmdPushConstants(mCommandBuffer, shader->GetPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, size, data);
 	}
 
 	void CommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, const std::vector<WeakRef<DescriptorSet>>& descriptorSets)

@@ -20,7 +20,7 @@ private:
 	WeakRef<Mule::Texture2D> mBlackTexture;
 	WeakRef<Mule::Material> mMaterial;
 
-	void DisplayTexture(const char* name, Mule::AssetHandle& textureHandle);
+	bool DisplayTexture(const char* name, Mule::AssetHandle& textureHandle);
 
 };
 

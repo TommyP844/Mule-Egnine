@@ -1,17 +1,19 @@
 #pragma once
 
 #include "Asset/Asset.h"
-#include "Graphics/Context/GraphicsContext.h"
 #include "DescriptorSetLayout.h"
 
 #include <vulkan/vulkan.h>
 
 namespace Mule
 {
+	class GraphicsContext;
+
 	struct ComputeShaderDescription
 	{
 		fs::path Filepath;
 		std::vector<WeakRef<DescriptorSetLayout>> Layouts;
+		uint32_t PushConstantSize = 0;
 	};
 
 	class ComputeShader : public Asset<AssetType::Shader>

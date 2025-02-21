@@ -62,32 +62,49 @@ Mule::RenderPass::RenderPass(VkDevice device, const RenderPassDescription& descr
 	}
 
 	// Subpass
-	VkSubpassDescription subpass{};
+	std::vector<VkSubpassDescription> subpasses{};
+	std::vector<std::vector<VkAttachmentReference>> attachmentRefs; // We need the memory to persist until the function ends
+	attachmentRefs.resize(description.Subpasses.size());
+	for(uint32_t i = 0; i < description.Subpasses.size(); i++)
 	{
+		const auto& subPassDesc = description.Subpasses[i];
+		mSubPassAttachmentCount.push_back(subPassDesc.AttachmentRefs.size());
+		for (uint32_t j = 0; j < subPassDesc.AttachmentRefs.size(); j++)
+		{
+			VkAttachmentReference attachmentRef{};
+
+			attachmentRef.attachment = subPassDesc.AttachmentRefs[j];
+			attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			attachmentRefs[i].push_back(attachmentRef);
+		}
+
+		VkSubpassDescription subpass{};
 		subpass.colorAttachmentCount = attachmentReferences.size();
 		subpass.pColorAttachments = attachmentReferences.data();
 		subpass.inputAttachmentCount = 0;
 		subpass.pInputAttachments = nullptr;
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pDepthStencilAttachment = hasDepth ? &depthAttachmentRef : nullptr;
+		subpass.pDepthStencilAttachment = subPassDesc.HasDepth ? &depthAttachmentRef : nullptr;
 		subpass.preserveAttachmentCount = 0;
 		subpass.pPreserveAttachments = nullptr;
 		subpass.pResolveAttachments = nullptr;
 		subpass.flags = 0;
+		subpasses.push_back(subpass);
 	}
 
 	VkRenderPassCreateInfo renderPassCreateInfo{};
 
 	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.subpassCount = subpasses.size();
 	renderPassCreateInfo.pNext = nullptr;
 	renderPassCreateInfo.attachmentCount = attachmentDescriptions.size();
 	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
 	renderPassCreateInfo.flags = 0;
 	renderPassCreateInfo.dependencyCount = 0;
 	renderPassCreateInfo.pDependencies = nullptr;
-	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subpass;
+	renderPassCreateInfo.subpassCount = subpasses.size();
+	renderPassCreateInfo.pSubpasses = subpasses.data();
 
 	VkResult result = vkCreateRenderPass(mDevice, &renderPassCreateInfo, nullptr, &mRenderPass);
 

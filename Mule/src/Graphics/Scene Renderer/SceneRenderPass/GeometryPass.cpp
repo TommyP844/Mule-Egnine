@@ -35,13 +35,26 @@ namespace Mule
 		};
 		mEnvironmentDescriptorSetLayout = mGraphicsContext->CreateDescriptorSetLayout(environmentSetLayout);
 
+		DescriptorSetLayoutDescription highlightSetLayout;
+		highlightSetLayout.Layouts = {
+			LayoutDescription(0, DescriptorType::StorageImage, ShaderStage::Compute),
+			LayoutDescription(1, DescriptorType::Texture, ShaderStage::Compute),
+		};
+		mHighlightDSL = mGraphicsContext->CreateDescriptorSetLayout(highlightSetLayout);
+
 #pragma region Frame Data
 
 		RenderPassDescription geometryRenderPassDesc{
 			.Attachments = {
-				{ TextureFormat::RGBA32F }
+				{ TextureFormat::RGBA32F },
+				{ TextureFormat::R32F },
+				{ TextureFormat::R32UI }
 			},
-			.DepthAttachment = { TextureFormat::D32F }
+			.DepthAttachment = { TextureFormat::D32F },
+			.Subpasses = {
+				{ { 0 }, true },
+				{ { 1, 2 }, false },
+			}
 		};
 		mRenderPass = context->CreateRenderPass(geometryRenderPassDesc);
 
@@ -51,7 +64,9 @@ namespace Mule
 			.LayerCount = 1,
 			.RenderPass = mRenderPass,
 			.Attachments = {
-				{ TextureFormat::RGBA32F }
+				{ TextureFormat::RGBA32F, TextureFlags::SotrageImage },
+				{ TextureFormat::R32F },
+				{ TextureFormat::R32UI }
 			},
 			.DepthAttachment = { TextureFormat::D32F }
 		};
@@ -63,7 +78,7 @@ namespace Mule
 		{
 			mFrameData[i].Fence = mGraphicsContext->CreateFence();
 			mFrameData[i].Semaphore = mGraphicsContext->CreateSemaphore();
-			mFrameData[i].CommandBuffer = mCommandPool->CreateCommandBuffer();
+			mFrameData[i].GeometryCommandBuffer = mCommandPool->CreateCommandBuffer();
 			mFrameData[i].FrameBuffer = mGraphicsContext->CreateFrameBuffer(framebufferDescription);
 			mFrameData[i].FrameBuffer->SetColorClearValue(0, glm::vec4(0));
 			mFrameData[i].BindlessTextureDS = initInfo.FrameInfo[i].BindlessTextureDS;
@@ -91,10 +106,14 @@ namespace Mule
 			};
 
 			mFrameData[i].EnvironmentDS->Update(environmentDSU);
+
+			DescriptorSetDescription highlightDSDesc{
+				.Layouts = { mHighlightDSL }
+			};
+			mFrameData[i].HighlightDS = mGraphicsContext->CreateDescriptorSet(highlightDSDesc);
 		}
 
 #pragma endregion
-
 
 		VertexLayout staticVertexLayout;
 		staticVertexLayout.AddAttribute(AttributeType::Vec3)
@@ -126,6 +145,27 @@ namespace Mule
 		environmentShaderDesc.CulleMode = CullMode::Front;
 
 		mEnvironmentMapShader = mGraphicsContext->CreateGraphicsShader(environmentShaderDesc);
+
+		GraphicsShaderDescription highlightShaderDesc{};
+		highlightShaderDesc.RenderPass = mRenderPass;
+		highlightShaderDesc.Subpass = 1;
+		highlightShaderDesc.SourcePath = "../Assets/Shaders/Graphics/SelectedEntityShader.glsl";
+		highlightShaderDesc.VertexLayout = staticVertexLayout;
+		highlightShaderDesc.PushConstants = {};
+		highlightShaderDesc.CulleMode = CullMode::Back;
+		highlightShaderDesc.PushConstants = {
+			PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
+			PushConstant(ShaderStage::Fragment, sizeof(uint32_t))
+		};
+
+		mSelectedEntityShader = mGraphicsContext->CreateGraphicsShader(highlightShaderDesc);
+
+		ComputeShaderDescription highlightDesc{};
+		highlightDesc.Filepath = "../Assets/Shaders/Compute/HighlightShader.glsl";
+		highlightDesc.Layouts = { mHighlightDSL };
+		highlightDesc.PushConstantSize = sizeof(uint32_t) * 2;
+
+		mHighlightShader = mGraphicsContext->CreateComputeShader(highlightDesc);
 	}
 	
 	GeometryPass::~GeometryPass()
@@ -140,6 +180,35 @@ namespace Mule
 		{
 			frameData.ResizeRequired = false;
 			frameData.FrameBuffer->Resize(frameData.ResizeWidth, frameData.ResizeHeight);
+
+			// TODO: transition layouts so vulkan doesnt complain
+			Ref<Fence> fence = mGraphicsContext->CreateFence();
+			fence->Wait();
+			fence->Reset();
+
+			Ref<CommandBuffer> cmd = mCommandPool->CreateCommandBuffer();
+			cmd->Begin();
+			cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(0), ImageLayout::General);
+			cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
+			cmd->End();
+			mGraphicsContext->GetGraphicsQueue()->Submit(cmd, {}, {}, fence);
+			fence->Wait();
+			fence->Reset();
+			std::vector<DescriptorSetUpdate> highlightDSU = {
+				DescriptorSetUpdate(0, DescriptorType::StorageImage, 0, { frameData.FrameBuffer->GetColorAttachment(0) }, {}),
+				DescriptorSetUpdate(1, DescriptorType::Texture, 0, { frameData.FrameBuffer->GetColorAttachment(1) }, {})
+			};
+
+			frameData.HighlightDS->Update(highlightDSU);
+			
+			cmd->Reset();
+			cmd->Begin();
+			cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
+			cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(1), ImageLayout::ColorAttachment);
+			cmd->End();
+			mGraphicsContext->GetGraphicsQueue()->Submit(cmd, {}, {}, fence);
+			fence->Wait();
+			fence->Reset();
 		}
 
 		WeakRef<EnvironmentMap> envMap = nullptr;
@@ -199,11 +268,13 @@ namespace Mule
 			frameData.GeometryDescriptorSet->Update(geometryDSU);
 		}
 
-		Ref<CommandBuffer> cmd = frameData.CommandBuffer;
+		Ref<CommandBuffer> cmd = frameData.GeometryCommandBuffer;
 
 		cmd->Reset();
 		cmd->Begin();
 		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
+		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(1), ImageLayout::ColorAttachment);
+		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(2), ImageLayout::ColorAttachment);
 		cmd->BeginRenderPass(frameData.FrameBuffer, mRenderPass);
 
 		cmd->BindGraphicsPipeline(mOpaqueGeometryShader);
@@ -253,8 +324,48 @@ namespace Mule
 			auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
+		
+		cmd->NextPass();
 
+		Entity SelectedEntity = renderInfo.SelectedEntity;
+		if (SelectedEntity && SelectedEntity.HasComponent<MeshComponent>())
+		{
+			MeshComponent& meshComponent = SelectedEntity.GetComponent<MeshComponent>();
+			if (meshComponent.Visible)
+			{
+				auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+				if (mesh)
+				{
+					glm::mat4 view = renderInfo.Camera.GetView();
+					glm::mat4 proj = renderInfo.Camera.GetProj();
+					glm::mat4 transform = proj * view * SelectedEntity.GetTransformComponent().TRS();
+					uint32_t id = SelectedEntity.ID();
+
+					cmd->BindGraphicsPipeline(mSelectedEntityShader);
+					cmd->SetPushConstants(mSelectedEntityShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					cmd->SetPushConstants(mSelectedEntityShader, ShaderStage::Fragment, &id, sizeof(uint32_t));
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+		}
+
+		
 		cmd->EndRenderPass();
+		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(0), ImageLayout::General);
+		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
+		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly);
+
+		cmd->BindComputePipeline(mHighlightShader);
+		uint32_t width = frameData.FrameBuffer->GetWidth();
+		uint32_t height = frameData.FrameBuffer->GetHeight();
+		uint32_t sizes[] = {
+			width,
+			height
+		};
+		cmd->BindComputeDescriptorSet(mHighlightShader, frameData.HighlightDS);
+		cmd->SetPushConstants(mHighlightShader, &sizes[0], sizeof(uint32_t) * 2);
+		cmd->Execute(width / 16, height / 16, 1);
+		
 		cmd->TranistionImageLayout(frameData.FrameBuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly);
 		cmd->End();
 

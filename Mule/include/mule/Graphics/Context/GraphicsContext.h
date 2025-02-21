@@ -15,6 +15,7 @@
 #include "Graphics/DescriptorSet.h"
 #include "Graphics/DescriptorSetLayout.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/ComputeShader.h"
 
 #include <vulkan/vulkan.h>
 
@@ -61,6 +62,7 @@ namespace Mule
 		Ref<UniformBuffer> CreateUniformBuffer(uint32_t bytes);
 		Ref<Mesh> CreateMesh(const MeshDescription& description);
 		Ref<GraphicsShader> CreateGraphicsShader(const GraphicsShaderDescription& description);
+		Ref<ComputeShader> CreateComputeShader(const ComputeShaderDescription& description);
 		Ref<RenderPass> CreateRenderPass(const RenderPassDescription& renderPassDescription);
 		Ref<Fence> CreateFence();
 		Ref<Semaphore> CreateSemaphore();

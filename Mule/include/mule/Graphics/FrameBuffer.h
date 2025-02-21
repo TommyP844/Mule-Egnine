@@ -19,6 +19,7 @@ namespace Mule
 	struct AttachmentDesc
 	{
 		TextureFormat Format = TextureFormat::NONE;
+		TextureFlags Flags = TextureFlags::None;
 	};
 
 	struct FramebufferDescription

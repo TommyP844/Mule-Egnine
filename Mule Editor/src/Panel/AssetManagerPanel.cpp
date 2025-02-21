@@ -112,6 +112,13 @@ void AssetManagerPanel::OnUIRender(float dt)
 				{
 					for (const auto& asset : mEngineContext->GetAssetsOfType(assetType))
 					{
+						if (strlen(nameBuffer) > 0)
+						{
+							std::regex regex = std::regex(std::string(nameBuffer), std::regex_constants::icase);
+							bool match = std::regex_search(asset->Name(), regex);
+							if (!match)
+								continue;
+						}
 						DisplayAsset(asset);
 						ImGui::Separator();
 					}

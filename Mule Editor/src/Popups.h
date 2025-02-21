@@ -12,9 +12,10 @@ static void NewItemPopup(bool& show, const std::string& itemName, const std::str
 {
 	static char pathBuffer[256] = { 0 };
 	static char name[256] = { 0 };
+	std::string popupName = "New " + itemName;
 	if (show)
 	{
-		ImGui::OpenPopup(("New " + itemName).c_str());
+		ImGui::OpenPopup(popupName.c_str());
 		show = false;
 		memset(pathBuffer, 0, 256);
 		memcpy(pathBuffer, defaultPath.string().c_str(), defaultPath.string().size());
@@ -22,7 +23,8 @@ static void NewItemPopup(bool& show, const std::string& itemName, const std::str
 		memset(name, 0, 256);
 	}
 
-	if (ImGui::BeginPopupModal("New Scene", nullptr, ImGuiWindowFlags_NoResize))
+	ImGui::SetNextWindowSize({600.f, 150.f}, ImGuiCond_Always);
+	if (ImGui::BeginPopupModal(popupName.c_str(), nullptr, ImGuiWindowFlags_NoResize))
 	{
 		if (ImGui::BeginTable("NewSceneTable", 3, ImGuiTableFlags_NoClip | ImGuiTableFlags_SizingFixedFit, {ImGui::GetContentRegionAvail().x, 0.f}))
 		{
@@ -37,7 +39,7 @@ static void NewItemPopup(bool& show, const std::string& itemName, const std::str
 
 			ImGui::TableNextColumn();
 			ImGui::PushItemWidth(350.f);
-			ImGui::InputText("##NewItemPath", pathBuffer, 256);
+			ImGui::InputText("##NewItemPath", pathBuffer, 256, ImGuiInputTextFlags_ElideLeft);
 			
 			ImGui::TableNextColumn();
 			if (ImGui::Button("Browse"))

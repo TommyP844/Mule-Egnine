@@ -168,6 +168,14 @@ void ComponentPanel::OnUIRender(float dt)
 				ImGui::InputText("##Material", (char*)materialPtr->Name().data(), materialPtr->Name().size());
 			else
 				ImGui::InputText("##Material", (char*)null.data(), null.size());
+			ImGuiExtension::DragDropFile ddf;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+			{
+				if (ddf.AssetType == Mule::AssetType::Material)
+				{
+					mesh.MaterialHandle = ddf.AssetHandle;
+				}
+			}
 
 			ImGui::EndDisabled();
 			});

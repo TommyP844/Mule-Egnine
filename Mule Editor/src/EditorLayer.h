@@ -51,5 +51,6 @@ private:
 
 	// Popups
 	bool mNewScenePopup = false;
+	bool mNewMaterialPopup = false;
 
 };

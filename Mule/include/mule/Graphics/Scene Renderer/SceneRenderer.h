@@ -55,6 +55,7 @@ namespace Mule
 		void RemoveTexture(AssetHandle textureHandle);
 
 		void AddMaterial(WeakRef<Material> material);
+		void UpdateMaterial(WeakRef<Material> material);
 		void RemoveMaterial(AssetHandle materialHandle);
 
 		void OnRender(WeakRef<Scene> scene, std::vector<WeakRef<Semaphore>> waitSemaphore = {});

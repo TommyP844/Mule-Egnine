@@ -93,7 +93,7 @@ namespace Mule
 			return mId == other.mId && mScene == other.mScene;
 		}
 
-		operator bool() {
+		operator bool() const {
 			return mScene != nullptr && mId != entt::null;
 		}
 

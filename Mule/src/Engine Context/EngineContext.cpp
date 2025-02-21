@@ -7,6 +7,7 @@
 #include "Asset/Loader/TextureLoader.h"
 #include "Asset/Loader/EnvironmentMapLoader.h"
 #include "Asset/Loader/GraphicsShaderLoader.h"
+#include "Asset/Loader/MaterialLoader.h"
 
 
 namespace Mule
@@ -31,6 +32,7 @@ namespace Mule
 		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);
 		mAssetManager->RegisterLoader<GraphicsShaderLoader>(mGraphicsContext);
+		mAssetManager->RegisterLoader<MaterialLoader>();
 
 		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
 

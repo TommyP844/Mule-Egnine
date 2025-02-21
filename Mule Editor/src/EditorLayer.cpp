@@ -115,6 +115,12 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
 					}));
 			}
+			else if (extension == ".mat")
+			{
+				futures.push_back(std::async(std::launch::async, [=]() {
+					mEngineContext->LoadAsset<Mule::Material>(filePath);
+					}));
+			}
 		}
 		});
 
@@ -159,6 +165,10 @@ void EditorLayer::OnUIRender(float dt)
 			if (ImGui::MenuItem("Scene"))
 			{
 				mNewScenePopup = true;
+			}
+			if (ImGui::MenuItem("Material"))
+			{
+				mNewMaterialPopup = true;
 			}
 			ImGui::EndMenu();
 		}
@@ -225,6 +235,14 @@ void EditorLayer::OnUIRender(float dt)
 		scene->SetFilePath(filepath);
 		mEngineContext->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
+		});
+
+	NewItemPopup(mNewMaterialPopup, "Material", ".mat", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
+		Ref<Mule::Material> material = MakeRef<Mule::Material>();
+		material->SetFilePath(filepath);
+		mEngineContext->InsertAsset(material);
+		mMaterialEditorPanel.Open();
+		mMaterialEditorPanel.SetMaterial(material->Handle());
 		});
 }
 

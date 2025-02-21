@@ -9,8 +9,8 @@ layout(location = 3) in vec2 uv;
 layout(location = 4) in vec4 color;
 
 layout(location = 0) out vec2 _uv;
-layout(location = 1) out mat3 _tbn;
-layout(location = 5) out vec3 _fragPos;
+layout(location = 1) out vec3 _normal;
+layout(location = 2) out vec3 _fragPos;
 
 struct CameraData
 {
@@ -35,10 +35,6 @@ const mat4 bias = mat4(
 
 void main()
 {
-	vec3 T = normalize(vec3(transform * vec4(tangent, 0.0)));
-    vec3 N = normalize(vec3(transform * vec4(normal, 0.0)));
-    vec3 B = cross(N, T);
-    _tbn = mat3(T, B, N);
 	_uv = uv;
 	_fragPos = (transform * vec4(position, 1.0)).xyz;
 	gl_Position = Camera.Proj * Camera.View * transform * vec4(position, 1);
@@ -55,8 +51,8 @@ void main()
 #define PI 3.1415926535897932384626433832795
 
 layout(location = 0) in vec2 uv;
-layout(location = 1) in mat3 TBN;
-layout(location = 5) in vec3 FragPos;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 FragPos;
 
 layout(location = 0) out vec4 FragColor;
 
@@ -179,7 +175,7 @@ vec3 prefilteredReflection(vec3 R, float roughness)
 	return mix(a, b, lod - lodf);
 }
 
-vec3 specularContribution(vec3 albedo, vec3 lightColor, vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float roughness)
+vec3 specularContribution(vec3 lightColor, vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float roughness)
 {
 	// Precalculate vectors and dot products	
 	vec3 H = normalize (V + L);
@@ -198,12 +194,28 @@ vec3 specularContribution(vec3 albedo, vec3 lightColor, vec3 L, vec3 V, vec3 N, 
 		vec3 F = F_Schlick(dotNV, F0);		
 		vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);		
 		vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);			
-		color += (kD * albedo / PI + spec) * dotNL;
+		color += (kD * lightColor / PI + spec) * dotNL;
 	}
 
 	return color;
 }
 
+vec3 getNormalFromMap(vec3 normal, uint textureIndex, vec2 uv, vec3 fragPos)
+{
+    vec3 tangentNormal = texture(textures[textureIndex], uv).rgb * 2.0 - 1.0; // Convert to [-1,1]
+
+    vec3 Q1  = dFdx(fragPos);
+    vec3 Q2  = dFdy(fragPos);
+    vec2 st1 = dFdx(uv);
+    vec2 st2 = dFdy(uv);
+
+    vec3 N  = normalize(normal);
+    vec3 T  = normalize(Q1 * st2.t - Q2 * st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
 
 void main()
 {
@@ -212,8 +224,7 @@ void main()
 	vec2 scaledUV = uv * material.TextureScale;
 
 	vec3 albedo = material.AlbedoColor.xyz * texture(textures[material.AlbedoIndex], scaledUV).rgb;
-    vec3 N = texture(textures[material.NormalIndex], scaledUV).rgb * 2.0 - 1.0; // Convert to [-1,1]
-    N = normalize(TBN * N);
+    vec3 N = getNormalFromMap(normal, material.NormalIndex, scaledUV, FragPos);
     float metallic = texture(textures[material.MetalnessIndex], scaledUV).r * material.MetalnessFactor;
     float roughness = texture(textures[material.RoughnessIndex], scaledUV).r * material.RoughnessFactor;
     float ao = texture(textures[material.AOIndex], scaledUV).r * material.AOFactor;
@@ -227,10 +238,10 @@ void main()
 	for(int i = 0; i < Lights.NumPointLights; i++) {
 		vec3 L = normalize(Lights.PointLights[i].Position - FragPos);
 		float D = length(Lights.PointLights[i].Position - FragPos);
-		vec3 luminance = specularContribution(albedo, Lights.PointLights[i].Color, L, V, N, F0, metallic, roughness);
+		vec3 luminance = specularContribution(Lights.PointLights[i].Color, L, V, N, F0, metallic, roughness);
 		Lo += (luminance * Lights.PointLights[i].Intensity) / (D*D);
 	}
-	vec3 luminance = specularContribution(albedo, Lights.DirectionalLight.Color, Lights.DirectionalLight.Direction, V, N, F0, metallic, roughness);
+	vec3 luminance = specularContribution(Lights.DirectionalLight.Color, -Lights.DirectionalLight.Direction, V, N, F0, metallic, roughness);
 	Lo += luminance * Lights.DirectionalLight.Intensity;
 	
 	vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;

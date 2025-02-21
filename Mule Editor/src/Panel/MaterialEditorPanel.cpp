@@ -1,5 +1,7 @@
 #include "MaterialEditorPanel.h"
 
+#include "ImGuiExtension.h"
+
 void MaterialEditorPanel::OnAttach()
 {
 	mBlackTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
@@ -16,11 +18,21 @@ void MaterialEditorPanel::OnUIRender(float dt)
 		}
 		else
 		{
+			bool modified = false;
+
 			std::string name = mMaterial->Name();
 			std::string guid = std::to_string(mMaterial->Handle());
 			float windowWidth = ImGui::GetContentRegionAvail().x;
 			const float headerOffset = 75.f;
 			const float paramOffset = 170.f;
+
+			if (!mMaterial->FilePath().empty())
+			{
+				if (ImGui::Button("Save"))
+				{
+					mEngineContext->SaveAssetText<Mule::Material>(mMaterial->Handle());
+				}
+			}
 
 			ImGui::BeginDisabled();
 			
@@ -38,48 +50,53 @@ void MaterialEditorPanel::OnUIRender(float dt)
 
 			ImGui::Text("Transparent");
 			ImGui::SameLine(paramOffset);
-			ImGui::Checkbox("##Transparent", &mMaterial->Transparent);
+			modified |= ImGui::Checkbox("##Transparent", &mMaterial->Transparent);
 
 			if (mMaterial->Transparent)
 			{
 				ImGui::Text("Transparency");
 				ImGui::SameLine(paramOffset);
 				ImGui::PushItemWidth(windowWidth - paramOffset);
-				ImGui::DragFloat("##Transparency", &mMaterial->Transparency, 0.01f, 0.f, 1.f);
+				modified |= ImGui::DragFloat("##Transparency", &mMaterial->Transparency, 0.01f, 0.f, 1.f);
 			}
 
 			ImGui::Text("Albedo Color");
 			ImGui::SameLine(paramOffset);
-			ImGui::ColorEdit4("##AlbedoColor", &mMaterial->AlbedoColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+			modified |= ImGui::ColorEdit4("##AlbedoColor", &mMaterial->AlbedoColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
 
 			ImGui::Text("Metalness Factor");
 			ImGui::SameLine(paramOffset);
 			ImGui::PushItemWidth(windowWidth - paramOffset);
-			ImGui::DragFloat("##MetalnessFactor", &mMaterial->MetalnessFactor, 0.01f, 0.f, 1.f);
+			modified |= ImGui::DragFloat("##MetalnessFactor", &mMaterial->MetalnessFactor, 0.01f, 0.f, 1.f);
 
 			ImGui::Text("Roughness Factor");
 			ImGui::SameLine(paramOffset);
 			ImGui::PushItemWidth(windowWidth - paramOffset);
-			ImGui::DragFloat("##roughnessFactor", &mMaterial->RoughnessFactor, 0.01f, 0.f, 1.f);
+			modified |= ImGui::DragFloat("##roughnessFactor", &mMaterial->RoughnessFactor, 0.01f, 0.f, 1.f);
 
 			ImGui::Text("Ambient Occ. Factor");
 			ImGui::SameLine(paramOffset);
 			ImGui::PushItemWidth(windowWidth - paramOffset);
-			ImGui::DragFloat("##AOFactor", &mMaterial->AOFactor, 0.01f, 0.f, 1.f);
+			modified |= ImGui::DragFloat("##AOFactor", &mMaterial->AOFactor, 0.01f, 0.f, 1.f);
 
 			ImGui::Text("Texture Scale");
 			ImGui::SameLine(paramOffset);
 			ImGui::PushItemWidth(windowWidth - paramOffset);
-			ImGui::DragFloat2("##TextureScale", &mMaterial->TextureScale[0], 0.1f, 0.1f, 0.f);
+			modified |= ImGui::DragFloat2("##TextureScale", &mMaterial->TextureScale[0], 0.1f, 0.1f, 0.f);
 
 			ImGui::Separator();
 
-			DisplayTexture("Albedo", mMaterial->AlbedoMap);
-			DisplayTexture("Normal", mMaterial->NormalMap);
-			DisplayTexture("Metalness", mMaterial->MetalnessMap);
-			DisplayTexture("Roughness", mMaterial->RoughnessMap);
-			DisplayTexture("Ambient Occulsion", mMaterial->AOMap);
-			DisplayTexture("Emissive", mMaterial->EmissiveMap);
+			modified |= DisplayTexture("Albedo", mMaterial->AlbedoMap);
+			modified |= DisplayTexture("Normal", mMaterial->NormalMap);
+			modified |= DisplayTexture("Metalness", mMaterial->MetalnessMap);
+			modified |= DisplayTexture("Roughness", mMaterial->RoughnessMap);
+			modified |= DisplayTexture("Ambient Occulsion", mMaterial->AOMap);
+			modified |= DisplayTexture("Emissive", mMaterial->EmissiveMap);
+
+			if (modified)
+			{
+				mEngineContext->GetSceneRenderer()->UpdateMaterial(mMaterial);
+			}
 		}
 	}
 	ImGui::End();
@@ -94,8 +111,9 @@ void MaterialEditorPanel::SetMaterial(Mule::AssetHandle materialHandle)
 	mMaterial = mEngineContext->GetAsset<Mule::Material>(materialHandle);
 }
 
-void MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& textureHandle)
+bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& textureHandle)
 {
+	bool modified = false;
 	WeakRef<Mule::Texture2D> texture = mEngineContext->GetAsset<Mule::Texture2D>(textureHandle);
 
 	ImGui::PushID(name);
@@ -109,6 +127,16 @@ void MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 		else
 		{
 			ImGui::Image(mBlackTexture->GetImGuiID(), {128, 128});
+		}
+
+		ImGuiExtension::DragDropFile ddf;
+		if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+		{
+			if (ddf.AssetType == Mule::AssetType::Texture)
+			{
+				textureHandle = ddf.AssetHandle;
+				modified = true;
+			}
 		}
 
 		ImGui::SameLine();
@@ -139,4 +167,6 @@ void MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 	ImGui::PopID();
 
 	ImGui::Separator();
+
+	return modified;
 }

@@ -124,6 +124,34 @@ namespace Mule
 		}
 	}
 
+	void SceneRenderer::UpdateMaterial(WeakRef<Material> material)
+	{
+		GPU::GPUMaterial gpuMaterial{};
+
+		gpuMaterial.AlbedoColor = material->AlbedoColor;
+
+		gpuMaterial.TextureScale = material->TextureScale;
+
+		gpuMaterial.MetalnessFactor = material->MetalnessFactor;
+		gpuMaterial.RoughnessFactor = material->RoughnessFactor;
+		gpuMaterial.AOFactor = material->AOFactor;
+
+		gpuMaterial.AlbedoIndex = mTextureArray.QueryIndex(material->AlbedoMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AlbedoMap);
+		gpuMaterial.NormalIndex = mTextureArray.QueryIndex(material->NormalMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->NormalMap);
+		gpuMaterial.MetalnessIndex = mTextureArray.QueryIndex(material->MetalnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->MetalnessMap);
+		gpuMaterial.RoughnessIndex = mTextureArray.QueryIndex(material->RoughnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->RoughnessMap);
+		gpuMaterial.AOIndex = mTextureArray.QueryIndex(material->AOMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AOMap);
+		gpuMaterial.EmissiveIndex = mTextureArray.QueryIndex(material->EmissiveMap) == UINT32_MAX ? mBlackImageIndex : mTextureArray.QueryIndex(material->EmissiveMap);
+
+		std::lock_guard<std::mutex> lock(mMutex);
+		uint32_t index = mMaterialArray.QueryIndex(material->Handle());
+
+		for (int i = 0; i < 2; i++)
+		{
+			mFrameData[i].AddedMaterials.push_back({ gpuMaterial, index });
+		}
+	}
+
 	void SceneRenderer::RemoveMaterial(AssetHandle materialHandle)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
@@ -160,6 +188,8 @@ namespace Mule
 		geometryRenderInfo.Scene = settings.Scene;
 		geometryRenderInfo.WaitSemaphores = semaphores;
 		geometryRenderInfo.RenderShadows = false;
+		geometryRenderInfo.Camera = settings.EditorCamera;
+		geometryRenderInfo.SelectedEntity = settings.SelectedEntities.empty() ? Entity() : settings.SelectedEntities[0];
 
 		mGeometryPass->Render(geometryRenderInfo);
 

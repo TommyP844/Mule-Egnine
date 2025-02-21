@@ -344,6 +344,7 @@ namespace Mule
 		RenderPassDescription renderPassDesc{};
 		renderPassDesc.Attachments.push_back({ (TextureFormat)mSurfaceFormat.format });
 		renderPassDesc.DepthAttachment = { TextureFormat::D32F };
+		renderPassDesc.Subpasses = { { { 0 }, true } };
 		Ref<RenderPass> renderpass = CreateRenderPass(renderPassDesc);
 
 		for (int i = 0; i < mFrameCount; i++)
@@ -557,6 +558,11 @@ namespace Mule
 	Ref<GraphicsShader> GraphicsContext::CreateGraphicsShader(const GraphicsShaderDescription& description)
 	{
 		return MakeRef<GraphicsShader>(mDevice, description);
+	}
+
+	Ref<ComputeShader> GraphicsContext::CreateComputeShader(const ComputeShaderDescription& description)
+	{
+		return MakeRef<ComputeShader>(WeakRef<GraphicsContext>(this), description);
 	}
 
 	Ref<RenderPass> GraphicsContext::CreateRenderPass(const RenderPassDescription& renderPassDescription)

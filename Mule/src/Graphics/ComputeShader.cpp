@@ -1,6 +1,8 @@
 
 #include "Graphics/ComputeShader.h"
 
+#include "Graphics/Context/GraphicsContext.h"
+
 #include <spdlog/spdlog.h>
 #include <shaderc/shaderc.h>
 
@@ -22,11 +24,20 @@ namespace Mule
 			layouts.push_back(descriptorSetLayout->GetLayout());
 		}
 
+		
+		VkPushConstantRange range{};
+
+		range.offset = 0;
+		range.size = description.PushConstantSize;
+		range.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
 		// Create pipeline layout
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = layouts.size();
 		pipelineLayoutInfo.pSetLayouts = layouts.data();
+		pipelineLayoutInfo.pushConstantRangeCount = description.PushConstantSize > 0 ? 1 : 0;
+		pipelineLayoutInfo.pPushConstantRanges = description.PushConstantSize > 0 ? &range : nullptr;
 		
 		if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS)
 		{

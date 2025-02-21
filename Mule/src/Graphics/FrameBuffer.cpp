@@ -74,7 +74,8 @@ namespace Mule
 
 		for (auto attachmentDesc : mDesc.Attachments)
 		{
-			Ref<Texture2D> attachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, attachmentDesc.Format, TextureFlags::RenderTarget);
+			TextureFlags flags = (TextureFlags)((uint32_t)TextureFlags::RenderTarget | (uint32_t)attachmentDesc.Flags);
+			Ref<Texture2D> attachment = MakeRef<Texture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, attachmentDesc.Format, flags);
 			mColorAttachments.push_back(attachment);
 			framebufferViews.push_back(attachment->GetImageView());
 		}

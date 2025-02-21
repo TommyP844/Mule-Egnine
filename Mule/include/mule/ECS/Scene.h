@@ -46,6 +46,12 @@ namespace Mule
 		}
 
 		template<typename T>
+		const T& GetComponent(entt::entity id) const
+		{
+			return mRegistry.get<T>(id);
+		}
+
+		template<typename T>
 		void RemoveComponent(entt::entity id)
 		{
 			mModified = true;
