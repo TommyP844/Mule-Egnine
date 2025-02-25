@@ -99,7 +99,7 @@ namespace Mule
 
             mBRDFCompute = MakeRef<ComputeShader>(mContext, computeDesc);
 
-            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
+            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::StorageImage);
 
             auto queue = mContext->GetGraphicsQueue();
             auto fence = mContext->CreateFence();
@@ -147,7 +147,7 @@ namespace Mule
         Ref<Texture2D> texture = MakeRef<Texture2D>(mContext, data, width, height, TextureFormat::RGBA32F);
         stbi_image_free(data);
 
-        Ref<TextureCube> cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, TextureFlags::SotrageImage);
+        Ref<TextureCube> cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, TextureFlags::StorageImage);
 
         auto fence = mContext->CreateFence();
         auto queue = mContext->GetGraphicsQueue();
@@ -183,9 +183,10 @@ namespace Mule
         queue->Submit(commandBuffer, {}, {}, fence);
         fence->Wait();
 
+
         mEngineContext->InsertAsset(cubeMap);
 
-        Ref<TextureCube> irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
+        Ref<TextureCube> irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
 
         commandPool->Reset();
         commandBuffer->Begin();
@@ -221,7 +222,7 @@ namespace Mule
         mEngineContext->InsertAsset(irradianceMap);
 
 
-        Ref<TextureCube> prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::SotrageImage);
+        Ref<TextureCube> prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
 
         commandPool->Reset();
         commandBuffer->Begin();

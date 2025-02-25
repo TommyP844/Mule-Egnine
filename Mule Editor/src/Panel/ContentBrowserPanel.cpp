@@ -1,6 +1,8 @@
 #include "ContentBrowserPanel.h"
 
 #include "ImGuiExtension.h"
+#include "Event/EditMaterialEvent.h"
+#include "Event/ViewTextureEvent.h"
 
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
@@ -305,6 +307,26 @@ bool ContentBrowserPanel::FilePopContent(const DisplayFile& file)
 			SetContentBrowserPath(mContentBrowserPath);
 			refresh = true;
 			// TODO: remove from asset manager
+		}
+		if (ImGui::MenuItem(ICON_FA_PENCIL" Edit"))
+		{
+			switch (file.AssetType)
+			{
+			case Mule::AssetType::Material:
+			{
+				Ref<EditMaterialEvent> event = MakeRef<EditMaterialEvent>(file.Handle);
+				mEditorContext->PushEvent(event);
+			}
+			break;
+			case Mule::AssetType::Texture:
+			{
+				Ref<ViewTextureEvent> event = MakeRef<ViewTextureEvent>(file.Handle);
+				mEditorContext->PushEvent(event);
+			}
+			break;
+			default:
+				break;
+			}
 		}
 		ImGui::EndPopup();
 	}

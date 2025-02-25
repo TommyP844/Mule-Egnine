@@ -65,5 +65,7 @@ void main() {
     vec4 color = texture(equirectangularSampler, equirectUV);
 
     // Write the color to the cubemap
-    imageStore(cubemapImage, ivec3(gl_GlobalInvocationID.xy, faceIndex), color);
+    uint x = gl_GlobalInvocationID.x;
+    uint y = gl_GlobalInvocationID.y;
+    imageStore(cubemapImage, ivec3(x, y, faceIndex), color);
 }

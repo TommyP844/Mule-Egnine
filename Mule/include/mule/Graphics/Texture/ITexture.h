@@ -71,5 +71,6 @@ namespace Mule
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;
 		TextureFormat mFormat;
 		TextureType mTextureType;
+		TextureFlags mFlags;
 	};
 }

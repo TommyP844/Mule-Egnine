@@ -148,7 +148,7 @@ namespace Mule
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if(flags & TextureFlags::RenderTarget)
 			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		if (flags & TextureFlags::SotrageImage)
+		if (flags & TextureFlags::StorageImage)
 			usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
 		
 		VkImageCreateInfo info{};

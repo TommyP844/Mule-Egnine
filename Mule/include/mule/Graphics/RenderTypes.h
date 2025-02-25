@@ -43,7 +43,7 @@ namespace Mule
 		RenderTarget = 2,
 		DepthTexture = 4,
 		CubeMap = 8,
-		SotrageImage = 16,
+		StorageImage = 16,
 		None = 32
 	};
 

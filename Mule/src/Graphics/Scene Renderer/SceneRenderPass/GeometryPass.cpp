@@ -64,7 +64,7 @@ namespace Mule
 			.LayerCount = 1,
 			.RenderPass = mRenderPass,
 			.Attachments = {
-				{ TextureFormat::RGBA32F, TextureFlags::SotrageImage },
+				{ TextureFormat::RGBA32F, TextureFlags::StorageImage },
 				{ TextureFormat::R32F },
 				{ TextureFormat::R32UI }
 			},
@@ -232,7 +232,8 @@ namespace Mule
 			if (!irradianceMap)
 				irradianceMap = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 
-			auto prefilterMap = mAssetManager->GetAsset<TextureCube>(envMap->GetPreFilterMap());
+			// TODO: look into prefilter map Mip levels
+			auto prefilterMap = mAssetManager->GetAsset<TextureCube>(envMap->GetCubeMapHandle());
 			if (!prefilterMap)
 				prefilterMap = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 

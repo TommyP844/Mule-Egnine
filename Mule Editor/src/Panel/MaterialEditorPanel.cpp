@@ -2,6 +2,8 @@
 
 #include "ImGuiExtension.h"
 
+#include "IconsFontAwesome6.h"
+
 void MaterialEditorPanel::OnAttach()
 {
 	mBlackTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
@@ -127,6 +129,15 @@ bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 		else
 		{
 			ImGui::Image(mBlackTexture->GetImGuiID(), {128, 128});
+		}
+
+		if (ImGui::BeginPopupContextItem("EditImage"))
+		{
+			if (ImGui::MenuItem(ICON_FA_TRASH" Remove"))
+			{
+				textureHandle = Mule::NullAssetHandle;
+			}
+			ImGui::EndPopup();
 		}
 
 		ImGuiExtension::DragDropFile ddf;

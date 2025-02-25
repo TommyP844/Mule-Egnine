@@ -90,8 +90,6 @@ void EditorLayer::OnAttach()
 			std::string extension = dir.path().extension().string();
 			fs::path filePath = dir.path();
 
-			SPDLOG_INFO("Loading file: {}", filePath.string());
-			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
 			const std::set<std::string> modelExtensions = { ".gltf" };
 			if (modelExtensions.contains(extension))
 			{
@@ -99,7 +97,22 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::Model>(filePath);
 					}));
 			}
-			else if (imageExtensions.contains(extension))
+		}
+
+		for (const auto& f : futures)
+			f.wait();
+		futures.clear();
+
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		{
+			if (dir.is_directory()) continue;
+
+			std::string extension = dir.path().extension().string();
+			fs::path filePath = dir.path();
+
+			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+
+			if (imageExtensions.contains(extension))
 			{
 				auto asset = mEngineContext->GetAssetByFilepath(dir.path());
 				if (!asset)
@@ -115,13 +128,27 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
 					}));
 			}
-			else if (extension == ".mat")
+		}
+
+		for (const auto& f : futures)
+			f.wait();
+		futures.clear();
+
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		{
+			if (dir.is_directory()) continue;
+
+			std::string extension = dir.path().extension().string();
+			fs::path filePath = dir.path();
+
+			if (extension == ".mat")
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
 					mEngineContext->LoadAsset<Mule::Material>(filePath);
 					}));
 			}
 		}
+ 
 		});
 
 	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))

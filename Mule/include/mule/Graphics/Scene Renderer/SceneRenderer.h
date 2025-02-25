@@ -73,6 +73,7 @@ namespace Mule
 
 		uint32_t mWhiteImageIndex;
 		uint32_t mBlackImageIndex;
+		uint32_t mNormalImageIndex;
 		uint32_t mBlackCubeMapImageIndex;
 
 		GuidArray<WeakRef<ITexture>> mTextureArray;
