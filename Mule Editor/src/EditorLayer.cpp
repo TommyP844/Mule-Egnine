@@ -282,15 +282,10 @@ void EditorLayer::OnRender(float dt)
 		switch (mEditorState->SimulationState)
 		{
 		case SimulationState::Editing:
-		{
-			mEditorState->EditorRenderSettings.SelectedEntities = { mEditorState->SelectedEntity };
-			mEditorState->EditorRenderSettings.WaitSemaphores = { mEngineContext->GetGraphicsContext()->GetImageAcquiredGPUFence() };
-			mEditorState->EditorRenderSettings.Scene = scene;
-			sceneRenderer->OnEditorRender(mEditorState->EditorRenderSettings);
-		}
+			sceneRenderer->OnEditorRender(scene, mEditorState->EditorCamera, {});
 			break;
 		case SimulationState::Simulation:
-			sceneRenderer->OnRender(scene, { mEngineContext->GetGraphicsContext()->GetImageAcquiredGPUFence() });
+			sceneRenderer->OnRender(scene, {});
 			break;
 		default:
 			break;

@@ -410,7 +410,7 @@ namespace Mule
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 	}
 
-	void CommandBuffer::BeginRenderPass(Ref<FrameBuffer> framebuffer, Ref<RenderPass> renderPass)
+	void CommandBuffer::BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass)
 	{
 		VkRenderPassBeginInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

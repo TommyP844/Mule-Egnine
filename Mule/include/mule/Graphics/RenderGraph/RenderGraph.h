@@ -1,8 +1,16 @@
 #pragma once
 
-#include "Resource.h"
+#include "PassContext.h"
 
+#include "WeakRef.h"
 #include "Ref.h"
+
+#include "Graphics/Context/GraphicsContext.h"
+#include "Graphics/Execution/GraphicsQueue.h"
+#include "Graphics/Execution/CommandBuffer.h"
+#include "Graphics/Execution/CommandPool.h"
+#include "Graphics/Execution/Semaphore.h"
+#include "Graphics/Execution/Fence.h"
 
 #include <string>
 #include <vector>
@@ -10,35 +18,76 @@
 
 namespace Mule::RenderGraph
 {
-	struct PassContext
-	{
-
-	};
+	class IResource;
 
 	class RenderGraph
 	{
 	public:
-		RenderGraph();
+		RenderGraph() = default;
+		RenderGraph(WeakRef<GraphicsContext> context);
 		~RenderGraph();
 
-		void AddResource(const std::string& name, Ref<IResource> resource);
-		void AddPass(const std::string& name, const std::vector<std::string>& inputs, const std::vector<std::string>& outputs, std::function<void(PassContext&)> func);
+		template<typename T>
+		void AddResource(uint32_t frameIndex, const std::string& name, Ref<T> resource);
+
+		template<typename T>
+		WeakRef<T> GetResource(uint32_t frameIndex, const std::string& name) const;
+
+		void SetCamera(const Camera& camera);
+		void SetScene(WeakRef<Scene> scene);
+
+		void AddPass(const std::string& name, const std::vector<std::string>& inputs, const std::vector<std::string>& outputs, std::function<void(const PassContext&)> func, bool hasCommands = false);
 		void Compile();
-		void Execute();
+		void Execute(const std::vector<WeakRef<Semaphore>>& waitSemaphores);
+		void NextFrame();
+
+		// Querys resource from the pass context used in the render passes
+		template<typename T>
+		WeakRef<T> QueryResource(const std::string& name) const;
+
+		// Returns the semaphore from the last render pass
+		WeakRef<Semaphore> GetSemaphore() const;
 
 		bool IsValid() const { return mIsValid; }
+		uint32_t GetFrameCount() const { return mFrameCount; }
+		uint32_t GetFrameIndex() const { return mFrameIndex; }
 
 	private:
-		struct RenderPass;
-		std::unordered_map<std::string, Ref<IResource>> mResources;
-		std::unordered_map<std::string, RenderPass> mPassesToCompile;
+		WeakRef<GraphicsContext> mGraphicsContext;
+		Ref<CommandPool> mCommandPool;
+		WeakRef<GraphicsQueue> mCommandQueue;
+
+		struct RenderPassInfo
+		{
+			std::vector<std::string> Inputs = {};
+			std::vector<std::string> Outputs = {};
+			std::function<void(const PassContext&)> CallBack = nullptr;
+			bool HasCommands = false;
+		};
+
+		struct PerFrameData
+		{
+			PassContext Ctx;
+		};
+
+		struct PerPassData
+		{
+			std::function<void(const PassContext&)> Callback;
+			std::vector<Ref<CommandBuffer>> CommandBuffers;
+			std::vector<Ref<Semaphore>> Semaphores;
+			std::vector<Ref<Fence>> Fences;
+			bool HasCommands;
+		};
+
+		std::vector<std::unordered_map<std::string, Ref<IResource>>> mResources;
+		std::unordered_map<std::string, RenderPassInfo> mPassesToCompile;
+		std::vector<PerPassData> mPassesToExecute;
+		std::vector<PerFrameData> mPerFrameData;
+		uint32_t mFrameCount, mFrameIndex;
 		bool mIsValid;
 
-		struct RenderPass
-		{
-			std::vector<std::string> Inputs;
-			std::vector<std::string> Outputs;
-			std::function<void(PassContext&)> CallBack;
-		};
+
 	};
 }
+
+#include "RenderGraph.inl"

@@ -29,7 +29,7 @@ namespace Mule
 
 		// Framebuffers
 		void BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer);
-		void BeginRenderPass(Ref<FrameBuffer> framebuffer, Ref<RenderPass> renderPass);
+		void BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass);
 		void NextPass();
 		void EndRenderPass();
 

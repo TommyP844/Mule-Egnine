@@ -46,6 +46,8 @@ namespace Mule
 		std::vector<WeakRef<DescriptorSetLayout>> DescriptorLayouts;
 		std::vector<PushConstant> PushConstants;
 		CullMode CulleMode = CullMode::Back;
+		bool EnableDepthTesting = true;
+		bool WriteDepth = true;
 	};
 
 	class GraphicsShader : public Asset<AssetType::Shader>

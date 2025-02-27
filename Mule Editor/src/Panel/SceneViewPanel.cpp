@@ -18,7 +18,7 @@ void SceneViewPanel::OnAttach()
 	mWidth = 0;
 	mHeight = 0;
 	mBlackImage = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
-	mEditorContext->EditorRenderSettings.EditorCamera.SetNearPlane(1.f);
+	mEditorContext->EditorCamera.SetNearPlane(1.f);
 }
 
 void SceneViewPanel::OnUIRender(float dt)
@@ -48,10 +48,10 @@ void SceneViewPanel::OnUIRender(float dt)
 				mWidth = region.x;
 				mHeight = region.y;
 				sceneRenderer->Resize(mWidth, mHeight);
-				mEditorContext->EditorRenderSettings.EditorCamera.SetAspectRatio(mWidth / mHeight);
+				mEditorContext->EditorCamera.SetAspectRatio(mWidth / mHeight);
 			}
 
-			Ref<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetCurrentFrameBuffer();
+			WeakRef<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetFrameBuffer();
 			WeakRef<Mule::Texture2D> texture = frameBuffer->GetColorAttachment(0);
 			texId = texture->GetImGuiID();
 		}
@@ -70,7 +70,7 @@ void SceneViewPanel::UpdateCamera(float dt)
 {
 	if (ImGui::IsWindowFocused())
 	{
-		Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
+		Mule::Camera& camera = mEditorContext->EditorCamera;
 		glm::vec3 cameraPosition = camera.GetPosition();
 		const float speed = 10.f * dt;
 		if (ImGui::IsKeyDown(ImGuiKey_W))
@@ -145,7 +145,7 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 
 		if (operation != 0)
 		{
-			Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
+			Mule::Camera& camera = mEditorContext->EditorCamera;
 			Mule::TransformComponent& transform = mEditorContext->SelectedEntity.GetTransformComponent();
 			glm::mat4 proj = camera.GetProj();
 			glm::mat4 view = camera.GetView();
@@ -196,7 +196,7 @@ void SceneViewPanel::HandleDragDrop()
 				auto& meshComponent = entity.AddComponent<Mule::MeshComponent>();
 				meshComponent.MeshHandle = dda.AssetHandle;				
 				auto& transform = entity.GetTransformComponent();
-				Mule::Camera& camera = mEditorContext->EditorRenderSettings.EditorCamera;
+				Mule::Camera& camera = mEditorContext->EditorCamera;
 				transform.Translation = camera.GetPosition() + camera.GetForwardDir() * 20.f;
 				mEditorContext->SelectedEntity = entity;
 			}

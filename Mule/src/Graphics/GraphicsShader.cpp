@@ -123,11 +123,11 @@ namespace Mule
 			depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			depthStencilState.pNext = nullptr;
 			depthStencilState.flags = 0;
-			depthStencilState.depthTestEnable = VK_TRUE;
-			depthStencilState.depthWriteEnable = VK_TRUE;
+			depthStencilState.depthTestEnable = description.EnableDepthTesting;
+			depthStencilState.depthWriteEnable = description.WriteDepth;
 			depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 			depthStencilState.depthBoundsTestEnable = VK_TRUE;
-			depthStencilState.stencilTestEnable = VK_FALSE;
+			depthStencilState.stencilTestEnable = description.WriteDepth;
 			depthStencilState.front = front;
 			depthStencilState.back = back;
 			depthStencilState.minDepthBounds = 0.f;

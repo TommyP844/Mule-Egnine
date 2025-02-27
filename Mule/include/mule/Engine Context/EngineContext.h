@@ -11,7 +11,7 @@
 #include "Asset/AssetManager.h"
 #include "Graphics/Context/GraphicsContext.h"
 #include "Graphics/Context/ImGuiContext.h"
-#include "Graphics/Scene Renderer/SceneRenderer.h"
+#include "Graphics/SceneRenderer.h"
 #include "Application/Window.h"
 
 namespace Mule

@@ -63,11 +63,6 @@ namespace Mule
 			255, 255, 255, 255,		255, 255, 255, 255
 		};
 
-		uint8_t normalImageData[] = {
-			0, 0, 255,	0, 0, 255,
-			0, 0, 255,	0, 0, 255
-		};
-
 		auto blackTexture = MakeRef<Texture2D>(mGraphicsContext, &blackImageData[0], 2, 2, TextureFormat::RGBA8U);
 		blackTexture->SetHandle(MULE_BLACK_TEXTURE_HANDLE);
 		InsertAsset(blackTexture);
@@ -79,10 +74,6 @@ namespace Mule
 		auto whiteTexture = MakeRef<Texture2D>(mGraphicsContext, &whiteImageData[0], 2, 2, TextureFormat::RGBA8U);
 		whiteTexture->SetHandle(MULE_WHITE_TEXTURE_HANDLE);
 		InsertAsset(whiteTexture);
-
-		auto normalTexture = MakeRef<Texture2D>(mGraphicsContext, &normalImageData[0], 2, 2, TextureFormat::RGBA8U);
-		normalTexture->SetHandle(MULE_NORMAL_TEXTURE_HANDLE);
-		InsertAsset(normalTexture);
 
 		mSceneRenderer->RefreshEngineObjects();
 

@@ -18,7 +18,8 @@ public:
 	fs::path mProjectPath = "C:\\Development\\Mule Projects\\Test Project";
 	fs::path mAssetsPath = "C:\\Development\\Mule Projects\\Test Project\\Assets";
 	SimulationState SimulationState = SimulationState::Editing;
-	Mule::EditorRenderSettings EditorRenderSettings;
+	WeakRef<Mule::Scene> Scene;
+	Mule::Camera EditorCamera;
 
 	void PushEvent(Ref<IEditorEvent> event) { mEvents.push_back(event); }
 	const std::vector<Ref<IEditorEvent>>& GetEvents() const { return mEvents; }

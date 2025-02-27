@@ -4,46 +4,27 @@
 
 namespace Mule::RenderGraph
 {
-	enum class ResourceType
-	{
-		StorageImage,
-		Texture,
-		UniformBuffer,
-		StorageBuffer,
-		DescriptorSet,
-		FrameBuffer,
-		RenderPass
-	};
-
 	class IResource
 	{
 	public:
-		IResource(ResourceType type)
-			:
-			mType(type)
-		{ }
+		IResource() { }
 
 		virtual ~IResource(){}
-
-		ResourceType GetType() const { return mType; }
-
-	private:
-		ResourceType mType;
 	};
 
 	template<typename T>
 	class Resource : public IResource
 	{
 	public:
-		Resource(Ref<T> resource, ResourceType type)
+		Resource(Ref<T> resource)
 			:
-			IResource(type),
+			IResource(),
 			mResource(resource)
 		{ }
 
-		virtual ~IResource() {}
+		virtual ~Resource() {}
 
-		Ref<T> Get() const {return mResource}
+		Ref<T> Get() const { return mResource; }
 
 	private:
 		Ref<T> mResource;

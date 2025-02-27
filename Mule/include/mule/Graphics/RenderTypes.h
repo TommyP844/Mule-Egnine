@@ -37,6 +37,11 @@ namespace Mule
 		None = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM
 	};
 
+	static ShaderStage operator|(const ShaderStage& lhs, const ShaderStage& rhs)
+	{
+		return ShaderStage((uint32_t)lhs | (uint32_t)rhs);
+	}
+
 	enum TextureFlags : uint32_t
 	{
 		GenerateMips = 1,

@@ -81,7 +81,7 @@ namespace Mule
 				std::vector<WeakRef<Semaphore>> waitSemaphores;
 				if (scene)
 				{
-					waitSemaphores.push_back(sceneRenderer->GetCurrentFrameRenderFinishedSemaphore());
+					waitSemaphores.push_back(sceneRenderer->GetSemaphore());
 				}
 
 				imguiContext->NewFrame();
