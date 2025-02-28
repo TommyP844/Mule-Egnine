@@ -27,7 +27,7 @@ namespace Mule
 		uint32_t Width;
 		uint32_t Height;
 		uint32_t LayerCount = 1;
-		Ref<RenderPass> RenderPass = nullptr;
+		WeakRef<RenderPass> RenderPass = nullptr;
 		std::vector<AttachmentDesc> Attachments;
 		AttachmentDesc DepthAttachment;
 	};
@@ -42,6 +42,7 @@ namespace Mule
 		int GetWidth() const { return mDesc.Width; }
 		int GetHeight() const { return mDesc.Height; }
 		std::vector<VkClearValue> GetClearValues() const { return mClearValues; };
+		uint32_t GetColorAttachmentCount() const { return mColorAttachments.size(); }
 		WeakRef<Texture2D> GetColorAttachment(int index);
 		WeakRef<Texture2D> GetDepthAttachment();
 

@@ -231,7 +231,7 @@ namespace Mule
 		deviceQueueCreateInfo.flags = 0;
 		deviceQueueCreateInfo.queueFamilyIndex = requestedQueueFamily;
 		deviceQueueCreateInfo.pQueuePriorities = &priority;
-		deviceQueueCreateInfo.queueCount = 1;
+		deviceQueueCreateInfo.queueCount = 2;
 		deviceQueueCreateInfo.pNext = nullptr;
 
 		VkDeviceCreateInfo deviceCreateInfo{};
@@ -257,9 +257,12 @@ namespace Mule
 		}
 
 		VkQueue queue = VK_NULL_HANDLE;
+		VkQueue queue2 = VK_NULL_HANDLE;
 		vkGetDeviceQueue(mDevice, requestedQueueFamily, 0, &queue);
+		vkGetDeviceQueue(mDevice, requestedQueueFamily, 1, &queue2);
 
 		mGraphicsQueue = MakeRef<GraphicsQueue>(mDevice, queue, requestedQueueFamily);
+		mBackGroundQueue = MakeRef<GraphicsQueue>(mDevice, queue2, requestedQueueFamily);
 
 #pragma endregion
 

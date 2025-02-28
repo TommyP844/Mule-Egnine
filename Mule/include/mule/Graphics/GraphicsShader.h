@@ -41,7 +41,7 @@ namespace Mule
 	{
 		fs::path SourcePath;
 		uint32_t Subpass;
-		Ref<RenderPass> RenderPass = nullptr;
+		WeakRef<RenderPass> RenderPass = nullptr;
 		VertexLayout VertexLayout;
 		std::vector<WeakRef<DescriptorSetLayout>> DescriptorLayouts;
 		std::vector<PushConstant> PushConstants;

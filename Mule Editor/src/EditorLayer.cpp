@@ -148,9 +148,14 @@ void EditorLayer::OnAttach()
 					}));
 			}
 		}
+
+		for (const auto& f : futures)
+			f.wait();
+		futures.clear();
  
 		});
 
+	// TODO: make this able to run async, currecnt issue is in YamlConvert.h where we set a scene context on load
 	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
 	{
 		fs::path filepath = dir.path();

@@ -150,7 +150,7 @@ namespace Mule
         Ref<TextureCube> cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, TextureFlags::StorageImage);
 
         auto fence = mContext->CreateFence();
-        auto queue = mContext->GetGraphicsQueue();
+        auto queue = mContext->GetBackgroundGraphicsQueue();
         auto commandPool = queue->CreateCommandPool();
         auto commandBuffer = commandPool->CreateCommandBuffer();
         commandBuffer->Begin();

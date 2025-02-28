@@ -21,9 +21,6 @@ namespace Mule
 		mGraph = RenderGraph::RenderGraph(context);
 		mResourceUpdates.resize(mGraph.GetFrameCount());
 
-		// Render Passes
-		Ref<RenderPass> geometryRenderPass;
-
 		// Descriptor Set Layouts
 		Ref<DescriptorSetLayout> geometryShaderDSL;
 		Ref<DescriptorSetLayout> bindlessTextureDSL;
@@ -140,7 +137,7 @@ namespace Mule
 			geometryPassDescription.Subpasses = {
 				{ { 0 }, true }
 			};
-			geometryRenderPass = mGraphicsContext->CreateRenderPass(geometryPassDescription);
+			auto geometryRenderPass = mGraphicsContext->CreateRenderPass(geometryPassDescription);
 
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
@@ -160,7 +157,7 @@ namespace Mule
 			framebufferDesc.Height = 600;
 			framebufferDesc.Width = 800;
 			framebufferDesc.LayerCount = 1;
-			framebufferDesc.RenderPass = geometryRenderPass;
+			framebufferDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
 
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
@@ -174,7 +171,7 @@ namespace Mule
 			GraphicsShaderDescription geometryDesc;
 			geometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
 			geometryDesc.Subpass = 0;
-			geometryDesc.RenderPass = geometryRenderPass;
+			geometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
 			geometryDesc.VertexLayout = staticVertexLayout;
 			geometryDesc.DescriptorLayouts = { geometryShaderDSL, bindlessTextureDSL };
 			geometryDesc.PushConstants = {
@@ -188,7 +185,7 @@ namespace Mule
 			GraphicsShaderDescription environemntShaderDesc{};
 			environemntShaderDesc.SourcePath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
 			environemntShaderDesc.Subpass = 0;
-			environemntShaderDesc.RenderPass = geometryRenderPass;
+			environemntShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
 			environemntShaderDesc.VertexLayout = staticVertexLayout;
 			environemntShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENVIRONMENT_SHADER_DSL_ID)};
 			environemntShaderDesc.PushConstants = { };
@@ -214,16 +211,16 @@ namespace Mule
 			std::bind(&SceneRenderer::PrepareDrawData, this, std::placeholders::_1), 
 			false);
 
-		mGraph.AddPass("Environemnt Pass",
-			{},
-			{ FRAMEBUFFER_ID },
-			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1),
-			true);
-
 		mGraph.AddPass("Solid Geometry Pass",
 			{},
 			{ FRAMEBUFFER_ID },
 			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1),
+			true);
+
+		mGraph.AddPass("Environemnt Pass",
+			{},
+			{ FRAMEBUFFER_ID },
+			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1),
 			true);
 
 		mGraph.Compile();
@@ -508,9 +505,9 @@ namespace Mule
 			geometryDS->Update(geometryShaderDSUs);
 		}
 
-
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handles by scene graph
 		
-		cmd->BeginRenderPass(framebuffer, renderPass);
+		cmd->BeginRenderPass(framebuffer, renderPass, true);
 
 		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { geometryDS, bindlessTextureDS });
@@ -553,7 +550,6 @@ namespace Mule
 		}
 
 		cmd->EndRenderPass();
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handles by scene graph
 	}
 
 	void SceneRenderer::RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx)
@@ -598,7 +594,7 @@ namespace Mule
 		};
 		DS->Update(DSUs);
 
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handles by scene graph
+		
 		cmd->BeginRenderPass(framebuffer, renderPass);
 		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
@@ -608,7 +604,7 @@ namespace Mule
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
 		cmd->EndRenderPass();
-		
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handles by scene graph
 	}
 
 	void SceneRenderer::RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx)

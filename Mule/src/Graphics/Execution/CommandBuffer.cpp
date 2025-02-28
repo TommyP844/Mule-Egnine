@@ -410,15 +410,37 @@ namespace Mule
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 	}
 
-	void CommandBuffer::BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass)
+	void CommandBuffer::BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass, bool clearFramebuffer)
 	{
+		if (clearFramebuffer)
+		{
+			VkClearDepthStencilValue depthClearValue{};
+			depthClearValue.depth = 1.0;
+
+			VkImageSubresourceRange range{};
+			range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			range.baseArrayLayer = 0;
+			range.layerCount = 1;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+
+			TranistionImageLayout(framebuffer->GetDepthAttachment(), ImageLayout::TransferDst);
+
+			vkCmdClearDepthStencilImage(mCommandBuffer,
+				framebuffer->GetDepthAttachment()->GetImage(),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				&depthClearValue,
+				1,
+				&range);
+
+			TranistionImageLayout(framebuffer->GetDepthAttachment(), ImageLayout::DepthAttachment);
+		}
+
 		VkRenderPassBeginInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		info.renderPass = renderPass->GetHandle();
 		info.framebuffer = framebuffer->GetHandle();
-		auto clearValues = framebuffer->GetClearValues();
-		info.clearValueCount = clearValues.size();
-		info.pClearValues = clearValues.data();
+		info.clearValueCount = 0;
 
 		VkRect2D rect{};
 		rect.offset.x = 0;
@@ -440,6 +462,33 @@ namespace Mule
 		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
 
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
+
+		if (clearFramebuffer)
+		{
+			uint32_t attachmentCount = framebuffer->GetColorAttachmentCount();
+
+			std::vector<VkClearAttachment> attachments;
+			for (uint32_t i = 0; i < attachmentCount; i++)
+			{
+				VkClearAttachment attachment{};
+
+				attachment.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				attachment.clearValue = framebuffer->GetClearValues()[i];
+				attachment.colorAttachment = i;
+
+				attachments.push_back(attachment);
+			}
+
+			VkClearRect rect{};
+			rect.rect.offset.x = 0;
+			rect.rect.offset.y = 0;
+			rect.rect.extent.width = framebuffer->GetWidth();
+			rect.rect.extent.height = framebuffer->GetHeight();
+			rect.baseArrayLayer = 0;
+			rect.layerCount = 1;
+
+			vkCmdClearAttachments(mCommandBuffer, attachmentCount, attachments.data(), 1, &rect);
+		}
 	}
 	
 	void CommandBuffer::NextPass()
@@ -590,8 +639,27 @@ namespace Mule
 
 			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;    // Ensure compute shader writes are finished
 			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Ensure proper writes to color attachment
-			}
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;  // Ensure depth writes are completed
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;             // Prepare for transfer operations
 
+			barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // Ensure depth writes are finished
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;                 // Allow writing via transfer operations
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT; // Target depth aspect
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;               // Ensure all transfers are complete
+			dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;   // Prepare for depth attachment usage
+
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;    // Ensure transfer writes are finished
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // Allow depth attachment writes
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT; // Target depth aspect
+		}
 		else
 		{
 			SPDLOG_ERROR("Invalid layout transition");

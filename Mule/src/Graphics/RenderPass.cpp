@@ -16,7 +16,7 @@ Mule::RenderPass::RenderPass(VkDevice device, const RenderPassDescription& descr
 
 		VkAttachmentDescription attachmentDesc{};
 		attachmentDesc.format = (VkFormat)attachment.Format;
-		attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -43,7 +43,7 @@ Mule::RenderPass::RenderPass(VkDevice device, const RenderPassDescription& descr
 		{
 			VkAttachmentDescription attachmentDesc{};
 			attachmentDesc.format = (VkFormat)description.DepthAttachment.Format;
-			attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 			attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

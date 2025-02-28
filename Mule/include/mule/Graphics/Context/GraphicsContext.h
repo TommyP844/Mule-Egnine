@@ -70,8 +70,8 @@ namespace Mule
 		Ref<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description);
 
 
-		// TODO: generate queues in a better manner, right now all three are identical
 		WeakRef<GraphicsQueue> GetGraphicsQueue() const { return mGraphicsQueue; }
+		WeakRef<GraphicsQueue> GetBackgroundGraphicsQueue() const { return mBackGroundQueue; }
 
 		WeakRef<Window> GetWindow() const { return mWindow; }
 
@@ -83,14 +83,7 @@ namespace Mule
 		Ref<SwapchainFrameBuffer> GetSwapchainFrameBuffer() const { return mFrameData[mFrameIndex].SwapchainFrameBuffer; }
 		uint32_t GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return mMemoryProperties; }
-		VkImageView CreateImageView(VkImage image, VkImageViewType viewtype, VkFormat format, int layers, int mips, bool depthImage);
-		VulkanImage CreateImage(uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageType imageType, int layers, int mips, VkImageUsageFlagBits usage);
 		VkSampler GetLinearSampler() const { return mLinearSampler; }
-
-		// Frame Data
-		uint32_t GetImageIndex() const { return mImageIndex; }
-		WeakRef<Fence> GetImageAcquiredCPUFence() const { return mFrameData[mFrameIndex].ImageAcquiredFence; }
-		WeakRef<Semaphore> GetImageAcquiredGPUFence() const { return mFrameData[mFrameIndex].ImageAcquiredSemaphore; }
 
 	private:
 		std::mutex mMutex;
@@ -107,6 +100,7 @@ namespace Mule
 		VkPhysicalDeviceMemoryProperties mMemoryProperties;
 
 		Ref<GraphicsQueue> mGraphicsQueue;
+		Ref<GraphicsQueue> mBackGroundQueue;
 
 		VkSampler mLinearSampler;
 		
@@ -128,6 +122,10 @@ namespace Mule
 			Ref<RenderPass> SwapchainRenderPass;
 		};
 		std::vector<FrameData> mFrameData;
+
+
+		VkImageView CreateImageView(VkImage image, VkImageViewType viewtype, VkFormat format, int layers, int mips, bool depthImage);
+		VulkanImage CreateImage(uint32_t width, uint32_t height, uint32_t depth, VkFormat format, VkImageType imageType, int layers, int mips, VkImageUsageFlagBits usage);
 
 	};
 }
