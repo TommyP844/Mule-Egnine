@@ -13,6 +13,7 @@
 #include "Panel/TextureViewerPanel.h"
 #include "Panel/SceneRendererSettingsPanel.h"
 #include "Panel/PrimitiveObjectPanel.h"
+#include "Panel/PerformancePanel.h"
 
 
 // STD
@@ -44,6 +45,7 @@ private:
 	TextureViewerPanel mTextureViewerPanel;
 	SceneRendererSettingsPanel mSceneRendererSettingsPanel;
 	PrimitiveObjectPanel mPrimitiveObjectPanel;
+	PerformancePanel mPerformancePanel;
 
 	bool mShowDemoWindow = false;
 

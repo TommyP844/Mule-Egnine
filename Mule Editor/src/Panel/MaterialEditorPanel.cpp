@@ -94,6 +94,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			modified |= DisplayTexture("Roughness", mMaterial->RoughnessMap);
 			modified |= DisplayTexture("Ambient Occulsion", mMaterial->AOMap);
 			modified |= DisplayTexture("Emissive", mMaterial->EmissiveMap);
+			modified |= DisplayTexture("Opacity", mMaterial->OpacityMap);
 
 			if (modified)
 			{
@@ -136,6 +137,7 @@ bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 			if (ImGui::MenuItem(ICON_FA_TRASH" Remove"))
 			{
 				textureHandle = Mule::NullAssetHandle;
+				modified = true;
 			}
 			ImGui::EndPopup();
 		}

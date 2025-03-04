@@ -59,6 +59,16 @@ namespace Mule
 			return iter->second;
 		}
 
+		void Update(uint32_t index, const T& data)
+		{
+			if (index >= mArray.size())
+			{
+				SPDLOG_WARN("Invalid index for GuidArray: {}", index);
+				return;
+			}
+			mArray[index] = data;
+		}
+
 		void Remove(AssetHandle handle)
 		{
 			auto iter = mIndices.find(handle);

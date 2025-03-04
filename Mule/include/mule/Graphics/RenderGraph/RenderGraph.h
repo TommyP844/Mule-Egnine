@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PassContext.h"
+#include "RenderPassStats.h"
 
 #include "WeakRef.h"
 #include "Ref.h"
@@ -36,7 +37,7 @@ namespace Mule::RenderGraph
 		void SetCamera(const Camera& camera);
 		void SetScene(WeakRef<Scene> scene);
 
-		void AddPass(const std::string& name, const std::vector<std::string>& inputs, const std::vector<std::string>& outputs, std::function<void(const PassContext&)> func, bool hasCommands = false);
+		void AddPass(const std::string& name, const std::vector<std::string>& dependecies, std::function<void(const PassContext&)> func);
 		void Compile();
 		void Execute(const std::vector<WeakRef<Semaphore>>& waitSemaphores);
 		void NextFrame();
@@ -52,6 +53,10 @@ namespace Mule::RenderGraph
 		uint32_t GetFrameCount() const { return mFrameCount; }
 		uint32_t GetFrameIndex() const { return mFrameIndex; }
 
+		void Wait();
+
+		std::vector<RenderPassStats> GetRenderPassStats() const;
+
 	private:
 		WeakRef<GraphicsContext> mGraphicsContext;
 		Ref<CommandPool> mCommandPool;
@@ -59,10 +64,8 @@ namespace Mule::RenderGraph
 
 		struct RenderPassInfo
 		{
-			std::vector<std::string> Inputs = {};
-			std::vector<std::string> Outputs = {};
+			std::vector<std::string> Dependecies = {};
 			std::function<void(const PassContext&)> CallBack = nullptr;
-			bool HasCommands = false;
 		};
 
 		struct PerFrameData
@@ -76,7 +79,7 @@ namespace Mule::RenderGraph
 			std::vector<Ref<CommandBuffer>> CommandBuffers;
 			std::vector<Ref<Semaphore>> Semaphores;
 			std::vector<Ref<Fence>> Fences;
-			bool HasCommands;
+			RenderPassStats Stats;
 		};
 
 		std::vector<std::unordered_map<std::string, Ref<IResource>>> mResources;

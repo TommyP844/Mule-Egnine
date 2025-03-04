@@ -3,11 +3,13 @@
 #include "Graphics/VertexLayout.h"
 #include "Graphics/Material.h"
 #include "Graphics/EnvironmentMap.h"
-#include "ECS/Components.h"
-#include "Asset/Loader/GraphicsShaderLoader.h"
 #include "Graphics/RenderTypes.h"
 #include "Graphics/Execution/CommandBuffer.h"
 #include "Graphics/Execution/CommandPool.h"
+
+#include "Asset/Loader/GraphicsShaderLoader.h"
+#include "ECS/Components.h"
+#include "Timer.h"
 
 #include "Engine Context/EngineAssets.h"
 
@@ -20,6 +22,7 @@ namespace Mule
 	{
 		mGraph = RenderGraph::RenderGraph(context);
 		mResourceUpdates.resize(mGraph.GetFrameCount());
+		mTiming.resize(mGraph.GetFrameCount());
 
 		// Descriptor Set Layouts
 		Ref<DescriptorSetLayout> geometryShaderDSL;
@@ -44,12 +47,12 @@ namespace Mule
 				auto lightBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPU::GPULightData));
 				mGraph.AddResource(i, LIGHT_BUFFER_ID, lightBuffer);
 
-				auto materialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPU::GPUMaterial) * 1000);
+				auto materialBuffer = mGraphicsContext->CreateUniformBuffer(sizeof(GPU::GPUMaterial) * 800);
 				mGraph.AddResource(i, MATERIAL_BUFFER_ID, materialBuffer);
 			}
 		}
 
-		// Desacriptor Set Layouts
+		// Descriptor Set Layouts
 		{
 			DescriptorSetLayoutDescription geometryShaderDSLD{};
 			geometryShaderDSLD.Layouts = {
@@ -129,9 +132,9 @@ namespace Mule
 		{
 			RenderPassDescription geometryPassDescription{};
 			geometryPassDescription.Attachments = {
-				{ TextureFormat::RGBA32F },
-				{ TextureFormat::R32UI },
-				{ TextureFormat::R32F }
+				{ TextureFormat::RGBA32F, true },
+				{ TextureFormat::R32UI, false },
+				{ TextureFormat::R32F, false }
 			};
 			geometryPassDescription.DepthAttachment = { TextureFormat::D32F };
 			geometryPassDescription.Subpasses = {
@@ -162,26 +165,47 @@ namespace Mule
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
 				auto framebuffer = mGraphicsContext->CreateFrameBuffer(framebufferDesc);
+				framebuffer->SetColorClearValue(0, glm::vec4(0, 0, 0, 1));
+				framebuffer->SetColorClearValue(1, glm::ivec4(0));
+				framebuffer->SetColorClearValue(2, glm::vec4(0));
+
 				mGraph.AddResource(i, FRAMEBUFFER_ID, framebuffer);
 			}
 		}
 
 		// Shaders
 		{
-			GraphicsShaderDescription geometryDesc;
-			geometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
-			geometryDesc.Subpass = 0;
-			geometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			geometryDesc.VertexLayout = staticVertexLayout;
-			geometryDesc.DescriptorLayouts = { geometryShaderDSL, bindlessTextureDSL };
-			geometryDesc.PushConstants = {
+			GraphicsShaderDescription opaqueGeometryDesc;
+			opaqueGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
+			opaqueGeometryDesc.Subpass = 0;
+			opaqueGeometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
+			opaqueGeometryDesc.VertexLayout = staticVertexLayout;
+			opaqueGeometryDesc.DescriptorLayouts = { geometryShaderDSL, bindlessTextureDSL };
+			opaqueGeometryDesc.PushConstants = {
 				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
 				PushConstant(ShaderStage::Fragment, 2 * sizeof(uint32_t)),
 			};
-			geometryDesc.CulleMode = CullMode::Back;
-			auto geometryShader = mGraphicsContext->CreateGraphicsShader(geometryDesc);
+			opaqueGeometryDesc.CulleMode = CullMode::Back;
+			auto opaqueGeometryShader = mGraphicsContext->CreateGraphicsShader(opaqueGeometryDesc);
 
-			MULE_ENVIRONMENT_MAP_SHADER_HANDLE;
+			GraphicsShaderDescription transparentGeometryDesc;
+			transparentGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
+			transparentGeometryDesc.Subpass = 0;
+			transparentGeometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
+			transparentGeometryDesc.VertexLayout = staticVertexLayout;
+			transparentGeometryDesc.DescriptorLayouts = { geometryShaderDSL, bindlessTextureDSL };
+			transparentGeometryDesc.PushConstants = {
+				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
+				PushConstant(ShaderStage::Fragment, 2 * sizeof(uint32_t)),
+			};
+			transparentGeometryDesc.CulleMode = CullMode::None;
+			transparentGeometryDesc.Macros = { { "TRANSPARENCY", "" }};
+			transparentGeometryDesc.EnableDepthTesting = true;
+			transparentGeometryDesc.BlendEnable = true;
+			transparentGeometryDesc.WriteDepth = false;
+			auto transparentGeometryShader = mGraphicsContext->CreateGraphicsShader(transparentGeometryDesc);
+
+
 			GraphicsShaderDescription environemntShaderDesc{};
 			environemntShaderDesc.SourcePath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
 			environemntShaderDesc.Subpass = 0;
@@ -191,12 +215,14 @@ namespace Mule
 			environemntShaderDesc.PushConstants = { };
 			environemntShaderDesc.CulleMode = CullMode::Front;
 			environemntShaderDesc.WriteDepth = false;
+			environemntShaderDesc.EnableDepthTesting = false;
 
 			auto environmentShader = mGraphicsContext->CreateGraphicsShader(environemntShaderDesc);
 
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
-				mGraph.AddResource(i, GEOMETRY_SHADER_ID, geometryShader);
+				mGraph.AddResource(i, OPAQUE_GEOMETRY_SHADER_ID, opaqueGeometryShader);
+				mGraph.AddResource(i, TRANPARENT_GEOMETRY_SHADER_ID, transparentGeometryShader);
 				mGraph.AddResource(i, ENVIRONMENT_SHADER_ID, environmentShader);
 			}
 		}
@@ -205,23 +231,17 @@ namespace Mule
 
 #pragma region Render Graph Init
 
-		mGraph.AddPass("Pre Pass",
-			{},
-			{ FRAMEBUFFER_ID },
-			std::bind(&SceneRenderer::PrepareDrawData, this, std::placeholders::_1), 
-			false);
+		mGraph.AddPass(ENVIRONMENT_PASS_NAME,
+			{ },
+			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1));
 
-		mGraph.AddPass("Solid Geometry Pass",
-			{},
-			{ FRAMEBUFFER_ID },
-			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1),
-			true);
+		mGraph.AddPass(GEOMETRY_PASS_NAME,
+			{ ENVIRONMENT_PASS_NAME },
+			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1));
 
-		mGraph.AddPass("Environemnt Pass",
-			{},
-			{ FRAMEBUFFER_ID },
-			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1),
-			true);
+		mGraph.AddPass(TRANPARENT_GEOMETRY_PASS_NAME,
+			{ GEOMETRY_PASS_NAME },
+			std::bind(&SceneRenderer::RenderTransparentGeometryCallback, this, std::placeholders::_1));
 
 		mGraph.Compile();
 #pragma endregion
@@ -270,6 +290,7 @@ namespace Mule
 		gpuMaterial.MetalnessFactor = material->MetalnessFactor;
 		gpuMaterial.RoughnessFactor = material->RoughnessFactor;
 		gpuMaterial.AOFactor = material->AOFactor;
+		gpuMaterial.Transparency = material->Transparent ? material->Transparency : 1.0;
 
 		gpuMaterial.AlbedoIndex = mTextureArray.QueryIndex(material->AlbedoMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AlbedoMap);
 		gpuMaterial.NormalIndex = mTextureArray.QueryIndex(material->NormalMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->NormalMap);
@@ -277,11 +298,12 @@ namespace Mule
 		gpuMaterial.RoughnessIndex = mTextureArray.QueryIndex(material->RoughnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->RoughnessMap);
 		gpuMaterial.AOIndex = mTextureArray.QueryIndex(material->AOMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AOMap);
 		gpuMaterial.EmissiveIndex = mTextureArray.QueryIndex(material->EmissiveMap) == UINT32_MAX ? mBlackImageIndex : mTextureArray.QueryIndex(material->EmissiveMap);
+		gpuMaterial.OpacityIndex = mTextureArray.QueryIndex(material->OpacityMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->OpacityMap);
 
 		std::lock_guard<std::mutex> lock(mMutex);
 		uint32_t index = mMaterialArray.Insert(material->Handle(), gpuMaterial);
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < mGraph.GetFrameCount(); i++)
 		{
 			mResourceUpdates[i].MaterialUpdates.push_back({ gpuMaterial, index });
 		}
@@ -298,6 +320,7 @@ namespace Mule
 		gpuMaterial.MetalnessFactor = material->MetalnessFactor;
 		gpuMaterial.RoughnessFactor = material->RoughnessFactor;
 		gpuMaterial.AOFactor = material->AOFactor;
+		gpuMaterial.Transparency = material->Transparent ? material->Transparency : 1.0;
 
 		gpuMaterial.AlbedoIndex = mTextureArray.QueryIndex(material->AlbedoMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AlbedoMap);
 		gpuMaterial.NormalIndex = mTextureArray.QueryIndex(material->NormalMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->NormalMap);
@@ -305,11 +328,13 @@ namespace Mule
 		gpuMaterial.RoughnessIndex = mTextureArray.QueryIndex(material->RoughnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->RoughnessMap);
 		gpuMaterial.AOIndex = mTextureArray.QueryIndex(material->AOMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AOMap);
 		gpuMaterial.EmissiveIndex = mTextureArray.QueryIndex(material->EmissiveMap) == UINT32_MAX ? mBlackImageIndex : mTextureArray.QueryIndex(material->EmissiveMap);
+		gpuMaterial.OpacityIndex = mTextureArray.QueryIndex(material->OpacityMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->OpacityMap);
 
 		std::lock_guard<std::mutex> lock(mMutex);
 		uint32_t index = mMaterialArray.QueryIndex(material->Handle());
+		mMaterialArray.Update(index, gpuMaterial);
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < mGraph.GetFrameCount(); i++)
 		{
 			mResourceUpdates[i].MaterialUpdates.push_back({ gpuMaterial, index });
 		}
@@ -323,11 +348,113 @@ namespace Mule
 
 	void SceneRenderer::OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
+		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
 		// We call next frame first so all graph queries after render will reflect the currect frame
 		mGraph.NextFrame();
+		mGraph.Wait();
+		
+		Timer dataPrepTimer;
+		dataPrepTimer.Start();
+		// Data Prep
+		{
+			WeakRef<UniformBuffer> cameraUB = mGraph.QueryResource<UniformBuffer>(CAMERA_BUFFER_ID);
+			WeakRef<UniformBuffer> lightUB = mGraph.QueryResource<UniformBuffer>(LIGHT_BUFFER_ID);
+			WeakRef<UniformBuffer> materialBuffer = mGraph.QueryResource<DescriptorSet>(MATERIAL_BUFFER_ID);
+			WeakRef<DescriptorSet> bindlessTextureDS = mGraph.QueryResource<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
+			WeakRef<FrameBuffer> framebuffer = mGraph.QueryResource<FrameBuffer>(FRAMEBUFFER_ID);
+
+			// Camera
+			{
+				GPU::GPUCamera cameraData{};
+				cameraData.View = camera.GetView();
+				cameraData.Proj = camera.GetProj();
+				cameraData.CameraPos = camera.GetPosition();
+				cameraUB->SetData(&cameraData, sizeof(cameraData));
+			}
+
+			// Lights
+			{
+				GPU::GPULightData lightData;
+
+				for (auto entityId : scene->Iterate<DirectionalLightComponent>())
+				{
+					Entity e((uint32_t)entityId, scene);
+					DirectionalLightComponent& directionalLight = e.GetComponent<DirectionalLightComponent>();
+					if (!directionalLight.Active)
+						continue;
+
+					lightData.DirectionalLight.Color = directionalLight.Color;
+					lightData.DirectionalLight.Intensity = directionalLight.Intensity;
+					glm::quat rotation = glm::quat(glm::radians(e.GetTransformComponent().Rotation));
+					glm::vec4 direction = rotation * glm::vec4(0, -1, 0, 0);
+					lightData.DirectionalLight.Direction = glm::normalize(direction);
+
+					break;
+				}
+
+				for (auto entityId : scene->Iterate<PointLightComponent>())
+				{
+					Entity e((uint32_t)entityId, scene);
+
+					PointLightComponent& pointLight = e.GetComponent<PointLightComponent>();
+
+					if (!pointLight.Active)
+						continue;
+
+					lightData.PointLights[lightData.NumPointLights].Color = pointLight.Color;
+					lightData.PointLights[lightData.NumPointLights].Intensity = pointLight.Radiance;
+					lightData.PointLights[lightData.NumPointLights++].Position = e.GetTransformComponent().Translation;
+				}
+
+				lightUB->SetData(&lightData, sizeof(GPU::GPULightData));
+			}
+
+			auto& resourceUpdate = mResourceUpdates[mGraph.GetFrameIndex()];
+			// Materials
+			{
+				for (auto& [gpuMaterial, index] : resourceUpdate.MaterialUpdates)
+				{
+					materialBuffer->SetData(&gpuMaterial, sizeof(GPU::GPUMaterial), index * sizeof(GPU::GPUMaterial));
+				}
+				resourceUpdate.MaterialUpdates.clear();
+			}
+
+			// Textures
+			{
+				std::vector<DescriptorSetUpdate> updates;
+				for (auto& [texture, index] : resourceUpdate.TextureUpdates)
+				{
+					DescriptorSetUpdate update{};
+					update.Binding = 0;
+					update.ArrayElement = index;
+					update.Textures = { texture };
+					update.Type = DescriptorType::Texture;
+					updates.emplace_back(update);
+				}
+				bindlessTextureDS->Update(updates);
+				resourceUpdate.TextureUpdates.clear();
+			}
+
+			if (resourceUpdate.Resize)
+			{
+				resourceUpdate.Resize = false;
+				framebuffer->Resize(resourceUpdate.ResizeWidth, resourceUpdate.ResizeHeight);
+			}
+		}
+		dataPrepTimer.Stop();
+		timingInfo.CPUPrepareTime = dataPrepTimer.Query();
+
 		mGraph.SetCamera(camera);
 		mGraph.SetScene(scene);
+
+		Timer executionTimer;
+		executionTimer.Start();
+		
 		mGraph.Execute(waitSemaphores);
+		
+		executionTimer.Stop();
+		timingInfo.CPUExecutionTime = executionTimer.Query();
+		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
 	}
 
 	void SceneRenderer::OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
@@ -366,103 +493,12 @@ namespace Mule
 		}
 	}
 
-	void SceneRenderer::PrepareDrawData(const RenderGraph::PassContext& ctx)
-	{
-		WeakRef<Scene> scene = ctx.GetScene();
-
-		WeakRef<UniformBuffer> cameraUB = ctx.Get<UniformBuffer>(CAMERA_BUFFER_ID);
-		WeakRef<UniformBuffer> lightUB = ctx.Get<UniformBuffer>(LIGHT_BUFFER_ID);
-		WeakRef<UniformBuffer> materialBuffer = ctx.Get<DescriptorSet>(MATERIAL_BUFFER_ID);
-		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		Camera camera = ctx.GetCamera();
-
-		// Camera
-		{
-			GPU::GPUCamera cameraData{};
-			cameraData.View = camera.GetView();
-			cameraData.Proj = camera.GetProj();
-			cameraData.CameraPos = camera.GetPosition();
-			cameraUB->SetData(&cameraData, sizeof(cameraData));
-		}
-
-		// Lights
-		{
-			GPU::GPULightData lightData;
-
-			for (auto entityId : scene->Iterate<DirectionalLightComponent>())
-			{
-				Entity e((uint32_t)entityId, scene);
-				DirectionalLightComponent& directionalLight = e.GetComponent<DirectionalLightComponent>();
-				if (!directionalLight.Active)
-					continue;
-
-				lightData.DirectionalLight.Color = directionalLight.Color;
-				lightData.DirectionalLight.Intensity = directionalLight.Intensity;
-				glm::quat rotation = glm::quat(glm::radians(e.GetTransformComponent().Rotation));
-				glm::vec4 direction = rotation * glm::vec4(0, -1, 0, 0);
-				lightData.DirectionalLight.Direction = glm::normalize(direction);
-
-				break;
-			}
-
-			for (auto entityId : scene->Iterate<PointLightComponent>())
-			{
-				Entity e((uint32_t)entityId, scene);
-
-				PointLightComponent& pointLight = e.GetComponent<PointLightComponent>();
-
-				if (!pointLight.Active)
-					continue;
-
-				lightData.PointLights[lightData.NumPointLights].Color = pointLight.Color;
-				lightData.PointLights[lightData.NumPointLights].Intensity = pointLight.Radiance;
-				lightData.PointLights[lightData.NumPointLights++].Position = e.GetTransformComponent().Translation;
-			}
-
-			lightUB->SetData(&lightData, sizeof(GPU::GPULightData));
-		}
-
-		auto& resourceUpdate = mResourceUpdates[mGraph.GetFrameIndex()];
-		// Materials
-		{
-			for (auto& [gpuMaterial, index] : resourceUpdate.MaterialUpdates)
-			{
-				materialBuffer->SetData(&gpuMaterial, sizeof(GPU::GPUMaterial), index * sizeof(GPU::GPUMaterial));
-			}
-			resourceUpdate.MaterialUpdates.clear();
-		}
-
-		// Textures
-		{
-			std::vector<DescriptorSetUpdate> updates;
-			for (auto& [texture, index] : resourceUpdate.TextureUpdates)
-			{
-				DescriptorSetUpdate update{};
-				update.Binding = 0;
-				update.ArrayElement = index;
-				update.Textures = { texture };
-				update.Type = DescriptorType::Texture;
-				updates.emplace_back(update);
-			}
-			bindlessTextureDS->Update(updates);
-			resourceUpdate.TextureUpdates.clear();
-		}
-
-		if (resourceUpdate.Resize)
-		{
-			resourceUpdate.Resize = false;
-			framebuffer->Resize(resourceUpdate.ResizeWidth, resourceUpdate.ResizeHeight);
-		}
-		
-	}
-
 	void SceneRenderer::RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx)
 	{
 		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
 		WeakRef<RenderPass> renderPass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
 		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(GEOMETRY_SHADER_ID);
+		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(OPAQUE_GEOMETRY_SHADER_ID);
 		WeakRef<DescriptorSet> geometryDS = ctx.Get<FrameBuffer>(GEOMETRY_SHADER_DS_ID);
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
 		WeakRef<Scene> scene = ctx.GetScene();
@@ -479,7 +515,6 @@ namespace Mule
 
 			break;
 		}
-
 
 		if (environmentMap)
 		{
@@ -504,10 +539,8 @@ namespace Mule
 			};
 			geometryDS->Update(geometryShaderDSUs);
 		}
-
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handles by scene graph
-		
-		cmd->BeginRenderPass(framebuffer, renderPass, true);
+				
+		cmd->BeginRenderPass(framebuffer, renderPass, false);
 
 		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { geometryDS, bindlessTextureDS });
@@ -525,6 +558,12 @@ namespace Mule
 			uint32_t materialIndex = mMaterialArray.QueryIndex(meshComponent.MaterialHandle);
 			if (materialIndex == UINT32_MAX)
 				materialIndex = 0;
+
+			const GPU::GPUMaterial& material = mMaterialArray.Query(materialIndex);
+ 			if (material.AlbedoColor.a < 1.0 || material.Transparency < 1.0 || material.OpacityIndex != -1)
+			{
+				continue;
+			}
 
 			glm::mat4 transform = e.GetTransformComponent().TRS();
 			Entity parent = e.Parent();
@@ -554,6 +593,65 @@ namespace Mule
 
 	void SceneRenderer::RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx)
 	{
+		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
+		WeakRef<RenderPass> renderPass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
+		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
+		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(TRANPARENT_GEOMETRY_SHADER_ID);
+		WeakRef<DescriptorSet> geometryDS = ctx.Get<FrameBuffer>(GEOMETRY_SHADER_DS_ID);
+		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
+		WeakRef<Scene> scene = ctx.GetScene();
+
+		cmd->BeginRenderPass(framebuffer, renderPass, false);
+
+		cmd->BindGraphicsPipeline(shader);
+		cmd->BindGraphicsDescriptorSet(shader, { geometryDS, bindlessTextureDS });
+
+		for (auto entityId : scene->Iterate<MeshComponent>())
+		{
+			Entity e((uint32_t)entityId, scene);
+
+			const MeshComponent& meshComponent = e.GetComponent<MeshComponent>();
+			if (!meshComponent.Visible) continue;
+
+			auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+			if (!mesh) continue;
+
+			uint32_t materialIndex = mMaterialArray.QueryIndex(meshComponent.MaterialHandle);
+			if (materialIndex == UINT32_MAX)
+				materialIndex = 0;
+
+			const GPU::GPUMaterial& material = mMaterialArray.Query(materialIndex);
+			if (material.AlbedoColor.a == 1.0 && material.Transparency == 1.0 && material.OpacityIndex == -1)
+			{
+				continue;
+			}
+
+			glm::mat4 transform = e.GetTransformComponent().TRS();
+			Entity parent = e.Parent();
+			while (parent)
+			{
+				transform *= parent.GetTransformComponent().TRS();
+				Entity p = e.Parent();
+				if (p.ID() == parent.ID())
+					break;
+				parent = e.Parent();
+			}
+
+			// set push constants
+			uint32_t fragmentConstants[] = {
+				materialIndex,
+				0 // unused
+			};
+
+			cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+			cmd->SetPushConstants(shader, ShaderStage::Fragment, &fragmentConstants[0], sizeof(uint32_t) * 2);
+
+			cmd->BindAndDrawMesh(mesh, 1);
+		}
+
+		cmd->EndRenderPass();
+
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handles by scene graph
 	}
 
 	void SceneRenderer::RenderEnvironmentCallback(const RenderGraph::PassContext& ctx)
@@ -594,8 +692,8 @@ namespace Mule
 		};
 		DS->Update(DSUs);
 
-		
-		cmd->BeginRenderPass(framebuffer, renderPass);
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handles by scene graph
+		cmd->BeginRenderPass(framebuffer, renderPass, true);
 		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
 		auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
@@ -604,7 +702,6 @@ namespace Mule
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
 		cmd->EndRenderPass();
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handles by scene graph
 	}
 
 	void SceneRenderer::RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx)

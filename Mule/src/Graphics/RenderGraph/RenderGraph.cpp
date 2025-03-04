@@ -1,6 +1,7 @@
 #include "Graphics/RenderGraph/RenderGraph.h"
 
 #include "Graphics/RenderGraph/Resource.h"
+#include "Timer.h"
 
 #include <spdlog/spdlog.h>
 
@@ -40,7 +41,7 @@ namespace Mule::RenderGraph
 		}
 	}
 
-	void RenderGraph::AddPass(const std::string& name, const std::vector<std::string>& inputs, const std::vector<std::string>& outputs, std::function<void(const PassContext&)> callback, bool hasCommands)
+	void RenderGraph::AddPass(const std::string& name, const std::vector<std::string>& dependecies, std::function<void(const PassContext&)> callback)
 	{
 		auto iter = mPassesToCompile.find(name);
 		if (iter != mPassesToCompile.end())
@@ -50,10 +51,8 @@ namespace Mule::RenderGraph
 		}
 		
 		RenderPassInfo& renderPass = mPassesToCompile[name];
-		renderPass.Inputs = inputs;
-		renderPass.Outputs = outputs;
+		renderPass.Dependecies = dependecies;
 		renderPass.CallBack = callback;
-		renderPass.HasCommands = hasCommands;
 	}
 	
 	void RenderGraph::Compile()
@@ -63,9 +62,24 @@ namespace Mule::RenderGraph
 			mPerFrameData[i].Ctx = PassContext(mResources[i]);
 		}
 
-		// TODO: use some algorithm that i dont know how to implement to sort/filter the passes
-		for (auto& [name, pass] : mPassesToCompile)
+		auto passIter = mPassesToCompile.begin();
+		while (true)
 		{
+			if (passIter == mPassesToCompile.end())
+			{
+				if (mPassesToCompile.empty())
+					break;
+				passIter = mPassesToCompile.begin();
+			}
+
+			std::string name = passIter->first;
+			RenderPassInfo& pass = passIter->second;
+			if (!pass.Dependecies.empty())
+			{
+				passIter++;
+				continue;
+			}
+
 			PerPassData ppd{};
 
 			ppd.Callback = pass.CallBack;
@@ -73,19 +87,32 @@ namespace Mule::RenderGraph
 			ppd.CommandBuffers.resize(mFrameCount);
 			ppd.Semaphores.resize(mFrameCount);
 			ppd.Fences.resize(mFrameCount);
+			ppd.Stats.Name = name;
 
-			if (pass.HasCommands)
+			for (uint32_t i = 0; i < mFrameCount; i++)
 			{
-				ppd.HasCommands = true;
-				for (uint32_t i = 0; i < mFrameCount; i++)
-				{
-					ppd.CommandBuffers[i] = mCommandPool->CreateCommandBuffer();
-					ppd.Fences[i] = mGraphicsContext->CreateFence();
-					ppd.Semaphores[i] = mGraphicsContext->CreateSemaphore();
-				}
+				ppd.CommandBuffers[i] = mCommandPool->CreateCommandBuffer();
+				ppd.Fences[i] = mGraphicsContext->CreateFence();
+				ppd.Semaphores[i] = mGraphicsContext->CreateSemaphore();
 			}
 
 			mPassesToExecute.push_back(ppd);
+
+			passIter = mPassesToCompile.erase(passIter);
+
+			// Remove pass dependecies
+			for (auto& [depName, depPass] : mPassesToCompile)
+			{
+				if (name == depName)
+					continue;
+
+				auto iter = std::find(depPass.Dependecies.begin(), depPass.Dependecies.end(), name);
+				if (iter == depPass.Dependecies.end())
+					continue;
+
+				depPass.Dependecies.erase(iter);
+			}
+			
 		}
 
 		mIsValid = true;
@@ -103,43 +130,38 @@ namespace Mule::RenderGraph
 		PerFrameData& perFrameData = mPerFrameData[mFrameIndex];
 		PassContext& ctx = perFrameData.Ctx;
 
+		WeakRef<Semaphore> previousPassSemaphore = nullptr;
 		for (auto& pass : mPassesToExecute)
 		{
-			if (pass.HasCommands)
-			{
-				pass.Fences[mFrameIndex]->Wait();
-				pass.Fences[mFrameIndex]->Reset();
-			}
-		}
+			Timer passTimer;
+			passTimer.Start();
 
-		std::vector<WeakRef<Semaphore>> waits = waitSemaphores;
-
-		for (auto& pass : mPassesToExecute)
-		{
 			auto cmd = pass.CommandBuffers[mFrameIndex];
 			auto fence = pass.Fences[mFrameIndex];
 			auto semaphore = pass.Semaphores[mFrameIndex];
 
-			if (pass.HasCommands)
-			{
-				ctx.SetCommandBuffer(cmd);
+			ctx.SetCommandBuffer(cmd);
 
-				cmd->Reset();
-				cmd->Begin();
-			}
-			else
-			{
-				ctx.SetCommandBuffer(nullptr);
-			}
+			fence->Reset();
+			cmd->Reset();
+			cmd->Begin();
 
 			pass.Callback(ctx);
 
-			if (pass.HasCommands)
+			cmd->End();
+			if (previousPassSemaphore)
 			{
-				cmd->End();
-				mCommandQueue->Submit(cmd, waits, { semaphore }, fence);
-				waits.push_back(semaphore);
+				mCommandQueue->Submit(cmd, { previousPassSemaphore }, { semaphore }, fence);
+				previousPassSemaphore = semaphore;
 			}
+			else
+			{
+				mCommandQueue->Submit(cmd, waitSemaphores, { semaphore }, fence);
+				previousPassSemaphore = semaphore;
+			}
+			
+			passTimer.Stop();
+			pass.Stats.CPUExecutionTime = passTimer.Query();
 		}
 		
 	}
@@ -147,8 +169,29 @@ namespace Mule::RenderGraph
 	{
 		mFrameIndex = (mFrameIndex + 1) % mFrameCount;
 	}
+	
 	WeakRef<Semaphore> RenderGraph::GetSemaphore() const
 	{
 		return mPassesToExecute.back().Semaphores[mFrameIndex];
+	}
+
+	void RenderGraph::Wait()
+	{
+		for (auto& pass : mPassesToExecute)
+		{
+			pass.Fences[mFrameIndex]->Wait();
+		}
+	}
+	
+	std::vector<RenderPassStats> RenderGraph::GetRenderPassStats() const
+	{
+		std::vector<RenderPassStats> stats;
+
+		for (auto pass : mPassesToExecute)
+		{
+			stats.push_back(pass.Stats);
+		}
+
+		return stats;
 	}
 }

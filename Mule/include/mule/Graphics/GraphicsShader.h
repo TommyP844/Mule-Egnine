@@ -48,6 +48,8 @@ namespace Mule
 		CullMode CulleMode = CullMode::Back;
 		bool EnableDepthTesting = true;
 		bool WriteDepth = true;
+		std::vector<std::pair<std::string, std::string>> Macros = {};
+		bool BlendEnable = false;
 	};
 
 	class GraphicsShader : public Asset<AssetType::Shader>
@@ -70,7 +72,7 @@ namespace Mule
 		// <uint32_t, uint32_t> || <offset, size>
 		std::map<ShaderStage, std::pair<uint32_t, uint32_t>> mPushConstantMapping;
 
-		bool Compile(const fs::path& sourcePath, std::vector<VkPipelineShaderStageCreateInfo>& stages);
+		bool Compile(const fs::path& sourcePath, std::vector<VkPipelineShaderStageCreateInfo>& stages, const std::vector<std::pair<std::string, std::string>>& macros = {});
 		VkPipelineShaderStageCreateInfo CreateStage(const std::vector<uint32_t>& source, ShaderStage stage);
 		VkShaderModule CreateShaderModule(const std::vector<uint32_t>& source);
 	};

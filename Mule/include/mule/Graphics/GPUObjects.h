@@ -14,7 +14,7 @@ namespace Mule::GPU
 
 	struct GPUMaterial
 	{
-		glm::vec4 AlbedoColor;
+		alignas(16) glm::vec4 AlbedoColor;
 		alignas(8) glm::vec2 TextureScale;
 		alignas(4) float MetalnessFactor;
 		alignas(4) float RoughnessFactor;
@@ -25,6 +25,8 @@ namespace Mule::GPU
 		alignas(4) uint32_t RoughnessIndex;
 		alignas(4) uint32_t AOIndex;
 		alignas(4) uint32_t EmissiveIndex;
+		alignas(4) uint32_t OpacityIndex;
+		alignas(4) float Transparency;
 	};
 
 	struct GPUDirectionalLight

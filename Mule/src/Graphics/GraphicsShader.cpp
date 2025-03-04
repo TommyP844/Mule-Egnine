@@ -21,9 +21,11 @@ namespace Mule
 		mPipelineLayout(VK_NULL_HANDLE)
 	{
 		std::vector<VkPipelineShaderStageCreateInfo> stages;
-		bool compileResult = Compile(description.SourcePath, stages);
+		bool compileResult = Compile(description.SourcePath, stages, description.Macros);
 		if (!compileResult)
+		{
 			return;
+		}
 
 		// Vertex Input State
 		VkPipelineVertexInputStateCreateInfo vertexInputState{};
@@ -116,20 +118,16 @@ namespace Mule
 		// Depth/Stencil State
 		VkPipelineDepthStencilStateCreateInfo depthStencilState{};
 		{
-			VkStencilOpState front{};
-
-			VkStencilOpState back{};
-
 			depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			depthStencilState.pNext = nullptr;
 			depthStencilState.flags = 0;
 			depthStencilState.depthTestEnable = description.EnableDepthTesting;
 			depthStencilState.depthWriteEnable = description.WriteDepth;
-			depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+			depthStencilState.stencilTestEnable = VK_FALSE;
+			depthStencilState.front = {};
+			depthStencilState.back = {};
 			depthStencilState.depthBoundsTestEnable = VK_TRUE;
-			depthStencilState.stencilTestEnable = description.WriteDepth;
-			depthStencilState.front = front;
-			depthStencilState.back = back;
 			depthStencilState.minDepthBounds = 0.f;
 			depthStencilState.maxDepthBounds = 1.f;
 		}
@@ -143,9 +141,9 @@ namespace Mule
 			{
 				VkPipelineColorBlendAttachmentState attachmentState{};
 
-				attachmentState.blendEnable = VK_FALSE;
-				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+				attachmentState.blendEnable = attachment.BlendEnable & description.BlendEnable;
+				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 				attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
 				attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 				attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -284,7 +282,7 @@ namespace Mule
 		return iter->second;
 	}
 
-	bool GraphicsShader::Compile(const fs::path& sourcePath, std::vector<VkPipelineShaderStageCreateInfo>& stages)
+	bool GraphicsShader::Compile(const fs::path& sourcePath, std::vector<VkPipelineShaderStageCreateInfo>& stages, const std::vector<std::pair<std::string, std::string>>& macros)
 	{
 		std::fstream file(sourcePath);
 		if (!file.is_open())
@@ -312,6 +310,12 @@ namespace Mule
 		bool success = true;
 		shaderc_compiler_t compiler = shaderc_compiler_initialize();
 		shaderc_compile_options_t compileOptions = shaderc_compile_options_initialize();
+
+		for (const auto& [name, value] : macros)
+		{
+			shaderc_compile_options_add_macro_definition(compileOptions, name.c_str(), name.size(), value.c_str(), value.size());
+		}
+
 		for (auto [stage, source] : sources)
 		{
 			shaderc_shader_kind kind = shaderc_fragment_shader;

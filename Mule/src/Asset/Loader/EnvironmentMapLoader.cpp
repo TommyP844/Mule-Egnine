@@ -207,7 +207,7 @@ namespace Mule
 
         commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
         commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
-        commandBuffer->Execute(1024 / 8, 1024 / 8, 6);
+        commandBuffer->Execute(1024 / 16, 1024 / 16, 6);
 
         commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
 

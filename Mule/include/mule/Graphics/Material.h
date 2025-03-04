@@ -28,5 +28,6 @@ namespace Mule
 		AssetHandle RoughnessMap = NullAssetHandle;
 		AssetHandle AOMap = NullAssetHandle;
 		AssetHandle EmissiveMap = NullAssetHandle;
+		AssetHandle OpacityMap = NullAssetHandle;
 	};
 }

@@ -121,6 +121,7 @@ namespace Mule
 	struct Attachment
 	{
 		TextureFormat Format = TextureFormat::NONE;
+		bool BlendEnable = false;
 	};
 
 	struct VulkanImage

@@ -30,6 +30,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mTextureViewerPanel.SetContext(mEditorState, context);
 	mSceneRendererSettingsPanel.SetContext(mEditorState, context);
 	mPrimitiveObjectPanel.SetContext(mEditorState, context);
+	mPerformancePanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -40,6 +41,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mTextureViewerPanel.OnAttach();
 	mSceneRendererSettingsPanel.OnAttach();
 	mPrimitiveObjectPanel.OnAttach();
+	mPerformancePanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
@@ -210,6 +212,7 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Content Browser", "", mContentBrowserPanel.OpenPtr());
 			ImGui::MenuItem("Components", "", mComponentPanel.OpenPtr());
 			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
+			ImGui::MenuItem("Performance", "", mPerformancePanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
 			ImGui::MenuItem("Scene View", "", mSceneViewPanel.OpenPtr());
 			ImGui::MenuItem("Texture Viewer", "", mTextureViewerPanel.OpenPtr());
@@ -247,6 +250,7 @@ void EditorLayer::OnUIRender(float dt)
 		mTextureViewerPanel.OnEvent(event);
 		mSceneRendererSettingsPanel.OnEvent(event);
 		mPrimitiveObjectPanel.OnEvent(event);
+		mPerformancePanel.OnEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -261,6 +265,7 @@ void EditorLayer::OnUIRender(float dt)
 	mTextureViewerPanel.OnUIRender(dt);
 	mSceneRendererSettingsPanel.OnUIRender(dt);
 	mPrimitiveObjectPanel.OnUIRender(dt);
+	mPerformancePanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();

@@ -11,12 +11,20 @@
 #include "GPUObjects.h"
 #include "GuidArray.h"
 #include "Graphics/RenderGraph/RenderGraph.h"
+#include "Graphics/RenderGraph/RenderPassStats.h"
 
 // STD
 #include <vector>
 
 namespace Mule
 {
+	struct SceneRendererStats
+	{
+		float CPUPrepareTime = 0.f;
+		float CPUExecutionTime = 0.f;
+		std::vector<RenderGraph::RenderPassStats> RenderPassStats;
+	};
+
 	class SceneRenderer
 	{
 	public:
@@ -40,6 +48,8 @@ namespace Mule
 
 		void Resize(uint32_t width, uint32_t height);
 
+		const SceneRendererStats& GetRenderStats() const { return mTiming[mGraph.GetFrameIndex()]; }
+
 	private:
 		std::mutex mMutex;
 
@@ -55,18 +65,26 @@ namespace Mule
 
 		RenderGraph::RenderGraph mGraph;
 
-		void PrepareDrawData(const RenderGraph::PassContext& ctx);
+		// Timing
+		std::vector<SceneRendererStats> mTiming;
+
 		void RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx);
 		void RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx);
 		void RenderEnvironmentCallback(const RenderGraph::PassContext& ctx);
 		void RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx);
 
+		// Render Graph Passes
+		const std::string GEOMETRY_PASS_NAME = "OpaqueGeometryPass";
+		const std::string ENVIRONMENT_PASS_NAME = "EnvironmentPass";
+		const std::string TRANPARENT_GEOMETRY_PASS_NAME = "TransparentGeometryPass";
+
 		// Resources
 		const std::string FRAMEBUFFER_ID = "Framebuffer";
-		const std::string GEOMETRY_RENDER_PASS_ID = "GeometryPass";
+		const std::string GEOMETRY_RENDER_PASS_ID = "GeometryRenderPass";
 
 		// Shaders
-		const std::string GEOMETRY_SHADER_ID = "GeometryShader";
+		const std::string OPAQUE_GEOMETRY_SHADER_ID = "OpaqueGeometryShader";
+		const std::string TRANPARENT_GEOMETRY_SHADER_ID = "TransparentGeometryShader";
 		const std::string ENVIRONMENT_SHADER_ID = "EnvironmentShader";
 
 		// Descriptor Sets

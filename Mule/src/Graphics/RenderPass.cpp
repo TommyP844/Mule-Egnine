@@ -88,8 +88,7 @@ Mule::RenderPass::RenderPass(VkDevice device, const RenderPassDescription& descr
 		subpass.pDepthStencilAttachment = subPassDesc.HasDepth ? &depthAttachmentRef : nullptr;
 		subpass.preserveAttachmentCount = 0;
 		subpass.pPreserveAttachments = nullptr;
-		subpass.pResolveAttachments = nullptr;
-		subpass.flags = 0;
+		subpass.pResolveAttachments = nullptr;;
 		subpasses.push_back(subpass);
 	}
 

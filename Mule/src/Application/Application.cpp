@@ -86,14 +86,6 @@ namespace Mule
 
 				imguiContext->NewFrame();
 				OnUIRender(dt);
-
-				if (ImGui::Begin("Frame Rate"))
-				{
-					ImGui::Text("FPS: %.2f", 1.f / dt);
-					ImGui::Text("Frame Time: %.3f", dt);
-				}
-				ImGui::End();
-
 				imguiContext->EndFrame({ waitSemaphores });
 
 				graphicsContext->EndFrame({ imguiContext->GetRenderSemaphore() });

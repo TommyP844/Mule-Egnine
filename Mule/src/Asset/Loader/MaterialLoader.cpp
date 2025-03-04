@@ -26,6 +26,10 @@ namespace Mule
 		material->MetalnessMap = root["MetalnessMap"].as<AssetHandle>();
 		material->AOMap = root["AOMap"].as<AssetHandle>();
 		material->EmissiveMap = root["EmissiveMap"].as<AssetHandle>();
+		if (root["OpacityMap"])
+		{
+			material->OpacityMap = root["OpacityMap"].as<AssetHandle>();
+		}
 
 		material->TextureScale = root["TextureScale"].as<glm::vec2>();
 		material->Transparent = root["Transparent"].as<bool>();
@@ -49,6 +53,7 @@ namespace Mule
 		root["MetalnessMap"] = asset->MetalnessMap;
 		root["AOMap"] = asset->AOMap;
 		root["EmissiveMap"] = asset->EmissiveMap;
+		root["OpacityMap"] = asset->OpacityMap;
 
 		root["TextureScale"] = asset->TextureScale;
 		root["Transparent"] = asset->Transparent;

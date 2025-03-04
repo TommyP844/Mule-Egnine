@@ -45,7 +45,7 @@ void main()
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #define MAX_CASCADES 10
-#define MAX_MATERIALS 1000
+#define MAX_MATERIALS 800
 #define MAX_POINT_LIGHTS 1024
 
 #define PI 3.1415926535897932384626433832795
@@ -71,6 +71,8 @@ struct Material
 	uint RoughnessIndex;
 	uint AOIndex;
 	uint EmissiveIndex;
+	uint OpacityIndex;
+	float Transparency;
 };
 
 struct DirectionalLight
@@ -299,6 +301,21 @@ void main()
 		ambientLighting = diffuseIBL + specularIBL;
 	}
 
-	// Final fragment color.
-	FragColor = vec4(directLighting + ambientLighting, 1.0);
+	vec3 finalColor = directLighting + ambientLighting;
+
+	#ifdef TRANSPARENCY
+
+	//float alpha = 1;
+	//if(material.OpacityIndex != UINT32_MAX)
+	//{
+	//	alpha = texture(textures[material.OpacityIndex], scaledUV).r;
+	//}
+
+	float alpha = material.Transparency;
+	//alpha *= material.AlbedoColor.a;
+
+	FragColor = vec4(vec3(1), alpha);
+	#else
+	FragColor = vec4(finalColor, 1.0);
+	#endif
 }
