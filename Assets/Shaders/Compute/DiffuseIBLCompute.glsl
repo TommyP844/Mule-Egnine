@@ -36,10 +36,10 @@ void main() {
             dir = vec3(-1.0, -uv.y, uv.x);
             break;
         case 2:  // +Y
-            dir = vec3(uv.x, 1.0, uv.y);
+            dir = vec3(uv.x, -1.0, -uv.y);
             break;
         case 3:  // -Y
-            dir = vec3(uv.x, -1.0, -uv.y);
+            dir = vec3(uv.x, 1.0, uv.y);
             break;
         case 4:  // +Z
             dir = vec3(uv.x, -uv.y, 1.0);

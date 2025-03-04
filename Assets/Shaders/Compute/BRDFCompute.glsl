@@ -60,6 +60,7 @@ vec2 IntegrateBRDF(float NdotV, float roughness) {
 
 void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    texelCoord.y = 1 - texelCoord.y;
     vec2 texelSize = 1.0 / vec2(imageSize(brdfLUT));
     
     vec2 uv = vec2(texelCoord) * texelSize;

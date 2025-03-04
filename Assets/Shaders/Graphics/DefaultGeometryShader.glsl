@@ -270,7 +270,6 @@ void main()
 	{
 		// Sample diffuse irradiance at normal direction.
 		vec3 irradianceDir = N;
-		irradianceDir.y = -irradianceDir.y;
 		vec3 irradiance = texture(irradianceMap, irradianceDir).rgb;
 
 		// Calculate Fresnel term for ambient lighting.
@@ -288,7 +287,6 @@ void main()
 		// Sample pre-filtered specular reflection environment at correct mipmap level.
 		int specularTextureLevels = textureQueryLevels(prefilteredMap);
 		vec3 sampleDir = Lr;
-		sampleDir.y = -sampleDir.y;
 		vec3 specularIrradiance = texture(prefilteredMap, sampleDir/*roughness * specularTextureLevels */).rgb;
 
 		// Split-sum approximation factors for Cook-Torrance specular BRDF.
@@ -305,16 +303,16 @@ void main()
 
 	#ifdef TRANSPARENCY
 
-	//float alpha = 1;
-	//if(material.OpacityIndex != UINT32_MAX)
-	//{
-	//	alpha = texture(textures[material.OpacityIndex], scaledUV).r;
-	//}
+	float alpha = 1;
+	if(material.OpacityIndex != UINT32_MAX)
+	{
+		alpha = texture(textures[material.OpacityIndex], scaledUV).r;
+	}
 
-	float alpha = material.Transparency;
-	//alpha *= material.AlbedoColor.a;
+	alpha *= material.Transparency;
+	alpha *= material.AlbedoColor.a;
 
-	FragColor = vec4(vec3(1), alpha);
+	FragColor = vec4(finalColor, alpha);
 	#else
 	FragColor = vec4(finalColor, 1.0);
 	#endif

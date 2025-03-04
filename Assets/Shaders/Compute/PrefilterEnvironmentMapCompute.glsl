@@ -70,7 +70,7 @@ void main() {
     uint sampleCount = 0;
 
     // Use importance sampling to create more samples in the reflection direction
-    for (int i = 0; i < SAMPLE_COUNT; i++) {
+    for (int i = 0; i < 1; i++) {
         // Sample a random direction in the hemisphere
         vec3 sampleDir = sampleHemisphere(roughness, dir);
 

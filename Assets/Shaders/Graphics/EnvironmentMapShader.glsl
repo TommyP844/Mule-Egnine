@@ -19,7 +19,6 @@ layout(binding = 1) uniform UniformBufferObject {
 void main()
 {
 	pos = position;
-	pos.y = -pos.y;
 	gl_Position = ubo.proj * mat4(mat3(ubo.view)) * vec4(position, 1.0);
 	gl_Position.z = gl_Position.w; // Set depth to the far plane
 }
