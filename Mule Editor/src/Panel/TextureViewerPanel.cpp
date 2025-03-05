@@ -61,16 +61,16 @@ void TextureViewerPanel::OnUIRender(float dt)
 			{
 				ImGui::Text("Layer"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Layer", &layer, 1.f, 0, mTexture->GetLayerCount() - 1);
-				id = mTexture->GetLayerID(layer);
+				ImGui::DragInt("##Layer", &layer, 0.02f, 0, mTexture->GetLayerCount() - 1);
 			}
 			if (mTexture->GetMipCount() > 1)
 			{
 				ImGui::Text("Mip Level"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Mip", &mip, 1.f, 0, mTexture->GetMipCount() - 1);
-				id = mTexture->GetMipID(mip);
+				ImGui::DragInt("##Mip", &mip, 0.02f, 0, mTexture->GetMipCount() - 1);
 			}
+
+			id = mTexture->GetImGuiMipLayerID(mip, layer);
 
 			if (id != 0)
 			{

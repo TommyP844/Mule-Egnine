@@ -34,6 +34,7 @@ namespace Mule
 		engineDescription.GraphicsDescription.AppVersion = 1;
 		engineDescription.GraphicsDescription.EngineName = "Mule Engine";
 		engineDescription.GraphicsDescription.EngineVersion = 1;
+		engineDescription.ProjectPath = "C:/Development/Mule Projects/Test Project";
 		// engineDescription.GraphicsDescription.Window = mWindow; -- Will be set by engine context
 #ifdef _DEBUG
 		engineDescription.GraphicsDescription.EnableDebug = true;

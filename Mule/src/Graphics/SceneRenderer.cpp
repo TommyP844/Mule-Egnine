@@ -187,6 +187,7 @@ namespace Mule
 			};
 			opaqueGeometryDesc.CulleMode = CullMode::Back;
 			auto opaqueGeometryShader = mGraphicsContext->CreateGraphicsShader(opaqueGeometryDesc);
+			mAssetManager->InsertAsset(opaqueGeometryShader);
 
 			GraphicsShaderDescription transparentGeometryDesc;
 			transparentGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
@@ -204,7 +205,7 @@ namespace Mule
 			transparentGeometryDesc.BlendEnable = true;
 			transparentGeometryDesc.WriteDepth = false;
 			auto transparentGeometryShader = mGraphicsContext->CreateGraphicsShader(transparentGeometryDesc);
-
+			mAssetManager->InsertAsset(transparentGeometryShader);
 
 			GraphicsShaderDescription environemntShaderDesc{};
 			environemntShaderDesc.SourcePath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
@@ -424,11 +425,7 @@ namespace Mule
 				std::vector<DescriptorSetUpdate> updates;
 				for (auto& [texture, index] : resourceUpdate.TextureUpdates)
 				{
-					DescriptorSetUpdate update{};
-					update.Binding = 0;
-					update.ArrayElement = index;
-					update.Textures = { texture };
-					update.Type = DescriptorType::Texture;
+					DescriptorSetUpdate update(0, DescriptorType::Texture, index, { texture }, {});
 					updates.emplace_back(update);
 				}
 				bindlessTextureDS->Update(updates);
@@ -503,6 +500,9 @@ namespace Mule
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
 		WeakRef<Scene> scene = ctx.GetScene();
 
+		if (!shader->IsValid())
+			return;
+
 		WeakRef<EnvironmentMap> environmentMap = nullptr;
 		for (auto entityId : scene->Iterate<EnvironmentMapComponent>())
 		{
@@ -519,7 +519,7 @@ namespace Mule
 		if (environmentMap)
 		{
 			auto irradianceMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetDiffuseIBLMap());
-			auto prefilterMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetCubeMapHandle());
+			auto prefilterMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetPreFilterMap());
 			auto brdfLutMap = mAssetManager->GetAsset<Texture2D>(environmentMap->GetBRDFLutMap());
 			std::vector<DescriptorSetUpdate> geometryShaderDSUs = {
 				DescriptorSetUpdate(4, DescriptorType::Texture, 0, { irradianceMap }, {}),
@@ -601,6 +601,9 @@ namespace Mule
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
 		WeakRef<Scene> scene = ctx.GetScene();
 
+		if (!shader->IsValid())
+			return;
+
 		cmd->BeginRenderPass(framebuffer, renderPass, false);
 
 		cmd->BindGraphicsPipeline(shader);
@@ -662,6 +665,9 @@ namespace Mule
 		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(ENVIRONMENT_SHADER_ID);
 		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENVIRONMENT_SHADER_DS_ID);
 		WeakRef<Scene> scene = ctx.GetScene();
+
+		if (!shader->IsValid())
+			return;
 
 		WeakRef<TextureCube> cubeMap = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 		for (auto entityId : scene->Iterate<EnvironmentMapComponent>())

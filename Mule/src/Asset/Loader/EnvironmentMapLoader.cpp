@@ -65,6 +65,7 @@ namespace Mule
 
             preFilterDesc.Filepath = "../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl";
             preFilterDesc.Layouts = { mCubeMapDescriptorSetLayout };
+            preFilterDesc.PushConstantSize = sizeof(float);
 
             mPreFilterCompute = MakeRef<ComputeShader>(mContext, preFilterDesc);
         }
@@ -108,11 +109,7 @@ namespace Mule
             commandBuffer->Begin();
             commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::General);
 
-            DescriptorSetUpdate descUpdate{};
-            descUpdate.ArrayElement = 0;
-            descUpdate.Binding = 0;
-            descUpdate.Type = DescriptorType::StorageImage;
-            descUpdate.Textures = { brdfImage };
+            DescriptorSetUpdate descUpdate(0, DescriptorType::StorageImage, 0, { brdfImage }, {});
 
             mBRDFDescriptorSet->Update({ descUpdate });
 
@@ -147,115 +144,118 @@ namespace Mule
         Ref<Texture2D> texture = MakeRef<Texture2D>(mContext, data, width, height, TextureFormat::RGBA32F);
         stbi_image_free(data);
 
-        Ref<TextureCube> cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, TextureFlags::StorageImage);
+        std::string filename = filepath.filename().replace_extension().string();
 
         auto fence = mContext->CreateFence();
         auto queue = mContext->GetBackgroundGraphicsQueue();
         auto commandPool = queue->CreateCommandPool();
         auto commandBuffer = commandPool->CreateCommandBuffer();
-        commandBuffer->Begin();
-
-        commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::General);
 
         DescriptorSetUpdate update1{};
-        update1.ArrayElement = 0;
-        update1.Binding = 0;
-        update1.Type = DescriptorType::Texture;
-        update1.Textures = { texture };
-
         DescriptorSetUpdate update2{};
-        update2.ArrayElement = 0;
-        update2.Binding = 1;
-        update2.Type = DescriptorType::StorageImage;
-        update2.Textures = { cubeMap };
 
-        mCubeMapDescriptorSet->Update({ update1, update2 });
+        // Cube Map
+        Ref<TextureCube> cubeMap = nullptr;
+        {
+            cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
 
-        commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
-        commandBuffer->BindComputePipeline(mCubeMapCompute);
-        commandBuffer->Execute(1024 / 16, 1024 / 16, 6);
+            commandBuffer->Begin();
 
-        commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
+            commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::General);
+            
+            DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { texture }, {});
+            DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { cubeMap }, {});
 
-        commandBuffer->End();
-        fence->Wait();
-        fence->Reset();
-        queue->Submit(commandBuffer, {}, {}, fence);
-        fence->Wait();
+            mCubeMapDescriptorSet->Update({ update1, update2 });
 
+            commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
+            commandBuffer->BindComputePipeline(mCubeMapCompute);
+            commandBuffer->Execute((1024 + 16) / 16, (1024 + 16) / 16, 6);
 
-        mEngineContext->InsertAsset(cubeMap);
+            commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
 
-        Ref<TextureCube> irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            commandBuffer->End();
+            fence->Wait();
+            fence->Reset();
+            queue->Submit(commandBuffer, {}, {}, fence);
+            fence->Wait();
 
-        commandPool->Reset();
-        commandBuffer->Begin();
+            cubeMap->GenerateMips();
+            cubeMap->SetFilePath(filepath);
 
-        commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::General);
+            mEngineContext->InsertAsset(cubeMap);
+        }
+    
 
-        update1.ArrayElement = 0;
-        update1.Binding = 0;
-        update1.Type = DescriptorType::Texture;
-        update1.Textures = { cubeMap };
+        Ref<TextureCube> irradianceMap;
+        // Irradiance Map
+        {
+            irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
 
-        update2.ArrayElement = 0;
-        update2.Binding = 1;
-        update2.Type = DescriptorType::StorageImage;
-        update2.Textures = { irradianceMap };
+            commandPool->Reset();
+            commandBuffer->Begin();
 
-        mCubeMapDescriptorSet->Update({ update1, update2 });
+            commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::General);
 
-        commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
-        commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
-        commandBuffer->Execute(1024 / 16, 1024 / 16, 6);
+            DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { cubeMap }, {});
+            DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { irradianceMap }, {});
 
-        commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
+            mCubeMapDescriptorSet->Update({ update1, update2 });
 
-        commandBuffer->End();
-        fence->Wait();
-        fence->Reset();
-        queue->Submit(commandBuffer, {}, {}, fence);
-        fence->Wait();
+            commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
+            commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
+            commandBuffer->Execute(1024 / 16, 1024 / 16, 6);
 
-        std::string filename = filepath.filename().replace_extension().string();
-        irradianceMap->SetName(filename + "-IrradianceMap");
-        mEngineContext->InsertAsset(irradianceMap);
+            commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
 
+            commandBuffer->End();
+            fence->Wait();
+            fence->Reset();
+            queue->Submit(commandBuffer, {}, {}, fence);
+            fence->Wait();
 
-        Ref<TextureCube> prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            irradianceMap->SetName(filename + "-IrradianceMap");
+            mEngineContext->InsertAsset(irradianceMap);
+        }
 
-        commandPool->Reset();
-        commandBuffer->Begin();
+        Ref<TextureCube> prefilterMap = nullptr;
+        // Pre-Filter Map
+        {
+            prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
 
-        commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::General);
+            uint32_t preFilterMipLevelCount = prefilterMap->GetMipCount();
+            for (uint32_t i = 0; i < preFilterMipLevelCount; i++)
+            {
+                commandPool->Reset();
+                commandBuffer->Begin();
 
-        update1.ArrayElement = 0;
-        update1.Binding = 0;
-        update1.Type = DescriptorType::Texture;
-        update1.Textures = { cubeMap };
+                commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::General);
+                                
+                DescriptorSetUpdate update(1, DescriptorType::StorageImage, 0, prefilterMap->GetMipImageView(i), prefilterMap->GetSampler(), prefilterMap->GetVulkanImage().Layout);
 
-        update2.ArrayElement = 0;
-        update2.Binding = 1;
-        update2.Type = DescriptorType::StorageImage;
-        update2.Textures = { prefilterMap };
+                mCubeMapDescriptorSet->Update({ update });
 
-        mCubeMapDescriptorSet->Update({ update1, update2 });
+                commandBuffer->BindComputeDescriptorSet(mPreFilterCompute, mCubeMapDescriptorSet);
+                commandBuffer->BindComputePipeline(mPreFilterCompute);
 
-        commandBuffer->BindComputeDescriptorSet(mPreFilterCompute, mCubeMapDescriptorSet);
-        commandBuffer->BindComputePipeline(mPreFilterCompute);
-        commandBuffer->Execute(1024 / 8, 1024 / 8, 6);
+                float roughness = (static_cast<float>(i)) / (static_cast<float>(preFilterMipLevelCount - 1.f));
 
-        commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
+                glm::ivec2 dimension = prefilterMap->GetMipLevelSize(i);
+                commandBuffer->SetPushConstants(mPreFilterCompute, &roughness, sizeof(float));
+                commandBuffer->Execute((dimension.x + 16) / 16, (dimension.y + 16) / 16, 6);
+                commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
 
-        commandBuffer->End();
-        fence->Wait();
-        fence->Reset();
-        queue->Submit(commandBuffer, {}, {}, fence);
-        fence->Wait();
+                commandBuffer->End();
+                fence->Wait();
+                fence->Reset();
+                queue->Submit(commandBuffer, {}, {}, fence);
+                fence->Wait();
+            }
 
-        filename = filepath.filename().replace_extension().string();
-        prefilterMap->SetName(filename + "-PreFilterMap");
-        mEngineContext->InsertAsset(prefilterMap);
+            filename = filepath.filename().replace_extension().string();
+            prefilterMap->SetName(filename + "-PreFilterMap");
+            mEngineContext->InsertAsset(prefilterMap);
+        }
 
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
     }

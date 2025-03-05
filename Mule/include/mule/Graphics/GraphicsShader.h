@@ -58,6 +58,8 @@ namespace Mule
 		GraphicsShader(VkDevice device, const GraphicsShaderDescription& description);
 		~GraphicsShader();
 
+		void Reload();
+
 		VkPipeline GetPipeline() const { return mPipeline; }
 		VkPipelineLayout GetPipelineLayout() const { return mPipelineLayout; }
 		const std::pair<uint32_t, uint32_t>& GetPushConstantRange(ShaderStage stage);
@@ -68,6 +70,7 @@ namespace Mule
 		VkPipeline mPipeline;
 		VkPipelineLayout mPipelineLayout;
 		bool mIsValid;
+		GraphicsShaderDescription mDescription;
 
 		// <uint32_t, uint32_t> || <offset, size>
 		std::map<ShaderStage, std::pair<uint32_t, uint32_t>> mPushConstantMapping;

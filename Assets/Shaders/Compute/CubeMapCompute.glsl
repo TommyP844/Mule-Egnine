@@ -13,7 +13,7 @@ void main() {
     ivec2 cubeSize = imageSize(cubemapImage).xy;
 
     // Ensure we're within the bounds of the cubemap face
-    if (gl_GlobalInvocationID.x >= cubeSize.x || gl_GlobalInvocationID.y >= cubeSize.y) {
+    if (gl_GlobalInvocationID.x > cubeSize.x || gl_GlobalInvocationID.y > cubeSize.y) {
         return;
     }
 

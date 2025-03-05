@@ -18,10 +18,41 @@ namespace Mule
 		mIsValid(false),
 		mDevice(device),
 		mPipeline(VK_NULL_HANDLE),
-		mPipelineLayout(VK_NULL_HANDLE)
+		mPipelineLayout(VK_NULL_HANDLE),
+		mDescription(description)
 	{
+		Reload();
+	}
+
+	GraphicsShader::~GraphicsShader()
+	{
+		if(mPipelineLayout)
+			vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+
+		if(mPipeline)
+			vkDestroyPipeline(mDevice, mPipeline, nullptr);
+	}
+
+	void GraphicsShader::Reload()
+	{
+		mIsValid = false;
+
+		vkDeviceWaitIdle(mDevice);
+
+		if (mPipelineLayout)
+		{
+			vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+			mPipelineLayout = VK_NULL_HANDLE;
+		}
+
+		if (mPipeline)
+		{
+			vkDestroyPipeline(mDevice, mPipeline, nullptr);
+			mPipeline = VK_NULL_HANDLE;
+		}
+
 		std::vector<VkPipelineShaderStageCreateInfo> stages;
-		bool compileResult = Compile(description.SourcePath, stages, description.Macros);
+		bool compileResult = Compile(mDescription.SourcePath, stages, mDescription.Macros);
 		if (!compileResult)
 		{
 			return;
@@ -33,7 +64,7 @@ namespace Mule
 		VkVertexInputBindingDescription vertexBindingDesc{};
 		{
 			uint32_t offset = 0;
-			const std::vector<AttributeType>& attributeLayout = description.VertexLayout.GetAttributes();
+			const std::vector<AttributeType>& attributeLayout = mDescription.VertexLayout.GetAttributes();
 			for (int i = 0; i < attributeLayout.size(); i++)
 			{
 				auto& layoutAttribute = attributeLayout[i];
@@ -92,7 +123,7 @@ namespace Mule
 			rasterizationState.depthClampEnable;
 			rasterizationState.rasterizerDiscardEnable;
 			rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-			rasterizationState.cullMode = (VkCullModeFlagBits)description.CulleMode;
+			rasterizationState.cullMode = (VkCullModeFlagBits)mDescription.CulleMode;
 			rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			rasterizationState.depthBiasEnable = VK_FALSE;
 			rasterizationState.depthBiasConstantFactor;
@@ -121,8 +152,8 @@ namespace Mule
 			depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			depthStencilState.pNext = nullptr;
 			depthStencilState.flags = 0;
-			depthStencilState.depthTestEnable = description.EnableDepthTesting;
-			depthStencilState.depthWriteEnable = description.WriteDepth;
+			depthStencilState.depthTestEnable = mDescription.EnableDepthTesting;
+			depthStencilState.depthWriteEnable = mDescription.WriteDepth;
 			depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 			depthStencilState.stencilTestEnable = VK_FALSE;
 			depthStencilState.front = {};
@@ -136,19 +167,19 @@ namespace Mule
 		VkPipelineColorBlendStateCreateInfo colorBlendState{};
 		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 		{
-			const auto& attachments = description.RenderPass->GetColorAttachments();
+			const auto& attachments = mDescription.RenderPass->GetColorAttachments();
 			for (auto attachment : attachments)
 			{
 				VkPipelineColorBlendAttachmentState attachmentState{};
 
-				attachmentState.blendEnable = attachment.BlendEnable & description.BlendEnable;
+				attachmentState.blendEnable = attachment.BlendEnable & mDescription.BlendEnable;
 				attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 				attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 				attachmentState.colorBlendOp = VK_BLEND_OP_ADD;
 				attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 				attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 				attachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-				attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |	VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+				attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 				colorBlendAttachments.push_back(attachmentState);
 			}
@@ -183,13 +214,13 @@ namespace Mule
 		std::vector<VkPushConstantRange> pushConstantRanges{};
 		std::vector<VkDescriptorSetLayout> layouts;
 		{
-			for (const auto& layout : description.DescriptorLayouts)
+			for (const auto& layout : mDescription.DescriptorLayouts)
 			{
 				layouts.push_back(layout->GetLayout());
 			}
 
 			uint32_t offset = 0;
-			for (auto& range : description.PushConstants)
+			for (auto& range : mDescription.PushConstants)
 			{
 				VkPushConstantRange pcr{};
 
@@ -217,7 +248,7 @@ namespace Mule
 			if (result != VK_SUCCESS)
 			{
 				mIsValid = false;
-				SPDLOG_ERROR("Failed to create pipeline layout for shader: {}", description.SourcePath.string());
+				SPDLOG_ERROR("Failed to create pipeline layout for shader: {}", mDescription.SourcePath.string());
 			}
 		}
 
@@ -237,38 +268,29 @@ namespace Mule
 		createInfo.pColorBlendState = &colorBlendState;
 		createInfo.pDynamicState = &dynamicState;
 		createInfo.layout = mPipelineLayout;
-		createInfo.renderPass = description.RenderPass->GetHandle();
-		createInfo.subpass = description.Subpass;
+		createInfo.renderPass = mDescription.RenderPass->GetHandle();
+		createInfo.subpass = mDescription.Subpass;
 		createInfo.basePipelineHandle = VK_NULL_HANDLE;
 		createInfo.basePipelineIndex = 0;
-		
+
 		VkResult result = vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &createInfo, nullptr, &mPipeline);
 		if (result != VK_SUCCESS)
 		{
 			mIsValid = false;
-			SPDLOG_ERROR("Failed to load shader: {}", description.SourcePath.string());
+			SPDLOG_ERROR("Failed to load shader: {}", mDescription.SourcePath.string());
 		}
 		else
 		{
 			mIsValid = true;
 		}
 
-		for (auto stage : stages) 
+		for (auto stage : stages)
 		{
 			if (stage.module)
 			{
 				vkDestroyShaderModule(mDevice, stage.module, nullptr);
 			}
 		}
-	}
-
-	GraphicsShader::~GraphicsShader()
-	{
-		if(mPipelineLayout)
-			vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-
-		if(mPipeline)
-			vkDestroyPipeline(mDevice, mPipeline, nullptr);
 	}
 
 	const std::pair<uint32_t, uint32_t>& GraphicsShader::GetPushConstantRange(ShaderStage stage)
@@ -289,19 +311,51 @@ namespace Mule
 			return false;
 
 		std::map<ShaderStage, std::string> sources;
+		std::map<ShaderStage, std::pair<uint32_t, uint32_t>> shaderLines;
 
 		ShaderStage currentStage = ShaderStage::None;
 		std::string line;
+
+		uint32_t lineCount = 0;
 		while (std::getline(file, line))
 		{
-			if (line == "#VERTEX") { currentStage = ShaderStage::Vertex; continue; }
-			if (line == "#FRAGMENT") { currentStage = ShaderStage::Fragment; continue; }
-			if (line == "#GEOMETRY") { currentStage = ShaderStage::Geometry; continue; }
-			if (line == "#TESSELATION-CONTOL") { currentStage = ShaderStage::TesselationControl; continue; }
-			if (line == "#TESSELATION-EVALUATION") { currentStage = ShaderStage::TesselationEvaluation; continue; }
+			lineCount++;
+
+			if (line == "#VERTEX") 
+			{
+				currentStage = ShaderStage::Vertex; 
+				shaderLines[currentStage] = { lineCount, 0 };
+				continue; 
+			}
+			if (line == "#FRAGMENT")
+			{ 
+				currentStage = ShaderStage::Fragment;
+				shaderLines[currentStage] = { lineCount, 0 };
+				continue; 
+			}
+			if (line == "#GEOMETRY") 
+			{
+				currentStage = ShaderStage::Geometry;
+				shaderLines[currentStage] = { lineCount, 0 };
+				continue; 
+			}
+			if (line == "#TESSELATION-CONTOL") 
+			{ 
+				currentStage = ShaderStage::TesselationControl;
+				shaderLines[currentStage] = { lineCount, 0 };
+				continue;
+			}
+			if (line == "#TESSELATION-EVALUATION")
+			{ 
+				currentStage = ShaderStage::TesselationEvaluation;
+				shaderLines[currentStage] = { lineCount, 0 };
+				continue; 
+			}
 
 			if (currentStage == ShaderStage::None)
 				continue;
+
+			shaderLines[currentStage].second++;
 
 			sources[currentStage] += line + "\n";
 		}

@@ -17,24 +17,53 @@ namespace Mule
 		std::vector<WeakRef<DescriptorSetLayout>> Layouts;
 	};
 
-	struct DescriptorSetUpdate
+	class DescriptorSetUpdate
 	{
+	public:
 		DescriptorSetUpdate() = default;
 		DescriptorSetUpdate(const DescriptorSetUpdate& other) = default;
-		DescriptorSetUpdate(uint32_t binding, DescriptorType type, uint32_t arrayElement, const std::vector<WeakRef<ITexture>>& textures,
+		explicit DescriptorSetUpdate(uint32_t binding, DescriptorType type, uint32_t arrayElement, const std::vector<WeakRef<ITexture>>& textures,
 				const std::vector<WeakRef<UniformBuffer>>& buffers)
 			:
-			Binding(binding),
-			ArrayElement(arrayElement),
-			Type(type),
-			Buffers(buffers),
-			Textures(textures)
-		{}
-		uint32_t Binding;
-		uint32_t ArrayElement;
-		DescriptorType Type;
-		std::vector<WeakRef<UniformBuffer>> Buffers;
-		std::vector<WeakRef<ITexture>> Textures;
+			mBinding(binding),
+			mArrayElement(arrayElement),
+			mType(type),
+			mBuffers(buffers)
+		{
+			for (auto texture : textures)
+			{
+				mTextures.push_back(texture->GetImageView());
+				mLayouts.push_back(texture->GetVulkanImage().Layout);
+				mSamplers.push_back(texture->GetSampler());
+			}
+		}
+
+		explicit DescriptorSetUpdate(uint32_t binding, DescriptorType type, uint32_t arrayElement, VkImageView texture, VkSampler sampler, VkImageLayout layout)
+			:
+			mBinding(binding),
+			mArrayElement(arrayElement),
+			mType(type)
+		{
+			mTextures.push_back(texture);
+			mSamplers.push_back(sampler);
+			mLayouts.push_back(layout);
+		}
+
+		uint32_t GetBinding() const { return mBinding; }
+		uint32_t GetArrayElement() const { return mArrayElement; }
+		DescriptorType GetType() const { return mType; }
+		const std::vector<WeakRef<UniformBuffer>>& GetBuffers() const { return mBuffers; }
+		const std::vector<VkImageView>& GetImageViews() const { return mTextures; };
+		const std::vector<VkSampler>& GetSamplers() const { return mSamplers; };
+		const std::vector<VkImageLayout>& GetLayouts() const { return mLayouts; };
+	private:
+		uint32_t mBinding;
+		uint32_t mArrayElement;
+		DescriptorType mType;
+		std::vector<WeakRef<UniformBuffer>> mBuffers;
+		std::vector<VkImageView> mTextures;
+		std::vector<VkSampler> mSamplers;
+		std::vector<VkImageLayout> mLayouts;
 	};
 
 	class DescriptorSet

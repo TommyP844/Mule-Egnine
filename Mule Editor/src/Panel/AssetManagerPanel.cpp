@@ -167,6 +167,15 @@ void AssetManagerPanel::DisplayAsset(WeakRef<Mule::IAsset> asset)
 			break;
 		}
 	}
+	switch (asset->GetType())
+	{
+	case Mule::AssetType::Shader:
+		if (ImGui::Button("Reload"))
+		{
+			WeakRef<Mule::GraphicsShader> shader = asset;
+			shader->Reload();
+		}
+	}
 	ImGui::BeginDisabled();
 	
 	ImGui::Text("GUID");  

@@ -5,6 +5,7 @@
 
 #include "Asset/Asset.h"
 
+#include <glm/glm.hpp>
 #include <imgui.h>
 
 namespace Mule
@@ -33,6 +34,10 @@ namespace Mule
 
 		VkImage GetImage() const { return mVulkanImage.Image; }
 		VkImageView GetImageView() const { return mVulkanImage.ImageView; }
+		VkImageView GetMipLayerImageView(uint32_t mipLevel, uint32_t layer = 0) const;
+		VkImageView GetMipImageView(uint32_t mipLevel) const;
+		ImTextureID GetImGuiMipLayerID(uint32_t mipLevel, uint32_t layer = 0) const;
+		ImTextureID GetImGuiMipID(uint32_t mipLevel) const;
 
 		TextureFormat GetFormat() const { return mFormat; }
 		uint32_t GetLayerCount() const { return mLayers; }
@@ -41,13 +46,14 @@ namespace Mule
 		uint32_t GetHeight() const { return mHeight; }
 		uint32_t GetDepth() const { return mDepth; }
 		bool IsDepthTexture() const { return mIsDepthTexture; }
+		glm::ivec2 GetMipLevelSize(uint32_t mipLevel) const;
+
+		void GenerateMips();
 
 		const VulkanImage& GetVulkanImage() const { return mVulkanImage; }
 
 		TextureType GetTextureType() const { return mTextureType; }
 
-		ImTextureID GetLayerID(int index);
-		ImTextureID GetMipID(int index);
 		VkSampler GetSampler() const { return mSampler; }
 
 	protected:
@@ -58,14 +64,17 @@ namespace Mule
 		VulkanImage mVulkanImage;
 		VkSampler mSampler;
 
-		struct ImGuiView
+		struct MipView
 		{
-			VkImageView ImageView;
-			ImTextureID Id;
+			ImTextureID ImGuiMipId;
+			VkImageView View;
+
+			// Layers
+			std::vector<VkImageView> LayerViews;
+			std::vector<ImTextureID> ImGuiLayerIDs;
 		};
 
-		std::vector<ImGuiView> mLayerViews;
-		std::vector<ImGuiView> mMipviews;
+		std::vector<MipView> mMipViews;
 		
 		bool mIsDepthTexture;
 		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;

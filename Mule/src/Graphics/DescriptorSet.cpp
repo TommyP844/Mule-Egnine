@@ -53,12 +53,12 @@ namespace Mule
 			std::vector<VkDescriptorBufferInfo> bufferInfos;
 			uint32_t count = 0;
 
-			switch (update.Type)
+			switch (update.GetType())
 			{
 			case DescriptorType::UniformBuffer:
 			{
-				count = update.Buffers.size();
-				for (auto& buffer : update.Buffers)
+				count = update.GetBuffers().size();
+				for (const auto& buffer : update.GetBuffers())
 				{
 					VkDescriptorBufferInfo bufferInfo{};
 
@@ -73,14 +73,14 @@ namespace Mule
 			case DescriptorType::StorageImage:
 			case DescriptorType::Texture:
 			{
-				count = update.Textures.size();
-				for (auto& texture : update.Textures)
+				count = update.GetImageViews().size();
+				for (uint32_t i = 0; i < count; i++)
 				{
 					VkDescriptorImageInfo imageInfo{};
 
-					imageInfo.imageLayout = texture->GetVulkanImage().Layout;
-					imageInfo.imageView = texture->GetImageView();
-					imageInfo.sampler = texture->GetSampler();
+					imageInfo.imageLayout = update.GetLayouts()[i];
+					imageInfo.imageView = update.GetImageViews()[i];
+					imageInfo.sampler = update.GetSamplers()[i];
 
 					imageInfos.push_back(imageInfo);
 				}
@@ -95,10 +95,10 @@ namespace Mule
 			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			write.pNext = nullptr;
 			write.dstSet = mDescriptorSet;
-			write.dstBinding = update.Binding;
-			write.dstArrayElement = update.ArrayElement;
+			write.dstBinding = update.GetBinding();
+			write.dstArrayElement = update.GetArrayElement();
 			write.descriptorCount = count;
-			write.descriptorType = (VkDescriptorType)update.Type;
+			write.descriptorType = (VkDescriptorType)update.GetType();
 			write.pImageInfo = imageInfoGlobal.back().data();
 			write.pBufferInfo = bufferInfoGlobal.back().data();
 			write.pTexelBufferView = nullptr;
