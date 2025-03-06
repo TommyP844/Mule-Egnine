@@ -100,29 +100,37 @@ namespace Mule
 
             mBRDFCompute = MakeRef<ComputeShader>(mContext, computeDesc);
 
-            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            int width, height, channels;
+            void* data = stbi_load("../Assets/Textures/brdf_lut.png", &width, &height, &channels, STBI_rgb_alpha);
+            if (data == nullptr)
+            {
+                SPDLOG_ERROR("Failed to load brdf image");
+            }
+            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), data, width, height, TextureFormat::RGBA8U);
 
-            auto queue = mContext->GetGraphicsQueue();
-            auto fence = mContext->CreateFence();
-            auto commandPool = queue->CreateCommandPool();
-            auto commandBuffer = commandPool->CreateCommandBuffer();
-            commandBuffer->Begin();
-            commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::General);
-
-            DescriptorSetUpdate descUpdate(0, DescriptorType::StorageImage, 0, { brdfImage }, {});
-
-            mBRDFDescriptorSet->Update({ descUpdate });
-
-            commandBuffer->BindComputeDescriptorSet(mBRDFCompute, mBRDFDescriptorSet);
-            commandBuffer->BindComputePipeline(mBRDFCompute);
-            commandBuffer->Execute(512 / 16, 512 / 16, 1);
-            commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::ShaderReadOnly);
-
-            commandBuffer->End();
-            fence->Wait();
-            fence->Reset();
-            queue->Submit(commandBuffer, {}, {}, fence);
-            fence->Wait();
+            //Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            //
+            //auto queue = mContext->GetGraphicsQueue();
+            //auto fence = mContext->CreateFence();
+            //auto commandPool = queue->CreateCommandPool();
+            //auto commandBuffer = commandPool->CreateCommandBuffer();
+            //commandBuffer->Begin();
+            //commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::General);
+            //
+            //DescriptorSetUpdate descUpdate(0, DescriptorType::StorageImage, 0, { brdfImage }, {});
+            //
+            //mBRDFDescriptorSet->Update({ descUpdate });
+            //
+            //commandBuffer->BindComputeDescriptorSet(mBRDFCompute, mBRDFDescriptorSet);
+            //commandBuffer->BindComputePipeline(mBRDFCompute);
+            //commandBuffer->Execute((512) / 32, (512) / 32, 1);
+            //commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::ShaderReadOnly);
+            //
+            //commandBuffer->End();
+            //fence->Wait();
+            //fence->Reset();
+            //queue->Submit(commandBuffer, {}, {}, fence);
+            //fence->Wait();
 
             mEngineContext->InsertAsset(brdfImage);
             mBRDFLutMap = brdfImage->Handle();
@@ -170,7 +178,7 @@ namespace Mule
 
             commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
             commandBuffer->BindComputePipeline(mCubeMapCompute);
-            commandBuffer->Execute((1024 + 16) / 16, (1024 + 16) / 16, 6);
+            commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
 
             commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
 
@@ -181,8 +189,7 @@ namespace Mule
             fence->Wait();
 
             cubeMap->GenerateMips();
-            cubeMap->SetFilePath(filepath);
-
+            cubeMap->SetName(filename);
             mEngineContext->InsertAsset(cubeMap);
         }
     
@@ -204,7 +211,7 @@ namespace Mule
 
             commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
             commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
-            commandBuffer->Execute(1024 / 16, 1024 / 16, 6);
+            commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
 
             commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
 
@@ -242,7 +249,7 @@ namespace Mule
 
                 glm::ivec2 dimension = prefilterMap->GetMipLevelSize(i);
                 commandBuffer->SetPushConstants(mPreFilterCompute, &roughness, sizeof(float));
-                commandBuffer->Execute((dimension.x + 16) / 16, (dimension.y + 16) / 16, 6);
+                commandBuffer->Execute((dimension.x + 32) / 32, (dimension.y + 32) / 32, 6);
                 commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
 
                 commandBuffer->End();

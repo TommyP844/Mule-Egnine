@@ -73,12 +73,12 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 			{
 				file.Handle = asset->Handle();
 				file.AssetType = asset->GetType();
-				if (file.AssetType == Mule::AssetType::Texture)
-				{
-					Ref<Mule::Texture2D> texture = asset;
-					file.TexId = texture->GetImGuiID();
-				}
-				else
+				//if (file.AssetType == Mule::AssetType::Texture)
+				//{
+				//	Ref<Mule::Texture2D> texture = asset;
+				//	file.TexId = texture->GetImGuiID();
+				//}
+				//else
 				{
 					file.TexId = mThumbnailManager->GetThumbnail(asset->Handle())->GetImGuiID();
 				}

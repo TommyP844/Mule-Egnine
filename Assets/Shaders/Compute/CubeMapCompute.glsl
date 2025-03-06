@@ -6,7 +6,7 @@ layout(set = 0, binding = 0) uniform sampler2D equirectangularSampler;
 // Output cubemap (6 faces)
 layout(set = 0, binding = 1, rgba32f) writeonly uniform imageCube cubemapImage;
 
-layout(local_size_x = 16, local_size_y = 16) in;  // Workgroup size
+layout(local_size_x = 32, local_size_y = 32) in;  // Workgroup size
 
 void main() {
     // Get the size of the output cubemap face

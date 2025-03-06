@@ -18,8 +18,6 @@ void TextureViewerPanel::OnUIRender(float dt)
 		}
 		else
 		{
-			static int layer = 0;
-			static int mip = 0;
 			const float offset = 100.f;
 			float width = ImGui::GetContentRegionAvail().x;
 			width = glm::min(width, 400.f);
@@ -61,16 +59,16 @@ void TextureViewerPanel::OnUIRender(float dt)
 			{
 				ImGui::Text("Layer"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Layer", &layer, 0.02f, 0, mTexture->GetLayerCount() - 1);
+				ImGui::DragInt("##Layer", &mLayer, 0.02f, 0, mTexture->GetLayerCount() - 1);
 			}
 			if (mTexture->GetMipCount() > 1)
 			{
 				ImGui::Text("Mip Level"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Mip", &mip, 0.02f, 0, mTexture->GetMipCount() - 1);
+				ImGui::DragInt("##Mip", &mMipLevel, 0.02f, 0, mTexture->GetMipCount() - 1);
 			}
 
-			id = mTexture->GetImGuiMipLayerID(mip, layer);
+			id = mTexture->GetImGuiMipLayerID(mMipLevel, mLayer);
 
 			if (id != 0)
 			{
@@ -89,5 +87,6 @@ void TextureViewerPanel::SetTexture(Mule::AssetHandle textureHandle)
 {
 	auto texture = mEngineContext->GetAsset<Mule::ITexture>(textureHandle);
 	mTexture = texture;
-	mLayerView = 0;
+	mMipLevel = 0;
+	mLayer = 0;
 }

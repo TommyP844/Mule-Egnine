@@ -5,7 +5,7 @@
 class TextureViewerPanel : public IPanel
 {
 public:
-	TextureViewerPanel() : IPanel("Texture Viewer"), mLayerView(0) {}
+	TextureViewerPanel() : IPanel("Texture Viewer"), mMipLevel(0), mLayer(0) {}
 	virtual ~TextureViewerPanel() {}
 
 	// Inherited via IPanel
@@ -19,5 +19,5 @@ public:
 
 private:
 	WeakRef<Mule::ITexture> mTexture;
-	int mLayerView;
+	int mMipLevel, mLayer;
 };

@@ -1,10 +1,10 @@
 #version 450 core
 #extension GL_EXT_samplerless_texture_functions : require
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 layout(binding = 0) uniform samplerCube envMap;        // Cube map environment texture
-layout(binding = 1, rgba16f) uniform imageCube irradianceMap;  // Output irradiance map
+layout(binding = 1, rgba16f) uniform writeonly imageCube irradianceMap;  // Output irradiance map
 
 const float PI = 3.14159265359;
 
@@ -15,7 +15,7 @@ void main() {
     ivec3 texCoord = ivec3(gl_GlobalInvocationID.xyz);
 
     // Make sure we're within bounds
-    if (texCoord.x >= cubeSize.x || texCoord.y >= cubeSize.y)
+    if (texCoord.x > cubeSize.x || texCoord.y > cubeSize.y)
         return;
 
     vec2 uv = vec2(gl_GlobalInvocationID.xy) / vec2(cubeSize);
@@ -76,5 +76,6 @@ void main() {
 
 
     // Store the result in the irradiance map
+    texCoord.y = cubeSize.y - texCoord.y;
     imageStore(irradianceMap, texCoord, vec4(irradiance, 1.0));
 }

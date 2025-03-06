@@ -1,70 +1,100 @@
-#version 460 core
+#version 450
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
-layout (local_size_x = 16, local_size_y = 16) in;
-
-layout (binding = 0, rgba16f) uniform image2D brdfLUT;
+layout(rgba16f, binding = 0) uniform writeonly image2D brdfLUT;
 
 const float PI = 3.14159265359;
 
-// Schlick-GGX Geometry Function
-float GeometrySchlickGGX(float NdotV, float roughness) {
+vec2 hammersley(uint i, uint N)
+{
+    uint bits = (i << 16u) | (i >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    float rdi = float(bits) * 2.3283064365386963e-10;
+    return vec2(float(i) /float(N), clamp(rdi, 0.0, 1.0));
+}
+
+vec3 importanceSampleGGX(vec2 Xi, float roughness, vec3 N)
+{
     float a = roughness * roughness;
-    float k = (a * a) / 2.0;
-    return NdotV / (NdotV * (1.0 - k) + k);
+    // Sample in spherical coordinates
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    // Construct tangent space vector
+    vec3 H;
+    H.x = sinTheta * cos(phi);
+    H.y = sinTheta * sin(phi);
+    H.z = cosTheta;
+
+    // Tangent to world space
+    vec3 upVector = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangentX = normalize(cross(upVector, N));
+    vec3 tangentY = cross(N, tangentX);
+    return tangentX * H.x + tangentY * H.y + N * H.z;
 }
 
-// Smith's Combined GGX Geometry Function
-float GeometrySmith(float NdotV, float NdotL, float roughness) {
-    return GeometrySchlickGGX(NdotV, roughness) * GeometrySchlickGGX(NdotL, roughness);
+// From the filament docs. Geometric Shadowing function
+// https://google.github.io/filament/Filament.html#toc4.4.2
+float V_SmithGGXCorrelated(float NoV, float NoL, float roughness) {
+    float a2 = pow(roughness, 4.0);
+    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
+    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
+    return 0.5 / (GGXV + GGXL);
 }
 
-// Importance Sampling GGX
-vec2 IntegrateBRDF(float NdotV, float roughness) {
-    vec3 V;
-    V.x = sqrt(1.0 - NdotV * NdotV);  // sin(theta)
+// Karis 2014
+vec2 integrateBRDF(float roughness, float NoV)
+{
+	vec3 V;
+    V.x = sqrt(1.0 - NoV * NoV); // sin
     V.y = 0.0;
-    V.z = NdotV;                      // cos(theta)
+    V.z = NoV; // cos
+
+    // N points straight upwards for this integration
+    const vec3 N = vec3(0.0, 0.0, 1.0);
 
     float A = 0.0;
     float B = 0.0;
-    const uint SAMPLE_COUNT = 1024;
+    const uint numSamples = 1024;
 
-    for (uint i = 0; i < SAMPLE_COUNT; i++) {
-        float Xi1 = float(i) / float(SAMPLE_COUNT);
-        float Xi2 = fract(265.34 * float(i)); // Quasi-random sequence
+    for (uint i = 0u; i < numSamples; i++) {
+        vec2 Xi = hammersley(i, numSamples);
+        // Sample microfacet direction
+        vec3 H = importanceSampleGGX(Xi, roughness, N);
 
-        float a = roughness * roughness;
-        float phi = 2.0 * PI * Xi1;
-        float cosTheta = sqrt((1.0 - Xi2) / (1.0 + (a * a - 1.0) * Xi2));
-        float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+        // Get the light direction
+        vec3 L = 2.0 * dot(V, H) * H - V;
 
-        vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
-        vec3 L = normalize(2.0 * dot(V, H) * H - V);
+        float NoL = clamp(dot(N, L), 0.0, 1.0);
+        float NoH = clamp(dot(N, H), 0.0, 1.0);
+        float VoH = clamp(dot(V, H), 0.0, 1.0);
 
-        float NdotL = max(L.z, 0.0);
-        float NdotH = max(H.z, 0.0);
-        float VdotH = max(dot(V, H), 0.0);
-
-        if (NdotL > 0.0) {
-            float G = GeometrySmith(NdotV, NdotL, roughness);
-            float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            float Fc = pow(1.0 - VdotH, 5.0);
-
-            A += (1.0 - Fc) * G_Vis;
-            B += Fc * G_Vis;
+        if (NoL > 0.0) {
+            // Terms besides V are from the GGX PDF we're dividing by
+            float V_pdf = V_SmithGGXCorrelated(NoV, NoL, roughness) * VoH * NoL / NoH;
+            float Fc = pow(1.0 - VoH, 5.0);
+            A += (1.0 - Fc) * V_pdf;
+            B += Fc * V_pdf;
         }
     }
 
-    return vec2(A, B) / float(SAMPLE_COUNT);
+    return 4.0 * vec2(A, B) / float(numSamples);
 }
 
-void main() {
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    texelCoord.y = 1 - texelCoord.y;
-    vec2 texelSize = 1.0 / vec2(imageSize(brdfLUT));
-    
-    vec2 uv = vec2(texelCoord) * texelSize;
-    vec2 brdf = IntegrateBRDF(uv.x, uv.y);
-    
-    imageStore(brdfLUT, texelCoord, vec4(brdf, 0.0, 1.0));
+void main()
+{
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = vec2(gl_GlobalInvocationID.xy + 1) / vec2(imageSize(brdfLUT).xy);
+    float mu = uv.x;
+    float a = uv.y;
+
+
+    // Output to screen
+    vec2 res = integrateBRDF(a, mu);
+
+    // Scale and Bias for F0 (as per Karis 2014)
+    imageStore(brdfLUT, ivec2(gl_GlobalInvocationID.xy), vec4(res, 0.0, 0.0));
 }

@@ -280,6 +280,8 @@ void main()
     vec3 specular = vec3(0.0);
     vec3 diffuse = vec3(0.0);
     vec3 prefilteredColor = vec3(0.0);
+    vec3 irradiance = vec3(0.0);
+    vec2 brdf = vec2(0.0);
     {
         F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
         
@@ -287,13 +289,13 @@ void main()
         kD = 1.0 - kS;
         kD *= 1.0 - metallic;	  
         
-        vec3 irradiance = texture(irradianceMap, N).rgb;
+        irradiance = texture(irradianceMap, N).rgb;
         vec3 diffuse      = irradiance * albedo;
         
         // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
         float MAX_REFLECTION_LOD = textureQueryLevels(prefilterMap) - 1.0;
         prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;    
-        vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+        brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), clamp(roughness, 0.0, 1.0))).rg;
         specular = prefilteredColor * (F * brdf.x + brdf.y);
 
         ambient = (kD * diffuse + specular) * ao;
@@ -314,7 +316,7 @@ void main()
 
 		FragColor = vec4(color, alpha);
 	#else
-		FragColor = vec4(color , 1.0);
+		FragColor = vec4(color, 1.0);
 	#endif
 }
 
