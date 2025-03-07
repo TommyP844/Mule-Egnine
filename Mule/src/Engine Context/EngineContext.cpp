@@ -17,15 +17,12 @@ namespace Mule
 		mFilePath(description.ProjectPath)
 	{
 		mWindow = MakeRef<Window>(description.WindowName);
-
 		description.GraphicsDescription.Window = mWindow;
 		mGraphicsContext = MakeRef<GraphicsContext>(description.GraphicsDescription);
-
 		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
-
-		mAssetManager = MakeRef<AssetManager>();
-		
+		mAssetManager = MakeRef<AssetManager>();		
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
+		mScriptContext = MakeRef<ScriptContext>();
 
 		mAssetManager->RegisterLoader<SceneLoader>();
 		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));

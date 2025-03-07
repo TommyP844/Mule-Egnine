@@ -13,6 +13,7 @@
 #include "Graphics/Context/ImGuiContext.h"
 #include "Graphics/SceneRenderer.h"
 #include "Application/Window.h"
+#include "Scripting/ScriptContext.h"
 
 namespace Mule
 {
@@ -66,6 +67,7 @@ namespace Mule
 		Ref<AssetManager> mAssetManager;
 		Ref<SceneRenderer> mSceneRenderer;
 		Ref<ImGuiContext> mImguiContext;
+		Ref<ScriptContext> mScriptContext;
 		WeakRef<Scene> mScene;
 	};
 }

@@ -1,6 +1,5 @@
 workspace "Mule"
     configurations { "Debug", "Release" }
-    architecture "x64"
     startproject "Mule Editor"
 
     dir = os.getcwd();
@@ -16,7 +15,8 @@ workspace "Mule"
         dir .. "/Submodules/nativefiledialog/src/include",
         dir .. "/Submodules/Assimp/include",
         dir .. "/Submodules/ImGuizmo",
-        "%VULKAN_SDK%/Include"
+        "%VULKAN_SDK%/Include",
+        dir .. "/Submodules/Coral/Coral.Native/Include"
     } 
 
     debugLibs = {
@@ -58,7 +58,10 @@ workspace "Mule"
         include "Submodules/yaml/yaml.lua"
         include "Submodules/nativefiledialog/nativefiledialog.lua"
         include "Submodules/ImGuizmo/imguizmo.lua"
+        include "Submodules/Coral/Coral.Managed/premake5.lua"
+        include "Submodules/Coral/Coral.Native/premake5.lua"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"
     include "Mule/mule.lua"
+    include "MuleScriptEngine/MuleScriptEngine.lua"

@@ -3,6 +3,7 @@ project "Mule"
 	kind "StaticLib"
 	location ""
 	cppdialect "C++20"
+    architecture "x64"
 
     buildoptions {"/MP"}
     buildoptions {"/Zc:preprocessor"}
@@ -24,7 +25,8 @@ project "Mule"
         "glfw",
         "spdlog",
         "yaml-cpp",
-        libs
+        libs,
+        "Coral.Native"
     }
 
     files {

@@ -3,6 +3,7 @@ project "Mule Editor"
 	kind "ConsoleApp"
 	location ""
 	cppdialect "C++20"
+    architecture "x64"
 
     buildoptions {"/MP"}
     buildoptions {"/Zc:preprocessor"}
@@ -29,7 +30,8 @@ project "Mule Editor"
         "yaml-cpp",
         "nativefiledialog",
         "ImGuizmo",
-        libs
+        libs,
+        "coral.Native"
     }
 
     files {
