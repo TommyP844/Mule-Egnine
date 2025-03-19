@@ -5,10 +5,13 @@
 
 namespace Mule
 {
+	class ScriptContext;
+	class EngineContext;
+
 	class SceneLoader : public IAssetLoader<Scene, AssetType::Scene>
 	{
 	public:
-		SceneLoader() {}
+		SceneLoader(WeakRef<EngineContext> engineContext, WeakRef<ScriptContext> scriptContext);
 		virtual ~SceneLoader() {}
 
 
@@ -18,5 +21,8 @@ namespace Mule
 		virtual Ref<Scene> LoadBinary(const Buffer& filepath) override;
 		virtual void SaveBinary(Ref<Scene> asset) override;
 
+	private:
+		WeakRef<ScriptContext> mScriptContext;
+		WeakRef<EngineContext> mEngineContext;
 	};
 }

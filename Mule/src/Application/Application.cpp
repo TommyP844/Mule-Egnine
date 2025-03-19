@@ -73,6 +73,8 @@ namespace Mule
 			}
 
 			if (mMinimized) continue;
+			
+			OnUpdate(dt);
 
 			if (graphicsContext->BeginFrame())
 			{
@@ -143,6 +145,14 @@ namespace Mule
 		for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
 		{
 			(*it)->OnUIRender(dt);
+		}
+	}
+
+	void Application::OnUpdate(float dt)
+	{
+		for (auto it = mLayerStack.begin(); it != mLayerStack.end(); it++)
+		{
+			(*it)->OnUpdate(dt);
 		}
 	}
 }

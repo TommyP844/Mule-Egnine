@@ -48,3 +48,7 @@
 // Engine
 #include "Engine Context/EngineContext.h"
 #include "Engine Context/EngineAssets.h"
+
+// Scripting
+#include "Scripting/ScriptClass.h"
+#include "Scripting/ScriptInstance.h"

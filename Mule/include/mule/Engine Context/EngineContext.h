@@ -13,7 +13,6 @@
 #include "Graphics/Context/ImGuiContext.h"
 #include "Graphics/SceneRenderer.h"
 #include "Application/Window.h"
-#include "Scripting/ScriptContext.h"
 
 namespace Mule
 {
@@ -23,6 +22,8 @@ namespace Mule
 		GraphicsContextDescription GraphicsDescription;
 		fs::path ProjectPath;
 	};
+
+	class ScriptContext;
 
 	class EngineContext
 	{
@@ -56,6 +57,7 @@ namespace Mule
 		Ref<SceneRenderer> GetSceneRenderer() const { return mSceneRenderer; }
 		Ref<ImGuiContext> GetImGuiContext() const { return mImguiContext; }
 		Ref<Window> GetWindow() const { return mWindow; }
+		WeakRef<ScriptContext> GetScriptContext() const { return mScriptContext; }
 
 		void SetScene(WeakRef<Scene> scene) { mScene = scene; }
 		WeakRef<Scene> GetScene() const { return mScene; }

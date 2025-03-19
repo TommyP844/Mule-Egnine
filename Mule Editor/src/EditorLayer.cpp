@@ -19,7 +19,12 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	:
 	ILayer(context, "Editor Layer")
 {
-	mEditorState = MakeRef<EditorContext>();
+	mEditorState = MakeRef<EditorContext>("C:\\Development\\Mule Projects\\Test Project", context);
+
+	
+	std::string projectName = mEditorState->GetProjectName();
+	const fs::path projectDLL = mEditorState->GetProjectPath() / "bin/Debug/net8.0" / (projectName + ".dll");
+	mEngineContext->GetScriptContext()->LoadUserDLL(projectDLL);
 	
 	mSceneHierarchyPanel.SetContext(mEditorState, context);
 	mSceneViewPanel.SetContext(mEditorState, context);
@@ -85,7 +90,7 @@ void EditorLayer::OnAttach()
 
 	mAssetLoaderThread = std::async(std::launch::async, [&]() {
 		std::vector<std::future<void>> futures;
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
 		{
 			if (dir.is_directory()) continue;
 
@@ -99,13 +104,19 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::Model>(filePath);
 					}));
 			}
+			else if (extension == ".cs")
+			{
+				futures.push_back(std::async(std::launch::async, [=]() {
+					mEngineContext->LoadAsset<Mule::ScriptClass>(filePath);
+					}));
+			}
 		}
 
 		for (const auto& f : futures)
 			f.wait();
 		futures.clear();
 
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
 		{
 			if (dir.is_directory()) continue;
 
@@ -136,7 +147,7 @@ void EditorLayer::OnAttach()
 			f.wait();
 		futures.clear();
 
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
 		{
 			if (dir.is_directory()) continue;
 
@@ -157,8 +168,10 @@ void EditorLayer::OnAttach()
  
 		});
 
+	mAssetLoaderThread.wait();
+
 	// TODO: make this able to run async, currecnt issue is in YamlConvert.h where we set a scene context on load
-	for (auto dir : fs::recursive_directory_iterator(mEditorState->mAssetsPath))
+	for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
 	{
 		fs::path filepath = dir.path();
 		if(filepath.extension().string() == ".scene")
@@ -168,7 +181,24 @@ void EditorLayer::OnAttach()
 
 void EditorLayer::OnUpdate(float dt)
 {
-	SPDLOG_INFO("Layer OnUpdate: {}", GetName());
+	auto scriptContext = mEditorState->GetScriptEditorContext();
+	bool reloadDLL = scriptContext->DoesProjectDLLNeedReload();
+
+	if (reloadDLL)
+	{
+		mEngineContext->GetScriptContext()->ReloadDLL();
+
+		scriptContext->ClearProjectDLLNeedsReload();
+	}
+
+	switch (mEditorState->GetSimulationState())
+	{
+	case SimulationState::Editing: break;
+	case SimulationState::Paused: break;
+	case SimulationState::Simulation:
+		mEngineContext->GetScene()->OnUpdate(dt);
+		break;
+	}
 }
 
 void EditorLayer::OnUIRender(float dt)
@@ -203,6 +233,10 @@ void EditorLayer::OnUIRender(float dt)
 			if (ImGui::MenuItem("Material"))
 			{
 				mNewMaterialPopup = true;
+			}
+			if (ImGui::MenuItem("Script"))
+			{
+				mNewScriptPopup = true;
 			}
 			ImGui::EndMenu();
 		}
@@ -267,19 +301,24 @@ void EditorLayer::OnUIRender(float dt)
 	mPrimitiveObjectPanel.OnUIRender(dt);
 	mPerformancePanel.OnUIRender(dt);
 
-	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
-		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
+	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
+		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>(mEngineContext);
 		scene->SetFilePath(filepath);
 		mEngineContext->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
 		});
 
-	NewItemPopup(mNewMaterialPopup, "Material", ".mat", mEditorState->mAssetsPath, [&](const fs::path& filepath) {
+	NewItemPopup(mNewMaterialPopup, "Material", ".mat", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		Ref<Mule::Material> material = MakeRef<Mule::Material>();
 		material->SetFilePath(filepath);
 		mEngineContext->InsertAsset(material);
 		mMaterialEditorPanel.Open();
 		mMaterialEditorPanel.SetMaterial(material->Handle());
+		});
+
+	NewItemPopup(mNewScriptPopup, "Script", ".cs", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
+		mEditorState->GetScriptEditorContext()->CreateScriptFile(filepath);
+		// TODO: notify Script context and reload dll
 		});
 }
 
@@ -289,10 +328,10 @@ void EditorLayer::OnRender(float dt)
 	auto sceneRenderer = mEngineContext->GetSceneRenderer();
 	if (scene)
 	{
-		switch (mEditorState->SimulationState)
+		switch (mEditorState->GetSimulationState())
 		{
 		case SimulationState::Editing:
-			sceneRenderer->OnEditorRender(scene, mEditorState->EditorCamera, {});
+			sceneRenderer->OnEditorRender(scene, mEditorState->GetEditorCamera(), {});
 			break;
 		case SimulationState::Simulation:
 			sceneRenderer->OnRender(scene, {});

@@ -138,7 +138,7 @@ void AssetManagerPanel::DisplayAsset(WeakRef<Mule::IAsset> asset)
 	const float requestedOffset = 100.f;
 	std::string name = asset->Name();
 	std::string guid = std::to_string(asset->Handle());
-	std::string path = fs::relative(asset->FilePath(), mEditorContext->mAssetsPath).string();
+	std::string path = fs::relative(asset->FilePath(), mEditorContext->GetAssetsPath()).string();
 	std::string type = asset->GetTypeName();
 	ImGui::PushID(asset->Handle());
 

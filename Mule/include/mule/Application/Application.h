@@ -36,6 +36,7 @@ namespace Mule
 		void OnEvent(Ref<Event> event);
 		void OnRender(float dt);
 		void OnUIRender(float dt);
+		void OnUpdate(float dt);
 
 		bool mMinimized;
 		bool mRunning;

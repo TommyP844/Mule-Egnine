@@ -46,6 +46,7 @@ private:
 	void ContentFileBrowser(float width);
 	bool FilePopContent(const DisplayFile& file);
 	void CopyDragDropFile(const ImGuiExtension::DragDropFile& file, const fs::path& newDir);
+	void OpenFile(const DisplayFile& file);
 
 	// Popups
 	void DisplayPopups();

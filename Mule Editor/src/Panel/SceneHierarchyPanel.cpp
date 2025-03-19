@@ -18,19 +18,19 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
-		if (mEngineContext->GetScene())
+		WeakRef<Mule::Scene> scene = mEngineContext->GetScene();
+		if (scene)
 		{
 			if (ImGui::BeginPopupContextWindow())
 			{
 				if (ImGui::MenuItem("Create Entity"))
 				{
 					auto entity = mEngineContext->GetScene()->CreateEntity();
-					mEditorContext->SelectedEntity = entity;
+					mEditorContext->SetSelectedEntity(entity);
 				}
 				ImGui::EndPopup();
 			}
-
-			WeakRef<Mule::Scene> scene = mEngineContext->GetScene();
+			
 			scene->IterateRootEntities([&](Mule::Entity e) {
 				RecurseEntities(e);
 				});
@@ -42,9 +42,9 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 			}
 			if (mEntityToDelete)
 			{
-				if (mEditorContext->SelectedEntity == mEntityToDelete)
+				if (mEditorContext->GetSelectedEntity() == mEntityToDelete)
 				{
-					mEditorContext->SelectedEntity = Mule::Entity();
+					mEditorContext->SetSelectedEntity(Mule::Entity());
 				}
 				mEntityToDelete.Destroy();
 				mEntityToDelete = Mule::Entity();
@@ -63,7 +63,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (!e.HasChildren())
 		flags |= ImGuiTreeNodeFlags_Bullet;
-	if (mEditorContext->SelectedEntity == e)
+	if (mEditorContext->GetSelectedEntity() == e)
 		flags |= ImGuiTreeNodeFlags_Selected;
 
 	unsigned int id = e.ID();
@@ -91,7 +91,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	}
 	
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-		mEditorContext->SelectedEntity = e;
+		mEditorContext->SetSelectedEntity(e);
 
 	EntityContextMenu(e);
 	

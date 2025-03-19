@@ -35,6 +35,12 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Source\Glue.cs" />
+    <Compile Include="Mule\Components\Component.cs" />
+    <Compile Include="Mule\Entity.cs" />
+    <Compile Include="Mule\Components\TransformComponent.cs" />
+    <Compile Include="Mule\InternalCalls.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy /B /Y "$(SolutionDir)Submodules\Coral\Coral.Managed\Coral.Managed.runtimeconfig.json" "$(SolutionDir)Submodules\Coral\Build\"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

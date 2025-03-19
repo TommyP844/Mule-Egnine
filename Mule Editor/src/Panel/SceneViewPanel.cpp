@@ -4,6 +4,8 @@
 #include "ImGuizmo.h"
 #include "ImGuiExtension.h"
 
+#include <IconsFontAwesome6.h>
+
 SceneViewPanel::SceneViewPanel()
 	: 
 	IPanel("Scene View"),
@@ -18,7 +20,7 @@ void SceneViewPanel::OnAttach()
 	mWidth = 0;
 	mHeight = 0;
 	mBlackImage = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
-	mEditorContext->EditorCamera.SetNearPlane(1.f);
+	mEditorContext->GetEditorCamera().SetNearPlane(1.f);
 }
 
 void SceneViewPanel::OnUIRender(float dt)
@@ -36,8 +38,52 @@ void SceneViewPanel::OnUIRender(float dt)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 	if (ImGui::Begin(mName.c_str(), &mIsOpen, flags))
 	{
-		ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
 		ImVec2 region = ImGui::GetContentRegionAvail();
+		float height = ImGui::GetTextLineHeight() + ImGui::GetStyle().WindowPadding.y * 2.f;
+		if (ImGui::BeginChild("PlayBar", {region.x, height}, ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			float buttonWidths = ImGui::CalcTextSize(ICON_FA_PLAY).x + ImGui::CalcTextSize(ICON_FA_STOP).x + ImGui::GetStyle().ItemSpacing.x * 2.f;
+			float offset = region.x * 0.5f - buttonWidths * 0.5f;
+			ImGui::SameLine(offset);
+
+			ImGui::BeginDisabled(mEngineContext->GetScene() == nullptr);
+			if (mEditorContext->GetSimulationState() == SimulationState::Editing)
+			{
+				if (ImGui::Button(ICON_FA_PLAY))
+				{
+					mEditorContext->SetSimulationState(SimulationState::Simulation);
+				}
+			}
+			else
+			{
+				if (ImGui::Button(ICON_FA_PAUSE))
+				{
+					mEditorContext->SetSimulationState(SimulationState::Paused);
+				}
+			}			
+			ImGui::SameLine();
+			
+			ImGui::BeginDisabled(mEditorContext->GetSimulationState() == SimulationState::Editing);
+			if (ImGui::Button(ICON_FA_STOP))
+			{
+				mEditorContext->SetSimulationState(SimulationState::Editing);
+			}
+			ImGui::EndDisabled();
+			ImGui::EndDisabled();
+
+			ImGui::SameLine(region.x - ImGui::CalcTextSize(ICON_FA_GEAR).x - ImGui::GetStyle().WindowPadding.x * 2.f - ImGui::GetStyle().ItemInnerSpacing.x * 2.f);
+
+			if (ImGui::Button(ICON_FA_GEAR))
+			{
+
+			}
+		}
+		ImGui::EndChild();
+		ImGui::PopStyleVar();
+
+		ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+		region = ImGui::GetContentRegionAvail();
 		ImTextureID texId = mBlackImage->GetImGuiID();
 		if (scene)
 		{
@@ -48,7 +94,8 @@ void SceneViewPanel::OnUIRender(float dt)
 				mWidth = region.x;
 				mHeight = region.y;
 				sceneRenderer->Resize(mWidth, mHeight);
-				mEditorContext->EditorCamera.SetAspectRatio(mWidth / mHeight);
+				scene->SetViewportDimension(mWidth, mHeight);
+				mEditorContext->GetEditorCamera().SetAspectRatio(mWidth / mHeight);
 			}
 
 			WeakRef<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetFrameBuffer();
@@ -70,7 +117,7 @@ void SceneViewPanel::UpdateCamera(float dt)
 {
 	if (ImGui::IsWindowFocused())
 	{
-		Mule::Camera& camera = mEditorContext->EditorCamera;
+		Mule::Camera& camera = mEditorContext->GetEditorCamera();
 		glm::vec3 cameraPosition = camera.GetPosition();
 		const float speed = 10.f * dt;
 		if (ImGui::IsKeyDown(ImGuiKey_W))
@@ -132,7 +179,7 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 			mWidgetScale = !mWidgetScale;
 	}
 
-	if (mEditorContext->SelectedEntity)
+	if (mEditorContext->GetSelectedEntity())
 	{
 		ImGuizmo::SetOrthographic(false);  // Set to true if using an orthographic camera
 		ImGuizmo::SetDrawlist();
@@ -145,8 +192,8 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 
 		if (operation != 0)
 		{
-			Mule::Camera& camera = mEditorContext->EditorCamera;
-			Mule::TransformComponent& transform = mEditorContext->SelectedEntity.GetTransformComponent();
+			Mule::Camera& camera = mEditorContext->GetEditorCamera();
+			Mule::TransformComponent& transform = mEditorContext->GetSelectedEntity().GetTransformComponent();
 			glm::mat4 proj = camera.GetProj();
 			glm::mat4 view = camera.GetView();
 
@@ -176,7 +223,7 @@ void SceneViewPanel::HandleDragDrop()
 		{
 			auto scene = mEngineContext->GetAsset<Mule::Scene>(ddf.AssetHandle);
 			mEngineContext->SetScene(scene);
-			mEditorContext->SelectedEntity = Mule::Entity();
+			mEditorContext->SetSelectedEntity(Mule::Entity());
 		}
 			break;
 		}
@@ -196,9 +243,9 @@ void SceneViewPanel::HandleDragDrop()
 				auto& meshComponent = entity.AddComponent<Mule::MeshComponent>();
 				meshComponent.MeshHandle = dda.AssetHandle;				
 				auto& transform = entity.GetTransformComponent();
-				Mule::Camera& camera = mEditorContext->EditorCamera;
+				Mule::Camera& camera = mEditorContext->GetEditorCamera();
 				transform.Translation = camera.GetPosition() + camera.GetForwardDir() * 20.f;
-				mEditorContext->SelectedEntity = entity;
+				mEditorContext->SetSelectedEntity(entity);
 			}
 		}
 			break;

@@ -8,6 +8,7 @@
 #include "ECS/Components.h"
 
 namespace YAML {
+
     // Serializer for glm::vec2
     template<>
     struct convert<glm::vec2> {
@@ -165,57 +166,6 @@ namespace YAML {
         }
     };
 
-#define SERIALIZE_COMPONENT_IF_EXISTS(name, x) if(e.HasComponent<x>()) node[name] = e.GetComponent<x>();
-#define DESERIALIZE_COMPONENT_IF_EXISTS(name, x) \
-    if(node[name]) { \
-        auto& component = e.AddComponent<x>(); \
-        component = node[name].as<x>(); \
-    } \
-
-    template<>
-    struct convert<Mule::Entity> {
-        static Node encode(const Mule::Entity& e) {
-            Node node;
-
-            node["Name"] = e.Name();
-            node["Guid"] = (size_t)e.Guid();
-
-            node["Transform"] = e.GetComponent<Mule::TransformComponent>();
-
-            SERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
-            SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
-            SERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
-            SERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
-            SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
-
-            YAML::Node childNode;
-            for (auto child : e.Children())
-            {
-                childNode.push_back(child);
-            }
-
-            node["Children"] = childNode;
-            
-            return node;
-        }
-
-        static bool decode(const Node& node, Mule::Entity& e) {
-            e = gScene->CreateEntity(node["Name"].as<std::string>(), Mule::Guid(node["Guid"].as<uint64_t>()));
-            auto& transformComponent = e.GetComponent<Mule::TransformComponent>();
-            transformComponent = node["Transform"].as<Mule::TransformComponent>();
-
-            DESERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
-            DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
-            DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
-            DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
-            DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
-
-            return true;
-        }
-
-        static Ref<Mule::Scene> gScene;
-    };
-
 #pragma region Components
 
     template<>
@@ -361,5 +311,160 @@ namespace YAML {
         }
     };
 
+    template<>
+    struct convert<Mule::ScriptComponent> {
+        static Node encode(const Mule::ScriptComponent& script) {
+            Node node;
+
+            auto scriptInstance = gScriptContext->GetScriptInstance(script.Handle);
+
+            if (scriptInstance)
+            {
+                node["Class"] = scriptInstance->GetName();
+                node["Handle"] = script.Handle;
+
+                node["Fields"];
+
+                for (const auto& [name, field] : gScriptContext->GetType(scriptInstance->GetName()).GetFields())
+                {
+                    Node fieldNode;
+
+                    fieldNode["Type"] = (uint32_t)field.Type;
+                    fieldNode["Name"] = field.Name;
+
+#define SERIALIZE_SCRIPT_FIELD_VALUE(type) fieldNode["Value"] = scriptInstance->GetFieldValue<type>(field.Name);
+                    switch (field.Type)
+                    {
+                    case Mule::ScriptFieldType::Bool: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
+                    case Mule::ScriptFieldType::Int16: SERIALIZE_SCRIPT_FIELD_VALUE(int16_t); break;
+                    case Mule::ScriptFieldType::Int32: SERIALIZE_SCRIPT_FIELD_VALUE(int32_t); break;
+                    case Mule::ScriptFieldType::Int64: SERIALIZE_SCRIPT_FIELD_VALUE(int64_t); break;
+                    case Mule::ScriptFieldType::UInt16: SERIALIZE_SCRIPT_FIELD_VALUE(uint16_t); break;
+                    case Mule::ScriptFieldType::UInt32: SERIALIZE_SCRIPT_FIELD_VALUE(uint32_t); break;
+                    case Mule::ScriptFieldType::UInt64: SERIALIZE_SCRIPT_FIELD_VALUE(uint64_t); break;
+                    case Mule::ScriptFieldType::Float: SERIALIZE_SCRIPT_FIELD_VALUE(float); break;
+                    case Mule::ScriptFieldType::Double: SERIALIZE_SCRIPT_FIELD_VALUE(double); break;
+                        //case Mule::FieldType::Decimal: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
+                        //case Mule::FieldType::UIntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(unsigned long*); break;
+                        //case Mule::FieldType::IntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
+                    }
+
+
+                    node["Fields"].push_back(fieldNode);
+                }
+            }
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::ScriptComponent& script) {
+
+            if (!node["Class"]) return true;
+
+            std::string className = node["Class"].as<std::string>();
+            Mule::ScriptHandle handle = node["Handle"].as<Mule::ScriptHandle>();
+
+            bool success = gScriptContext->CreateInstance(className, gEntity.ID(), handle);
+            if (success)
+            {
+                const auto& scriptType = gScriptContext->GetType(className);
+                script.Handle = handle;
+                auto scriptInstance = gScriptContext->GetScriptInstance(handle);
+
+                for (auto fieldNode : node["Fields"])
+                {
+                    std::string fieldName = fieldNode["Name"].as<std::string>();
+                    Mule::ScriptFieldType fieldType = (Mule::ScriptFieldType)fieldNode["Type"].as<uint32_t>();
+
+                    if (!scriptType.DoesFieldExist(fieldName))
+                        continue;
+
+                    const auto& field = scriptType.GetField(fieldName);
+                    if (field.Type != fieldType)
+                        continue;
+
+
+#define DESERIALIZE_SCRIPT_FIELD(type) scriptInstance->SetFieldValue<type>(fieldName, fieldNode["Value"].as<type>());
+                    switch (fieldType)
+                    {
+                    case Mule::ScriptFieldType::Bool: DESERIALIZE_SCRIPT_FIELD(bool); break;
+                    case Mule::ScriptFieldType::Int16: DESERIALIZE_SCRIPT_FIELD(int16_t); break;
+                    case Mule::ScriptFieldType::Int32: DESERIALIZE_SCRIPT_FIELD(int32_t); break;
+                    case Mule::ScriptFieldType::Int64: DESERIALIZE_SCRIPT_FIELD(int64_t); break;
+                    case Mule::ScriptFieldType::UInt16: DESERIALIZE_SCRIPT_FIELD(uint16_t); break;
+                    case Mule::ScriptFieldType::UInt32: DESERIALIZE_SCRIPT_FIELD(uint32_t); break;
+                    case Mule::ScriptFieldType::UInt64: DESERIALIZE_SCRIPT_FIELD(uint64_t); break;
+                    case Mule::ScriptFieldType::Float: DESERIALIZE_SCRIPT_FIELD(float); break;
+                    case Mule::ScriptFieldType::Double: DESERIALIZE_SCRIPT_FIELD(double); break;
+                        //case Mule::FieldType::Decimal: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
+                        //case Mule::FieldType::UIntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(unsigned long*); break;
+                        //case Mule::FieldType::IntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
+                    }
+                }
+
+            }
+
+            return true;
+        }
+
+        static WeakRef<Mule::ScriptContext> gScriptContext;
+        static Mule::Entity gEntity;
+    };
+
 #pragma endregion
+
+
+#define SERIALIZE_COMPONENT_IF_EXISTS(name, x) if(e.HasComponent<x>()) node[name] = e.GetComponent<x>();
+#define DESERIALIZE_COMPONENT_IF_EXISTS(name, x) \
+    if(node[name]) { \
+        auto& component = e.AddComponent<x>(); \
+        component = node[name].as<x>(); \
+    } \
+
+    template<>
+    struct convert<Mule::Entity> {
+        static Node encode(const Mule::Entity& e) {
+            Node node;
+
+            node["Name"] = e.Name();
+            node["Guid"] = (size_t)e.Guid();
+
+            node["Transform"] = e.GetComponent<Mule::TransformComponent>();
+
+            SERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
+            SERIALIZE_COMPONENT_IF_EXISTS("Script", Mule::ScriptComponent);
+
+            YAML::Node childNode;
+            for (auto child : e.Children())
+            {
+                childNode.push_back(child);
+            }
+
+            node["Children"] = childNode;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::Entity& e) {
+            e = gScene->CreateEntity(node["Name"].as<std::string>(), Mule::Guid(node["Guid"].as<uint64_t>()));
+            auto& transformComponent = e.GetComponent<Mule::TransformComponent>();
+            transformComponent = node["Transform"].as<Mule::TransformComponent>();
+
+            DESERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
+            DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
+            convert<Mule::ScriptComponent>::gEntity = e;
+            DESERIALIZE_COMPONENT_IF_EXISTS("Script", Mule::ScriptComponent);
+
+            return true;
+        }
+
+        static Ref<Mule::Scene> gScene;
+    };
 }

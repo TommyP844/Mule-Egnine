@@ -21,7 +21,7 @@ void ContentBrowserPanel::OnAttach()
 {
 	mFolderTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
 	mFileTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
-	SetContentBrowserPath(mEditorContext->mAssetsPath);
+	SetContentBrowserPath(mEditorContext->GetAssetsPath());
 	mThumbnailManager = MakeRef<ThumbnailManager>(mEngineContext, mEditorContext);
 	mExcludeExtensions = {
 		".yml",
@@ -120,7 +120,7 @@ void ContentBrowserPanel::ContentAssetDirBrowser(float width)
 	if (ImGui::BeginChild("##Directories", { width, 0.f }, true))
 	{
 		float width = ImGui::GetContentRegionAvail().x;
-		for (auto dir : fs::directory_iterator(mEditorContext->mAssetsPath))
+		for (auto dir : fs::directory_iterator(mEditorContext->GetAssetsPath()))
 		{
 			if (!dir.is_directory())
 				continue;
@@ -144,7 +144,7 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 {
 	if (ImGui::BeginChild("##Files", { width, 0.f }, true))
 	{
-		ImGui::BeginDisabled(mContentBrowserPath == mEditorContext->mAssetsPath);
+		ImGui::BeginDisabled(mContentBrowserPath == mEditorContext->GetAssetsPath());
 		if (ImGui::Button(ICON_FA_ARROW_LEFT))
 		{
 			ClearSearchBuffer();
@@ -190,9 +190,9 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 		ImGui::Text("Filepath:");
 		ImGui::SameLine();
 
-		fs::path relativePath = fs::relative(mContentBrowserPath, mEditorContext->mAssetsPath);
+		fs::path relativePath = fs::relative(mContentBrowserPath, mEditorContext->GetAssetsPath());
 		relativePath = (relativePath == ".") ? "Assets" : "Assets" / relativePath;
-		fs::path curPath = mEditorContext->mAssetsPath.parent_path();
+		fs::path curPath = mEditorContext->GetAssetsPath().parent_path();
 		for (auto iter = relativePath.begin(); iter != relativePath.end(); iter++)
 		{
 			curPath /= *iter;
@@ -262,6 +262,11 @@ void ContentBrowserPanel::ContentFileBrowser(float width)
 						SetContentBrowserPath(mContentBrowserPath);
 						break;
 					}
+				}
+
+				if (!file.IsDirectory && doubleClicked)
+				{
+					OpenFile(file);
 				}
 
 				ImGuiExtension::DragDropFile ddf;
@@ -347,6 +352,23 @@ void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& f
 		asset->SetFilePath(newPath);
 		asset = mEngineContext->GetAsset<Mule::IAsset>(file.AssetHandle);
 		SPDLOG_INFO("Path rename: {}, {}", asset->Handle(), asset->FilePath().string());
+	}
+}
+
+void ContentBrowserPanel::OpenFile(const DisplayFile& file)
+{
+	switch (file.AssetType)
+	{
+	case Mule::AssetType::Script:
+	{
+		fs::path projectPath = mEditorContext->GetProjectPath();
+		std::string command = "\"\"C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/devenv.exe\"";
+		command += " \"" + projectPath.string() + "\"";
+		command += " /Edit \"" + file.FilePath.string() + "\"\"";
+
+		system(command.c_str());
+	}
+	break;
 	}
 }
 

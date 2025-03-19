@@ -4,6 +4,7 @@
 #include "ECS/Entity.h"
 
 #include "Graphics/Camera.h"
+#include "Scripting/ScriptContext.h"
 
 #include <string>
 
@@ -14,10 +15,19 @@
 namespace Mule
 {
 	// Only Used for checking if entity is a root component
-	struct RootComponent { bool root = true; };
+	struct RootComponent 
+	{
+		RootComponent() = default;
+		RootComponent(const RootComponent&) = default;
+
+		bool root = true; 
+	};
 
 	struct MetaComponent
 	{
+		MetaComponent() = default;
+		MetaComponent(const MetaComponent&) = default;
+
 		std::string Name;
 		Guid Guid;
 
@@ -27,9 +37,9 @@ namespace Mule
 
 	struct TransformComponent
 	{
-		bool InheritTranslation = true;
-		bool InheritRotation = true;
-		bool InheritScale = true;
+		TransformComponent() = default;
+		TransformComponent(const TransformComponent&) = default;
+
 		glm::vec3 Translation;
 		glm::vec3 Rotation;
 		glm::vec3 Scale = glm::vec3(1.f);
@@ -45,6 +55,9 @@ namespace Mule
 
 	struct CameraComponent
 	{
+		CameraComponent() = default;
+		CameraComponent(const CameraComponent&) = default;
+
 		bool Active = true;
 		Camera Camera;
 	};
@@ -52,7 +65,7 @@ namespace Mule
 	struct EnvironmentMapComponent
 	{
 		EnvironmentMapComponent() = default;
-		EnvironmentMapComponent(const EnvironmentMapComponent& other) = default;
+		EnvironmentMapComponent(const EnvironmentMapComponent&) = default;
 		bool Active = true;
 		float Radiance = 1.f;
 		AssetHandle EnvironmentMap = NullAssetHandle;
@@ -61,6 +74,9 @@ namespace Mule
 
 	struct PointLightComponent
 	{
+		PointLightComponent() = default;
+		PointLightComponent(const PointLightComponent&) = default;
+
 		bool Active = true;
 		float Radiance = 1.f;
 		glm::vec3 Color = glm::vec3(1.f);
@@ -68,6 +84,9 @@ namespace Mule
 
 	struct SpotLightComponent
 	{
+		SpotLightComponent() = default;
+		SpotLightComponent(const SpotLightComponent&) = default;
+
 		bool Active = true;
 		float Radiance = 1.f;
 		float Angle = 45.f;
@@ -76,6 +95,9 @@ namespace Mule
 
 	struct DirectionalLightComponent
 	{
+		DirectionalLightComponent() = default;
+		DirectionalLightComponent(const DirectionalLightComponent&) = default;
+
 		bool Active = true;
 		float Intensity = 1.f;
 		glm::vec3 Color = glm::vec3(1.f);
@@ -83,9 +105,34 @@ namespace Mule
 
 	struct MeshComponent
 	{
+		MeshComponent() = default;
+		MeshComponent(const MeshComponent&) = default;
+
 		bool Visible = true;
 		AssetHandle MeshHandle;
 		AssetHandle MaterialHandle;
 		bool CastsShadows = true;
 	};
+
+	struct ScriptComponent
+	{
+		ScriptComponent() = default;
+		ScriptComponent(const ScriptComponent&) = default;
+
+		ScriptHandle Handle;
+	};
+
+	// See MuleScriptEngine/Mule/Components/Component.cs for components ID's
+
+#define ROOT_COMPONENT_ID 1
+#define META_COMPONENT_ID 2
+#define TRANSFORM_COMPONENT_ID 3
+#define CAMERA_COMPONENT_ID 4
+#define ENVIRONMENT_COMPONENT_ID 5
+#define POINT_LIGHT_COMPONENT_ID 6
+#define SPOT_LIGHT_COMPONENT_ID 7
+#define DIRECTIONAL_LIGHT_COMPONENT_ID 8
+#define MESH_LIGHT_COMPONENT_ID 9
+#define SCRIPT_LIGHT_COMPONENT_ID 10
+
 }

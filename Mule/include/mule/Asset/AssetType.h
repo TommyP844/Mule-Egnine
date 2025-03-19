@@ -14,6 +14,8 @@ namespace Mule
 		Shader,
 		EnvironmentMap,
 
+		Script,
+
 		None
 	};
 
@@ -28,6 +30,7 @@ namespace Mule
 		case AssetType::Material: return "Material";
 		case AssetType::Shader: return "Shader";
 		case AssetType::EnvironmentMap: return "Environment Map";
+		case AssetType::Script: return "Script";
 		}
 
 		return "Unknown";

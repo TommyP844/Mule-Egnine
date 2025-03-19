@@ -49,6 +49,11 @@ workspace "Mule"
         "GLFW_EXPOSE_NATIVE_WIN32", --TODO add to windows filter
         "ASSIMP_BUILD_NO_EXPORT"
     }
+
+    -- Coral
+    postbuildcommands {
+		'{COPYFILE} "%{wks.location}Submodules/Coral/Coral.Managed/Coral.Managed.runtimeconfig.json" "%{wks.location}Submodules/Coral/Build/%{cfg.targetdir}"',
+	}
     
     -- Submodule
     group "Submodules"

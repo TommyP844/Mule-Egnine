@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MuleScriptEngine")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+45e3aef85461493607aa650c4eb1adcd0da24a35")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60e5c813e9c737fea71ece3f025d26bb7208a3a0")]
 [assembly: System.Reflection.AssemblyProductAttribute("MuleScriptEngine")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MuleScriptEngine")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

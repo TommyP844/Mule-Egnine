@@ -1,7 +1,9 @@
 #include "Asset/Loader/SceneLoader.h"
 
+#include "Scripting/ScriptContext.h"
 #include "ECS/Entity.h"
 #include "Asset/Loader/YamlFormatter.h"
+#include "Engine Context/EngineContext.h"
 
 // Submodules
 #include <spdlog/spdlog.h>
@@ -25,12 +27,21 @@ namespace Mule
 		return parent;
 	}
 
+	SceneLoader::SceneLoader(WeakRef<EngineContext> engineContext, WeakRef<ScriptContext> scriptContext)
+		:
+		mScriptContext(scriptContext),
+		mEngineContext(engineContext)
+	{
+		YAML::convert<Mule::ScriptComponent>::gScriptContext = mScriptContext;
+	}
+
 	Ref<Scene> SceneLoader::LoadText(const fs::path& filepath)
 	{
 		YAML::Node root = YAML::LoadFile(filepath.string());
 		
-		Ref<Scene> scene = MakeRef<Scene>();
+		Ref<Scene> scene = MakeRef<Scene>(mEngineContext);
 		scene->SetFilePath(filepath);
+		mEngineContext->SetScene(scene);
 
 		YAML::convert<Mule::Entity>::gScene = scene;
 
@@ -40,6 +51,7 @@ namespace Mule
 		}
 
 		scene->ClearModified();
+		mEngineContext->SetScene(nullptr);
 
 		return scene;
 	}

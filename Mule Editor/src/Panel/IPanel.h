@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EditorContext.h"
+#include "Context/EditorContext.h"
 #include <string>
 
 class IPanel

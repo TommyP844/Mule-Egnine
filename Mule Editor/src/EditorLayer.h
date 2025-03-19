@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mule.h"
-#include "EditorContext.h"
+#include "Context/EditorContext.h"
 
 // Panels
 #include "Panel/ComponentPanel.h"
@@ -54,5 +54,6 @@ private:
 	// Popups
 	bool mNewScenePopup = false;
 	bool mNewMaterialPopup = false;
+	bool mNewScriptPopup = false;
 
 };

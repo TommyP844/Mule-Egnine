@@ -1,6 +1,8 @@
 #include "Engine Context/EngineContext.h"
 #include "Engine Context/EngineAssets.h"
 
+#include "Scripting/ScriptContext.h"
+
 // Asset Loaders
 #include "Asset/Loader/ModelLoader.h"
 #include "Asset/Loader/SceneLoader.h"
@@ -8,6 +10,7 @@
 #include "Asset/Loader/EnvironmentMapLoader.h"
 #include "Asset/Loader/GraphicsShaderLoader.h"
 #include "Asset/Loader/MaterialLoader.h"
+#include "Asset/Loader/ScriptLoader.h"
 
 
 namespace Mule
@@ -22,9 +25,10 @@ namespace Mule
 		mImguiContext = MakeRef<ImGuiContext>(mGraphicsContext);
 		mAssetManager = MakeRef<AssetManager>();		
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
-		mScriptContext = MakeRef<ScriptContext>();
+		mScriptContext = MakeRef<ScriptContext>(this);
 
-		mAssetManager->RegisterLoader<SceneLoader>();
+		mAssetManager->RegisterLoader<SceneLoader>(this, mScriptContext);
+		mAssetManager->RegisterLoader<ScriptLoader>();
 		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);

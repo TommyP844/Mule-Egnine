@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WeakRef.h"
 #include "Ref.h"
 #include "Guid.h"
 #include "Asset/Asset.h"
@@ -12,21 +13,21 @@
 namespace Mule
 {
 	class Entity;
+	class EngineContext;
 
 	class Scene : public Asset<AssetType::Scene>
 	{
 	public:
-		Scene() : Asset() {}
+		Scene(WeakRef<EngineContext> context) : Asset(), mEngineContext(context) {}
 		~Scene() {}
 
-		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid());
+		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid(), uint32_t id = 0);
+
+		Ref<Scene> Copy();
 
 		void DestroyEntity(entt::entity id);
 
 		void IterateRootEntities(std::function<void(Entity)> func);
-
-		template<typename ...Components>
-		void IterateEntitiesWithComponents(std::function<void(Entity)> func);
 
 		template<typename ...Components>
 		auto Iterate();
@@ -66,6 +67,10 @@ namespace Mule
 
 		bool IsEntityValid(entt::entity id);
 
+		void SetViewportDimension(float width, float height) { mViewportWidth = width; mViewportHeight = height; }
+
+		// States
+		void OnPlayStart();
 		void OnUpdate(float dt);
 
 		void SetModified() { mModified = true; }
@@ -73,8 +78,14 @@ namespace Mule
 		bool IsModified() const { return mModified; }
 
 	private:
+		float mViewportWidth = 1.f;
+		float mViewportHeight = 1.f;
+		WeakRef<EngineContext> mEngineContext;
 		entt::registry mRegistry;
 		bool mModified;
+
+		template<typename T>
+		static void CopyComponent(Entity dst, Entity src);
 	};
 
 }
