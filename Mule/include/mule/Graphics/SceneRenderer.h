@@ -65,6 +65,8 @@ namespace Mule
 
 		RenderGraph::RenderGraph mGraph;
 
+		uint32_t QueryOrInsertTextureIndex(AssetHandle handle, uint32_t defaultIndex);
+
 		// Timing
 		std::vector<SceneRendererStats> mTiming;
 

@@ -43,6 +43,8 @@ namespace Mule
 		const ScriptType& GetType(const std::string& name);
 
 	private:
+		mutable std::mutex mMutex;
+
 		bool mInitSuccess;
 		WeakRef<EngineContext> mEngineContext;
 

@@ -1,4 +1,5 @@
-obj/
-bin/
+/obj
+/bin
 *.csproj
 *.csproj.user
+*.dll

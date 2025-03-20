@@ -62,6 +62,8 @@ namespace Mule
 
 	void ScriptContext::ReloadDLL()
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		SPDLOG_INFO("Reloading dll");
 
 		if (!fs::exists(mUserAssemblyPath))
@@ -207,6 +209,8 @@ namespace Mule
 
 	bool ScriptContext::CreateInstance(const std::string& name, uint32_t id, ScriptHandle handle)
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		auto iter = mTypes.find(name);
 		if (iter == mTypes.end())
 		{
@@ -231,6 +235,8 @@ namespace Mule
 		if (handle == NullScriptHandle)
 			return nullptr;
 
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		auto iter = mScriptInstances.find(handle);
 		if (iter == mScriptInstances.end())
 			return nullptr;
@@ -240,6 +246,8 @@ namespace Mule
 
 	const ScriptType& ScriptContext::GetType(const std::string& name)
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		auto iter = mTypes.find(name);
 		if (iter == mTypes.end())
 		{
@@ -250,6 +258,8 @@ namespace Mule
 
 	bool ScriptContext::DoesTypeExist(const std::string& className) const
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		auto iter = mTypes.find(className);
 		return iter != mTypes.end();
 	}
@@ -264,13 +274,11 @@ namespace Mule
 	}
 
 	void ScriptContext::UploadInternalCalls()
-	{
-	
+	{	
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "GetComponentPtr", &Scripting::GetComponentPtr);
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "AddComponentGetPtr", &Scripting::AddComponentGetPtr);
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "HasComponent", &Scripting::HasComponent);
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "RemoveComponent", &Scripting::RemoveComponent);
-
 
 		mEngineAssembly.UploadInternalCalls();
 	}

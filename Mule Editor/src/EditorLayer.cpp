@@ -141,42 +141,18 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
 					}));
 			}
-		}
-
-		for (const auto& f : futures)
-			f.wait();
-		futures.clear();
-
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
-		{
-			if (dir.is_directory()) continue;
-
-			std::string extension = dir.path().extension().string();
-			fs::path filePath = dir.path();
-
-			if (extension == ".mat")
+			else if (extension == ".mat")
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
 					mEngineContext->LoadAsset<Mule::Material>(filePath);
 					}));
 			}
-		}
-
-		for (const auto& f : futures)
-			f.wait();
-		futures.clear();
- 
+			else if (extension == ".scene")
+				mEngineContext->LoadAsset<Mule::Scene>(filePath);
+		} 
 		});
 
 	mAssetLoaderThread.wait();
-
-	// TODO: make this able to run async, currecnt issue is in YamlConvert.h where we set a scene context on load
-	for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
-	{
-		fs::path filepath = dir.path();
-		if(filepath.extension().string() == ".scene")
-			mEngineContext->LoadAsset<Mule::Scene>(filepath);
-	}
 }
 
 void EditorLayer::OnUpdate(float dt)

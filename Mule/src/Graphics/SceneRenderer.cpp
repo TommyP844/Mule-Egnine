@@ -268,7 +268,7 @@ namespace Mule
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 		uint32_t index = mTextureArray.Insert(texture->Handle(), texture);
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < mGraph.GetFrameCount(); i++)
 		{
 			mResourceUpdates[i].TextureUpdates.push_back({ texture, index });
 		}
@@ -293,13 +293,30 @@ namespace Mule
 		gpuMaterial.AOFactor = material->AOFactor;
 		gpuMaterial.Transparency = material->Transparent ? material->Transparency : 1.0;
 
-		gpuMaterial.AlbedoIndex = mTextureArray.QueryIndex(material->AlbedoMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AlbedoMap);
-		gpuMaterial.NormalIndex = mTextureArray.QueryIndex(material->NormalMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->NormalMap);
-		gpuMaterial.MetalnessIndex = mTextureArray.QueryIndex(material->MetalnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->MetalnessMap);
-		gpuMaterial.RoughnessIndex = mTextureArray.QueryIndex(material->RoughnessMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->RoughnessMap);
-		gpuMaterial.AOIndex = mTextureArray.QueryIndex(material->AOMap) == UINT32_MAX ? mWhiteImageIndex : mTextureArray.QueryIndex(material->AOMap);
-		gpuMaterial.EmissiveIndex = mTextureArray.QueryIndex(material->EmissiveMap) == UINT32_MAX ? mBlackImageIndex : mTextureArray.QueryIndex(material->EmissiveMap);
-		gpuMaterial.OpacityIndex = mTextureArray.QueryIndex(material->OpacityMap) == UINT32_MAX ? -1 : mTextureArray.QueryIndex(material->OpacityMap);
+		uint32_t albedoIndex = mTextureArray.QueryIndex(material->AlbedoMap);
+		if (albedoIndex == UINT32_MAX)
+		{
+			if (material->AlbedoMap != NullAssetHandle)
+			{
+				gpuMaterial.AlbedoIndex = mTextureArray.Insert(material->AlbedoMap, nullptr);
+			}
+			else
+			{
+				gpuMaterial.AlbedoIndex = mWhiteImageIndex;
+			}
+		}
+		else
+		{
+			gpuMaterial.AlbedoIndex = albedoIndex;
+		}
+
+		gpuMaterial.AlbedoIndex = QueryOrInsertTextureIndex(material->AlbedoMap, mWhiteImageIndex);
+		gpuMaterial.NormalIndex = QueryOrInsertTextureIndex(material->NormalMap, UINT32_MAX);
+		gpuMaterial.MetalnessIndex = QueryOrInsertTextureIndex(material->MetalnessMap, mWhiteImageIndex);
+		gpuMaterial.RoughnessIndex = QueryOrInsertTextureIndex(material->RoughnessMap, mWhiteImageIndex);
+		gpuMaterial.AOIndex = QueryOrInsertTextureIndex(material->AOMap, mWhiteImageIndex);
+		gpuMaterial.EmissiveIndex = QueryOrInsertTextureIndex(material->EmissiveMap, mBlackImageIndex);
+		gpuMaterial.OpacityIndex = QueryOrInsertTextureIndex(material->OpacityMap, UINT32_MAX);
 
 		std::lock_guard<std::mutex> lock(mMutex);
 		uint32_t index = mMaterialArray.Insert(material->Handle(), gpuMaterial);
@@ -488,6 +505,24 @@ namespace Mule
 			mResourceUpdates[i].ResizeWidth = width;
 			mResourceUpdates[i].ResizeHeight = height;
 		}
+	}
+
+	uint32_t SceneRenderer::QueryOrInsertTextureIndex(AssetHandle handle, uint32_t defaultIndex)
+	{
+		uint32_t index = mTextureArray.QueryIndex(handle);
+		if (index == UINT32_MAX)
+		{
+			if (handle != NullAssetHandle)
+			{
+				index = mTextureArray.Insert(handle, nullptr);
+			}
+			else
+			{
+				index = defaultIndex;
+			}
+		}
+
+		return index;
 	}
 
 	void SceneRenderer::RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx)

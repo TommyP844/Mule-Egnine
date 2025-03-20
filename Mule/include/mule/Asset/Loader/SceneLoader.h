@@ -2,6 +2,11 @@
 #include "AssetLoader.h"
 
 #include "ECS/Scene.h"
+#include "ECS/Entity.h"
+#include "ECS/Components.h"
+
+#include "yaml-cpp/node/node.h"
+
 
 namespace Mule
 {
@@ -24,5 +29,10 @@ namespace Mule
 	private:
 		WeakRef<ScriptContext> mScriptContext;
 		WeakRef<EngineContext> mEngineContext;
+
+		YAML::Node SerializeEntityYAML(Entity e);
+		Entity DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene);
+
+		ScriptComponent DeserializeScriptComponentYAML(const YAML::Node& node, Entity e);
 	};
 }
