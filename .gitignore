@@ -1,2 +1,11 @@
 .vs
 *.sln
+/MuleScriptEngine/bin/Debug/MuleScriptEngine.dll
+/MuleScriptEngine/bin/Debug/MuleScriptEngine.pdb
+/MuleScriptEngine/obj/Debug/ref/MuleScriptEngine.dll
+/MuleScriptEngine/obj/Debug/refint/MuleScriptEngine.dll
+/MuleScriptEngine/obj/Debug/MuleScriptEngine.AssemblyInfo.cs
+/MuleScriptEngine/obj/Debug/MuleScriptEngine.AssemblyInfoInputs.cache
+/MuleScriptEngine/obj/Debug/MuleScriptEngine.dll
+/MuleScriptEngine/obj/Debug/MuleScriptEngine.pdb
+/MuleScriptEngine/obj/Debug/MuleScriptEngine.sourcelink.json
