@@ -38,6 +38,7 @@
     <Compile Include="Mule\Components\Component.cs" />
     <Compile Include="Mule\Entity.cs" />
     <Compile Include="Mule\Components\TransformComponent.cs" />
+    <Compile Include="Mule\Input.cs" />
     <Compile Include="Mule\InternalCalls.cs" />
   </ItemGroup>
   <PropertyGroup>

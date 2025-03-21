@@ -56,6 +56,27 @@ namespace Mule
 		mEvents.push_back(event);
 	}
 
+	const glm::vec2& Window::GetMousePos()
+	{
+		return mMousePos;
+	}
+
+	void Window::SetMousePos(const glm::vec2& pos)
+	{
+		glfwSetCursorPos(mWindow, pos.x, pos.y);
+		mMousePos = pos;
+	}
+
+	bool Window::IsMouseButtonDown(MouseButton button)
+	{
+		return mMouseButtonStates[(uint32_t)button];
+	}
+
+	bool Window::IsKeyDown(KeyCode key)
+	{
+		return mKeyStates[(uint32_t)key];
+	}
+
 	void Window::SetupEventCallbacks()
 	{
 		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height) {

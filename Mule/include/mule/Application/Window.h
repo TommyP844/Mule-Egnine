@@ -1,11 +1,15 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-#include <string>
-#include <functional>
-
 #include "Ref.h"
 #include "Events/Event.h"
+#include "KeyCode.h"
+#include "MouseButton.h"
+
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
+#include <string>
+#include <functional>
 
 namespace Mule
 {
@@ -27,11 +31,20 @@ namespace Mule
 		const std::vector<Ref<Event>> PollEvents();
 		void PushEvent(Ref<Event> event);
 
+		const glm::vec2& GetMousePos();
+		void SetMousePos(const glm::vec2& pos);
+		bool IsMouseButtonDown(MouseButton button);
+
+		bool IsKeyDown(KeyCode key);
 
 	private:
 		GLFWwindow* mWindow;
 		std::string mTitle;
 		int mWidth, mHeight;
+
+		glm::vec2 mMousePos;
+		bool mKeyStates[512];
+		bool mMouseButtonStates[3];
 
 		std::vector<Ref<Event>> mEvents;
 

@@ -104,4 +104,31 @@ namespace Mule::Scripting
 		case SCRIPT_LIGHT_COMPONENT_ID: e.RemoveComponent<SpotLightComponent>(); break;
 		}
 	}
+
+	void SetMousePos(glm::vec2 pos)
+	{
+		auto window = gEngineContext->GetWindow();
+		window->SetMousePos(pos);
+	}
+
+	glm::vec2 GetMousePos()
+	{
+		auto window = gEngineContext->GetWindow();
+
+		return window->GetMousePos();
+	}
+
+	bool IsMouseButtonPressed(uint32_t mouseButton)
+	{
+		auto window = gEngineContext->GetWindow();
+
+		return window->IsMouseButtonDown((MouseButton)mouseButton);
+	}
+
+	bool IsKeyDown(uint32_t key)
+	{
+		auto window = gEngineContext->GetWindow();
+
+		return window->IsKeyDown((KeyCode)key);
+	}
 }

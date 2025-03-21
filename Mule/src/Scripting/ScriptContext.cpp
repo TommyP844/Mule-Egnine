@@ -279,6 +279,12 @@ namespace Mule
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "AddComponentGetPtr", &Scripting::AddComponentGetPtr);
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "HasComponent", &Scripting::HasComponent);
 		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "RemoveComponent", &Scripting::RemoveComponent);
+		
+		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "SetMousePos", &Scripting::SetMousePos);
+		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "GetMousePos", &Scripting::GetMousePos);
+		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "IsMouseButtonPressed", &Scripting::IsMouseButtonPressed);
+		mEngineAssembly.AddInternalCall("Mule.InternalCalls", "IsKeyDown", &Scripting::IsKeyDown);
+
 
 		mEngineAssembly.UploadInternalCalls();
 	}
