@@ -102,6 +102,9 @@ namespace Mule
 		SERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
 		SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
 		SERIALIZE_COMPONENT_IF_EXISTS("Script", Mule::ScriptComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("RigidBody3D", Mule::RigidBody3DComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", Mule::SphereColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", Mule::BoxColliderComponent);
 
 		YAML::Node childNode;
 		for (auto child : e.Children())
@@ -125,11 +128,13 @@ namespace Mule
 		DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
 		DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
 		DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("RigidBody3D", Mule::RigidBody3DComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", Mule::SphereColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", Mule::BoxColliderComponent);
 
 		if (node["Script"])
 		{
-			auto& script = e.AddComponent<ScriptComponent>();
-			script = DeserializeScriptComponentYAML(node, e);
+			DeserializeScriptComponentYAML(node["Script"], e);
 		}
 
 		for (auto childNode : node["Children"])
@@ -141,12 +146,9 @@ namespace Mule
 		return e;
 	}
 
-	ScriptComponent SceneLoader::DeserializeScriptComponentYAML(const YAML::Node& node, Entity e)
+	void SceneLoader::DeserializeScriptComponentYAML(const YAML::Node& node, Entity e)
 	{
-		ScriptComponent script;
-		script.Handle = NullScriptHandle;
-
-		if (!node["Class"]) return script;
+		if (!node["Class"]) return;
 
 		std::string className = node["Class"].as<std::string>();
 		Mule::ScriptHandle handle = node["Handle"].as<Mule::ScriptHandle>();
@@ -154,8 +156,10 @@ namespace Mule
 		bool success = mScriptContext->CreateInstance(className, e.ID(), handle);
 		if (success)
 		{
+			auto& scriptComponent = e.AddComponent<ScriptComponent>();
+			scriptComponent.Handle = handle;
+
 			const auto& scriptType = mScriptContext->GetType(className);
-			script.Handle = handle;
 			auto scriptInstance = mScriptContext->GetScriptInstance(handle);
 
 			for (auto fieldNode : node["Fields"])

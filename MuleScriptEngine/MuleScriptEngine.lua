@@ -13,5 +13,5 @@ project "MuleScriptEngine"
 
 
     files {
-        "Source/**.cs"
+        "Mule/**.cs"
     }

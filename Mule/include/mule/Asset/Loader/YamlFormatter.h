@@ -360,5 +360,69 @@ namespace YAML {
         static WeakRef<Mule::ScriptContext> gScriptContext;
     };
 
+    template<>
+    struct convert<Mule::RigidBody3DComponent> {
+        static Node encode(const Mule::RigidBody3DComponent& rigidBody) {
+            Node node;
+
+            node["Mass"] = rigidBody.Mass;
+            node["BodyType"] = (uint32_t)rigidBody.BodyType;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::RigidBody3DComponent& rigidBody) {
+
+            rigidBody.Mass = node["Mass"].as<float>();
+            rigidBody.BodyType = (Mule::BodyType)node["BodyType"].as<uint32_t>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::SphereColliderComponent> {
+        static Node encode(const Mule::SphereColliderComponent& collider) {
+            Node node;
+
+            node["Trigger"] = collider.Trigger;
+            node["Offset"] = collider.Offset;
+            node["Radius"] = collider.Radius;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::SphereColliderComponent& collider) {
+
+            collider.Trigger = node["Trigger"].as<bool>();
+            collider.Offset = node["Offset"].as<glm::vec3>();
+            collider.Radius = node["Radius"].as<float>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::BoxColliderComponent> {
+        static Node encode(const Mule::BoxColliderComponent& collider) {
+            Node node;
+
+            node["Trigger"] = collider.Trigger;
+            node["Offset"] = collider.Offset;
+            node["Extent"] = collider.Extent;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::BoxColliderComponent& collider) {
+
+            collider.Trigger = node["Trigger"].as<bool>();
+            collider.Offset = node["Offset"].as<glm::vec3>();
+            collider.Extent = node["Extent"].as<glm::vec3>();
+
+            return true;
+        }
+    };
+
 #pragma endregion
 }

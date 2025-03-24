@@ -5,6 +5,7 @@
 
 #include "Graphics/Camera.h"
 #include "Scripting/ScriptContext.h"
+#include "Physics/PhysicsContext3D.h" // For PhysicsObjectHandle
 
 #include <string>
 
@@ -50,6 +51,11 @@ namespace Mule
 			glm::mat4 rotation = glm::toMat4(glm::quat(glm::radians(Rotation)));
 			glm::mat4 scale = glm::scale(Scale);
 			return translation * rotation * scale;
+		}
+
+		glm::quat GetOrientation()
+		{
+			return glm::quat(glm::radians(Rotation));
 		}
 	};
 
@@ -121,6 +127,35 @@ namespace Mule
 
 		ScriptHandle Handle;
 	};
+
+#pragma region Physics
+
+	struct RigidBody3DComponent
+	{
+		RigidBody3DComponent() = default;
+		RigidBody3DComponent(const RigidBody3DComponent&) = default;
+		PhysicsObjectHandle Handle;
+		float Mass = 1.f;
+		BodyType BodyType = BodyType::Dynamic;
+	};
+
+	struct IBaseCollider
+	{
+		glm::vec3 Offset;
+		bool Trigger;
+	};
+
+	struct SphereColliderComponent : IBaseCollider
+	{
+		float Radius;
+	};
+
+	struct BoxColliderComponent : IBaseCollider
+	{
+		glm::vec3 Extent;
+	};
+
+#pragma endregion
 
 	// See MuleScriptEngine/Mule/Components/Component.cs for components ID's
 

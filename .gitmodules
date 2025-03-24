@@ -47,3 +47,6 @@
 [submodule "Submodules/Coral"]
 	path = Submodules/Coral
 	url = https://github.com/StudioCherno/Coral.git
+[submodule "Submodules/JoltPhysics"]
+	path = Submodules/JoltPhysics
+	url = https://github.com/jrouwe/JoltPhysics.git

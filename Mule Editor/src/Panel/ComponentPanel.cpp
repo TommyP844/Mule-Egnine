@@ -53,19 +53,28 @@ void ComponentPanel::OnUIRender(float dt)
 		
 		ImGui::Separator();
 
+#define ADD_COMPONENT(name, type) if(ImGui::MenuItem(name, "", nullptr, !e.HasComponent<type>())) e.AddComponent<type>();
+
 		if (ImGui::BeginMenu("Components"))
 		{
-			if (ImGui::MenuItem("Camera", "", nullptr, !e.HasComponent<Mule::CameraComponent>())) e.AddComponent<Mule::CameraComponent>();
-			if (ImGui::MenuItem("Environment Map", "", nullptr, !e.HasComponent<Mule::EnvironmentMapComponent>())) e.AddComponent<Mule::EnvironmentMapComponent>();
-			if (ImGui::MenuItem("Mesh", "", nullptr, !e.HasComponent<Mule::MeshComponent>())) e.AddComponent<Mule::MeshComponent>();
+			ADD_COMPONENT("Camera", Mule::CameraComponent);
+			ADD_COMPONENT("Environment", Mule::EnvironmentMapComponent);
+			ADD_COMPONENT("Mesh", Mule::MeshComponent);
 			if (ImGui::BeginMenu("Light"))
 			{
-				if (ImGui::MenuItem("Directional Light", "", nullptr, !e.HasComponent<Mule::DirectionalLightComponent>())) e.AddComponent<Mule::DirectionalLightComponent>();
-				if (ImGui::MenuItem("Point Light", "", nullptr, !e.HasComponent<Mule::PointLightComponent>())) e.AddComponent<Mule::PointLightComponent>();
-				if (ImGui::MenuItem("Spot Light", "", nullptr, !e.HasComponent<Mule::SpotLightComponent>())) e.AddComponent<Mule::SpotLightComponent>();
+				ADD_COMPONENT("Directional Light", Mule::DirectionalLightComponent);
+				ADD_COMPONENT("Point Light", Mule::PointLightComponent);
+				ADD_COMPONENT("Spot Light", Mule::SpotLightComponent);
 				ImGui::EndMenu();
 			}
-			if (ImGui::MenuItem("Script", "", nullptr, !e.HasComponent<Mule::ScriptComponent>())) e.AddComponent<Mule::ScriptComponent>();
+			if (ImGui::BeginMenu("Physics 3D"))
+			{
+				ADD_COMPONENT("Rigid Body 3D", Mule::RigidBody3DComponent);
+				ADD_COMPONENT("Box Collider", Mule::BoxColliderComponent);
+				ADD_COMPONENT("Sphere Collider", Mule::SphereColliderComponent);
+				ImGui::EndMenu();
+			}
+			ADD_COMPONENT("Script", Mule::ScriptComponent);
 
 			ImGui::EndMenu();
 		}
@@ -204,6 +213,61 @@ void ComponentPanel::OnUIRender(float dt)
 
 			DisplayRow("Color");
 			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+			});
+
+		DisplayComponent<Mule::RigidBody3DComponent>("Rigid Body 3D", e, [&](Mule::RigidBody3DComponent& rigidBody3d) {
+
+			DisplayRow("Mass");
+			ImGui::DragFloat("##Mass", &rigidBody3d.Mass, 0.1f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			const char* bodyTypes[] = {
+				"Dynamic",
+				"Static",
+				"Kinematic"
+			};
+
+			const char* preview = bodyTypes[rigidBody3d.BodyType];
+			DisplayRow("Body Type");
+			if (ImGui::BeginCombo("##BodyType", preview))
+			{
+				for (uint32_t i = 0; i < IM_ARRAYSIZE(bodyTypes); i++)
+				{
+					bool selected = rigidBody3d.BodyType == i;
+					if (ImGui::Selectable(bodyTypes[i], selected))
+					{
+						rigidBody3d.BodyType = (Mule::BodyType)i;
+						preview = bodyTypes[i];
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			});
+
+		DisplayComponent<Mule::BoxColliderComponent>("Box Collider", e, [&](Mule::BoxColliderComponent& box) {
+
+			DisplayRow("Extent");
+			ImGui::InputFloat3("##Extent", &box.Extent[0]);
+
+			DisplayRow("Trigger");
+			ImGui::Checkbox("##Trigger", &box.Trigger);
+
+			DisplayRow("Offset");
+			ImGui::InputFloat3("##Offset", &box.Offset[0]);
+
+			});
+
+		DisplayComponent<Mule::SphereColliderComponent>("Sphere Collider", e, [&](Mule::SphereColliderComponent& sphere) {
+			
+			DisplayRow("Radius");
+			ImGui::DragFloat("##Radius", &sphere.Radius, 0.1f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Trigger");
+			ImGui::Checkbox("##Trigger", &sphere.Trigger);
+
+			DisplayRow("Offset");
+			ImGui::InputFloat3("##Offset", &sphere.Offset[0]);
+
 			});
 
 		DisplayComponent<Mule::ScriptComponent>(ICON_FA_PEN" Script", e, [&](Mule::ScriptComponent& script) {
