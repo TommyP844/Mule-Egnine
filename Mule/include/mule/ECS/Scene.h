@@ -5,6 +5,8 @@
 #include "Guid.h"
 #include "Asset/Asset.h"
 
+#include "Physics/PhysicsContext3D.h"
+
 #include <entt/entt.hpp>
 
 #include <string>
@@ -71,6 +73,7 @@ namespace Mule
 
 		// States
 		void OnPlayStart();
+		void OnPlayStop();
 		void OnUpdate(float dt);
 
 		void SetModified() { mModified = true; }
@@ -81,6 +84,7 @@ namespace Mule
 		float mViewportWidth = 1.f;
 		float mViewportHeight = 1.f;
 		WeakRef<EngineContext> mEngineContext;
+		PhysicsContext3D mPhysicsContext3D;
 		entt::registry mRegistry;
 		bool mModified;
 

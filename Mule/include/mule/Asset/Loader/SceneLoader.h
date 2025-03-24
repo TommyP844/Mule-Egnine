@@ -33,6 +33,6 @@ namespace Mule
 		YAML::Node SerializeEntityYAML(Entity e);
 		Entity DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene);
 
-		ScriptComponent DeserializeScriptComponentYAML(const YAML::Node& node, Entity e);
+		void DeserializeScriptComponentYAML(const YAML::Node& node, Entity e);
 	};
 }

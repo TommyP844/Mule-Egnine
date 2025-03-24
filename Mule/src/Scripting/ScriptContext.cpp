@@ -62,7 +62,7 @@ namespace Mule
 
 	void ScriptContext::ReloadDLL()
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
+		// std::lock_guard<std::mutex> lock(mMutex);
 
 		SPDLOG_INFO("Reloading dll");
 

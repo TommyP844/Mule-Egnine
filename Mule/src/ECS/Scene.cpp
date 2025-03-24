@@ -1,8 +1,11 @@
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include "ECS/Components.h"
-#include <entt/entt.hpp>
 #include "Engine Context/EngineContext.h"
+#include "Physics/Shape3D/BoxShape.h"
+#include "Physics/Shape3D/SphereShape.h"
+
+#include <entt/entt.hpp>
 
 #include <fstream>
 
@@ -64,7 +67,10 @@ namespace Mule
 			CopyComponent<SpotLightComponent>(entity, oldEntity);
 			CopyComponent<DirectionalLightComponent>(entity, oldEntity);
 			CopyComponent<MeshComponent>(entity, oldEntity);
-			CopyComponent<ScriptComponent>(entity, oldEntity);			
+			CopyComponent<ScriptComponent>(entity, oldEntity);		
+			CopyComponent<RigidBody3DComponent>(entity, oldEntity);		
+			CopyComponent<BoxColliderComponent>(entity, oldEntity);		
+			CopyComponent<SphereColliderComponent>(entity, oldEntity);		
 		}
 
 		return scene;
@@ -93,6 +99,43 @@ namespace Mule
 
 	void Scene::OnPlayStart()
 	{
+		// Physics
+		mPhysicsContext3D.Init();
+		
+		for (auto entity : mRegistry.view<RigidBody3DComponent>())
+		{
+			Entity e((uint32_t)entity, this);
+
+			auto& transformComponent = GetComponent<TransformComponent>(entity);
+			auto& rigidbodyComponent = GetComponent<RigidBody3DComponent>(entity);
+
+			RigidBody3DInfo info;
+			info.Position = transformComponent.Translation;
+			info.Orientation = transformComponent.GetOrientation();
+			info.Type = rigidbodyComponent.BodyType;
+			info.CollisionLayers = UINT16_MAX;
+			info.Mass = rigidbodyComponent.Mass;
+			info.Shape = nullptr;
+
+			if (HasComponent<SphereColliderComponent>(entity))
+			{
+				auto& collider = GetComponent<SphereColliderComponent>(entity);
+
+				info.Shape = MakeRef<SphereShape>(collider.Radius, collider.Offset, collider.Trigger);
+			}
+			else if (HasComponent<BoxColliderComponent>(entity))
+			{
+				auto& collider = GetComponent<BoxColliderComponent>(entity);
+
+				info.Shape = MakeRef<BoxShape>(collider.Extent, collider.Offset, collider.Trigger);
+			}
+
+			if (!info.Shape)
+				continue;
+
+			rigidbodyComponent.Handle = mPhysicsContext3D.CreateRigidBody3D(info);	
+		}
+
 		auto scriptContext = mEngineContext->GetScriptContext();
 		for (auto entity : mRegistry.view<ScriptComponent>())
 		{
@@ -110,9 +153,27 @@ namespace Mule
 		}
 	}
 
+	void Scene::OnPlayStop()
+	{
+		mPhysicsContext3D.Shutdown();
+	}
+
 	// TODO: get viewport width / height
 	void Scene::OnUpdate(float dt)
 	{
+		mPhysicsContext3D.Step(dt);
+
+		for (auto entity : mRegistry.view<RigidBody3DComponent>())
+		{
+			auto& transform = GetComponent<TransformComponent>(entity);
+			auto& rigidBodyComponent = GetComponent<RigidBody3DComponent>(entity);
+
+			auto rigidBody = mPhysicsContext3D.GetRigidBody(rigidBodyComponent.Handle);
+
+			transform.Translation = rigidBody->GetPosition();
+			transform.Rotation = rigidBody->GetRotation();
+		}
+
 		for (auto entity : mRegistry.view<CameraComponent>())
 		{
 			Entity e((uint32_t)entity, this);

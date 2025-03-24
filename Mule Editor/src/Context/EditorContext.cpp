@@ -30,6 +30,7 @@ void EditorContext::SetSimulationState(SimulationState state)
 		// Noting to do yet
 		break;
 	case SimulationState::Editing:
+		mSimulationScene->OnPlayStop();
 		mSelectedEntity = Mule::Entity();
 		auto scene = mEngineContext->GetAsset<Mule::Scene>(mSimulationScene->Handle());
 		mEngineContext->SetScene(scene);
