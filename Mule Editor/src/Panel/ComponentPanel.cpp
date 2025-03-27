@@ -36,6 +36,7 @@ void ComponentPanel::OnUIRender(float dt)
 			{
 				e.GetComponent<Mule::MetaComponent>().Name = entityName;
 			}
+			DisplayRow("ID");
 			ImGui::Separator();
 
 			DisplayRow("Translation");
@@ -89,27 +90,27 @@ void ComponentPanel::OnUIRender(float dt)
 			entityModified |= ImGui::Checkbox("##CameraPrimary", &camera.Active);
 
 			DisplayRow("Field Of View");
-			float fov = camera.Camera.GetFOVDegrees();
+			float fov = camera.Camera->GetFOVDegrees();
 			if (ImGui::DragFloat("##CameraFOV", &fov, 0.01f, 0.01f, 359.f, "%.2f"))
 			{
 				entityModified = true;
-				camera.Camera.SetFOVDegrees(fov);
+				camera.Camera->SetFOVDegrees(fov);
 			}
 
 			DisplayRow("Near Plane");
-			float nearPlane = camera.Camera.GetNearPlane();
-			if (ImGui::DragFloat("##CameraNearPlane", &nearPlane, 0.05f, 0.01f, camera.Camera.GetFarPlane(), "%.2f"))
+			float nearPlane = camera.Camera->GetNearPlane();
+			if (ImGui::DragFloat("##CameraNearPlane", &nearPlane, 0.05f, 0.01f, camera.Camera->GetFarPlane(), "%.2f"))
 			{
 				entityModified = true;
-				camera.Camera.SetNearPlane(nearPlane);
+				camera.Camera->SetNearPlane(nearPlane);
 			}
 
 			DisplayRow("Far Plane");
-			float farPlane = camera.Camera.GetFarPlane();
-			if (ImGui::DragFloat("##CameraFarPlane", &farPlane, 0.05f, camera.Camera.GetNearPlane(), 0.f, "%.2f"))
+			float farPlane = camera.Camera->GetFarPlane();
+			if (ImGui::DragFloat("##CameraFarPlane", &farPlane, 0.05f, camera.Camera->GetNearPlane(), 0.f, "%.2f"))
 			{
 				entityModified = true;
-				camera.Camera.SetFarPlane(farPlane);
+				camera.Camera->SetFarPlane(farPlane);
 			}
 		});
 
@@ -296,7 +297,7 @@ void ComponentPanel::OnUIRender(float dt)
 
 					fs::path p = scriptClass->Name();
 					std::string scriptClassName = p.filename().replace_extension().string();
-					script.Handle = scriptContext->CreateInstance(scriptClassName, e.ID());
+					script.Handle = scriptContext->CreateInstance(scriptClassName, e.Guid());
 				}
 			}
 
@@ -326,61 +327,55 @@ void ComponentPanel::OnUIRender(float dt)
 						break;
 					case Mule::ScriptFieldType::UInt16:
 					{
-						int value = scriptInstance->GetFieldValue<uint16_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<uint16_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U16, &value))
 						{
-							value = glm::clamp(static_cast<uint16_t>(value), 0ui16, UINT16_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<uint16_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;
 					case Mule::ScriptFieldType::UInt32:
 					{
-						int value = scriptInstance->GetFieldValue<uint32_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<uint32_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U32, &value))
 						{
-							value = glm::clamp(static_cast<uint32_t>(value), 0ui32, UINT32_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<uint32_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;
 					case Mule::ScriptFieldType::UInt64:
 					{
-						int value = scriptInstance->GetFieldValue<uint64_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<uint64_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U64, &value))
 						{
-							value = glm::clamp(static_cast<uint64_t>(value), 0ui64, UINT64_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<uint64_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;
 					case Mule::ScriptFieldType::Int16:
 					{
-						int value = scriptInstance->GetFieldValue<int16_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<int16_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S16, &value))
 						{
-							value = glm::clamp<int16_t>(static_cast<int16_t>(value), INT16_MIN, INT16_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<int16_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;
 					case Mule::ScriptFieldType::Int32:
 					{
-						int value = scriptInstance->GetFieldValue<int32_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<int32_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S32, &value))
 						{
-							value = glm::clamp(static_cast<int32_t>(value), INT32_MIN, INT32_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<int32_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;
 					case Mule::ScriptFieldType::Int64:
 					{
-						int value = scriptInstance->GetFieldValue<int64_t>(field.Name);
-						if (ImGui::InputInt(fieldName.c_str(), &value))
+						auto value = scriptInstance->GetFieldValue<int64_t>(field.Name);
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S64, &value))
 						{
-							value = glm::clamp(static_cast<int64_t>(value), INT64_MIN, INT64_MAX);
-							scriptInstance->SetFieldValue(field.Name, static_cast<int64_t>(value));
+							scriptInstance->SetFieldValue(field.Name, value);
 						}
 					}
 					break;

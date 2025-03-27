@@ -1,27 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Mule.Components
 {
-    public class Component
+    public class Component<T>
     {
-        protected IntPtr _nativePtr;
+        private IntPtr _NativePtr;
+        private T _StructRaw;
 
-        protected Component(nint nativePtr)
+        internal Component(IntPtr nativePtr)
         {
-            _nativePtr = nativePtr;
+            _NativePtr = nativePtr;
+            _StructRaw = Marshal.PtrToStructure<T>(nativePtr);
         }
 
-        // See ECS/Components for Component ID's
-        static internal uint GetComponentID<T>()
+        internal Component()
         {
-            if (typeof(T) == typeof(TransformComponent))
-                return 3;
-
-            return 0;
+            _NativePtr = IntPtr.Zero;
+            _StructRaw = (T)Activator.CreateInstance(typeof(T));
         }
-    }
+
+        internal ref T GetStructInt()
+        {
+            if (IntPtr.Zero != _NativePtr)
+                _StructRaw = Marshal.PtrToStructure<T>(_NativePtr);
+
+            return ref _StructRaw;
+        }
+
+        internal void SaveStructInt()
+        {
+            if (IntPtr.Zero != _NativePtr)
+                Marshal.StructureToPtr(_StructRaw, _NativePtr, false);
+        }
+
+    };
+
+
 }

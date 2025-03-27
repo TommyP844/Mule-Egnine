@@ -31,9 +31,10 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 				ImGui::EndPopup();
 			}
 			
-			scene->IterateRootEntities([&](Mule::Entity e) {
-				RecurseEntities(e);
-				});
+			for(auto entity : scene->Iterate<Mule::RootComponent>())
+			{
+				RecurseEntities(entity);
+			}
 
 			if (mEntityToOrphan)
 			{
@@ -66,16 +67,16 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 	if (mEditorContext->GetSelectedEntity() == e)
 		flags |= ImGuiTreeNodeFlags_Selected;
 
-	unsigned int id = e.ID();
+	Mule::Guid guid = e.Guid();
 
-	bool open = ImGui::TreeNodeEx((e.Name() + "##" + std::to_string(id)).c_str(), flags);
-	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_ENTITY, id, [e]() {
+	bool open = ImGui::TreeNodeEx((e.Name() + "##" + std::to_string(guid)).c_str(), flags);
+	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_ENTITY, guid, [e]() {
 		ImGui::Text(e.Name().c_str());
 		});
-	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_ENTITY, id))
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_ENTITY, guid))
 	{
 		auto scene = mEngineContext->GetScene();
-		auto entity = Mule::Entity(id, scene);
+		auto entity = scene->GetEntityByGUID(guid);
 		entity.Orphan();
 		e.AddChild(entity);
 	}
@@ -107,7 +108,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 
 void SceneHierarchyPanel::EntityContextMenu(Mule::Entity e)
 {
-	std::string popupContextId = e.Name() + "_PopupContext_" + std::to_string((int)e.ID());
+	std::string popupContextId = e.Name() + "_PopupContext_" + std::to_string(e.Guid());
 	if (ImGui::BeginPopupContextItem(popupContextId.c_str()))
 	{
 		ImGui::Text(e.Name().c_str());

@@ -70,7 +70,7 @@ void EditorLayer::OnEvent(Ref<Mule::Event> event)
 {
 	switch (event->Type)
 	{
-	case Mule::EventType::DropFile:
+	case Mule::EventType::DropFileEvent:
 	{
 		Ref<Mule::DropFileEvent> dropFileEvent = event;
 		SPDLOG_INFO("Drop file event recieved: ");

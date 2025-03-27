@@ -1,5 +1,5 @@
 
-project "MuleScriptEngine"
+project "Mule"
     
     language "C#"
     dotnetframework "net8.0"

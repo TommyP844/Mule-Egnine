@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mule
 {
@@ -13,19 +7,37 @@ namespace Mule
     {
         #region Entity
 
-        internal static unsafe delegate*<uint, uint, IntPtr> GetComponentPtr;
-        internal static unsafe delegate*<uint, uint, IntPtr> AddComponentGetPtr;
-        internal static unsafe delegate*<uint, uint, bool> HasComponent;
-        internal static unsafe delegate*<uint, uint, void> RemoveComponent;
+        internal static unsafe delegate*<ulong, uint, IntPtr> GetComponentPtr;
+        internal static unsafe delegate*<ulong, uint, IntPtr> AddComponentGetPtr;
+        internal static unsafe delegate*<ulong, uint, bool> HasComponent;
+        internal static unsafe delegate*<ulong, uint, void> RemoveComponent;
 
         #endregion
 
         #region Input
 
         internal static unsafe delegate*<Vector2, void> SetMousePos;
-        internal static unsafe delegate*<Vector2> GetMousePos;
+        internal static unsafe delegate*<float> GetMousePosX;
+        internal static unsafe delegate*<float> GetMousePosY;
         internal static unsafe delegate*<uint, bool> IsMouseButtonPressed;
         internal static unsafe delegate*<uint, bool> IsKeyDown;
+
+        #endregion
+
+        #region Camera
+
+        internal static unsafe delegate*<IntPtr, void> UpdateCameraVectors;
+        internal static unsafe delegate*<IntPtr, void> UpdateCameraViewMatrix;
+        internal static unsafe delegate*<IntPtr, void> UpdateCameraProjectionMatrix;
+        internal static unsafe delegate*<IntPtr, void> UpdateCameraVPMatrix;
+
+        #endregion
+
+        #region Physics
+
+        internal static unsafe delegate*<ulong, float> GetRigidBody3DMass;
+        internal static unsafe delegate*<ulong, float, void> SetRigidBody3DMass;
+        internal static unsafe delegate*<ulong, Vector3, Quaternion, float, void> MoveRigidBody3DKinematic;
 
         #endregion
     }

@@ -8,21 +8,26 @@ namespace Mule
 {
     public class Entity
     {
-        public readonly uint _id;
+        public ulong _guid = 0;
 
         protected Entity()
         {
-            this._id = uint.MaxValue;
+            this._guid = 0;
+        }
+
+        public ulong GetGuid()
+        {
+            return _guid;
         }
 
         public T GetComponent<T>()
         {
-            uint componentId = Component.GetComponentID<T>();
-
+            uint componentId = ComponentType.GetID<T>();
+            Console.WriteLine($"Component ID: {componentId}");
             IntPtr nativePtr = IntPtr.Zero;
 
             unsafe {
-                nativePtr = InternalCalls.GetComponentPtr(_id, componentId);
+                nativePtr = InternalCalls.GetComponentPtr(_guid, componentId);
             }
 
             if (nativePtr == IntPtr.Zero)
@@ -34,13 +39,13 @@ namespace Mule
 
         public T AddComponent<T>()
         {
-            uint componentId = Component.GetComponentID<T>();
+            uint componentId = ComponentType.GetID<T>();
 
             IntPtr nativePtr = IntPtr.Zero;
 
             unsafe
             {
-                nativePtr = InternalCalls.AddComponentGetPtr(_id, componentId);
+                nativePtr = InternalCalls.AddComponentGetPtr(_guid, componentId);
             }
 
             if (nativePtr == IntPtr.Zero)
@@ -52,13 +57,13 @@ namespace Mule
 
         public bool HasComponent<T>()
         {
-            uint componentId = Component.GetComponentID<T>();
+            uint componentId = ComponentType.GetID<T>();
 
             bool hasComponent = false;
 
             unsafe
             {
-                hasComponent = InternalCalls.HasComponent(_id, componentId);
+                hasComponent = InternalCalls.HasComponent(_guid, componentId);
             }
 
             return hasComponent;
@@ -66,11 +71,11 @@ namespace Mule
 
         public void RemoveComponent<T>()
         {
-            uint componentId = Component.GetComponentID<T>();
+            uint componentId = ComponentType.GetID<T>();
 
             unsafe
             {
-                InternalCalls.RemoveComponent(_id, componentId);
+                InternalCalls.RemoveComponent(_guid, componentId);
             }
         }
     }

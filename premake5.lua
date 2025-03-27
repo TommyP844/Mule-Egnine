@@ -84,5 +84,5 @@ workspace "Mule"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"
-    include "Mule/mule.lua"
+    include "Mule Engine/mule engine.lua"
     include "MuleScriptEngine/MuleScriptEngine.lua"

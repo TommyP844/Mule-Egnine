@@ -8,15 +8,8 @@ using System.Threading.Tasks;
 
 namespace Mule.Components
 {
-    public class TransformComponent : Component
-    {
-        private struct TransformComponentRaw
-        {
-            public Vector3 Translation;
-            public Vector3 Rotation;
-            public Vector3 Scale;
-        };
-
+    public class TransformComponent : Component<TransformComponent_Int>
+    {      
         public TransformComponent(nint nativePtr)
             :
             base(nativePtr)
@@ -27,20 +20,18 @@ namespace Mule.Components
             :
             base(IntPtr.Zero)
         {
-
         }
 
         public Vector3 Translation
         {
             get
             {
-                return Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr).Translation;
+                return GetStructInt().Translation;
             }
             set
             {
-                var data = Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr);
-                data.Translation = value;
-                Marshal.StructureToPtr(data, _nativePtr, false);
+                GetStructInt().Translation = value;
+                SaveStructInt();
             }
         }
 
@@ -48,13 +39,12 @@ namespace Mule.Components
         {
             get
             {
-                return Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr).Rotation;
+                return GetStructInt().Rotation;
             }
             set
             {
-                var data = Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr);
-                data.Rotation = value;
-                Marshal.StructureToPtr(data, _nativePtr, false);
+                GetStructInt().Rotation = value;
+                SaveStructInt();
             }
         }
 
@@ -62,13 +52,12 @@ namespace Mule.Components
         {
             get
             {
-                return Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr).Scale;
+                return GetStructInt().Scale;
             }
             set
             {
-                var data = Marshal.PtrToStructure<TransformComponentRaw>(_nativePtr);
-                data.Scale = value;
-                Marshal.StructureToPtr(data, _nativePtr, false);
+                GetStructInt().Scale = value;
+                SaveStructInt();
             }
         }
     }

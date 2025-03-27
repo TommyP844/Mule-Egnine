@@ -1,6 +1,6 @@
-project "Mule Editor"
+project "Mule Engine"
 	language "C++"
-	kind "ConsoleApp"
+	kind "StaticLib"
 	location ""
 	cppdialect "C++20"
     architecture "x64"
@@ -15,27 +15,23 @@ project "Mule Editor"
     }
 
     includedirs {
-        includes,
-        "../Mule Engine/include",
-        "../Mule Engine/include/mule",
-        "../Submodules/IconFontCppHeaders",
-        "src"
+        "include/imguiImpl",
+        "include/mule",
+        includes
     }
 
     links {
         "ImGui",
         "glfw",
         "spdlog",
-        "Mule Engine",
         "yaml-cpp",
-        "nativefiledialog",
-        "ImGuizmo",
         libs,
-        "coral.Native"
+        "Coral.Native"
     }
 
     files {
-        "src/**.h",
+        "include/**.h",
+        "include/**.inl",
         "src/**.cpp"
     }
 
@@ -50,4 +46,3 @@ project "Mule Editor"
         links {
             releaseLibs
         }
-        
