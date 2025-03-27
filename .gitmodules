@@ -1,12 +1,3 @@
-[submodule "Submodules/bgfx"]
-	path = Submodules/bgfx
-	url = https://github.com/bkaradzic/bgfx.git
-[submodule "Submodules/bx"]
-	path = Submodules/bx
-	url = https://github.com/bkaradzic/bx.git
-[submodule "Submodules/bimg"]
-	path = Submodules/bimg
-	url = https://github.com/bkaradzic/bimg.git
 [submodule "Submodules/glfw"]
 	path = Submodules/glfw
 	url = git@github.com:TommyP844/glfw.git
@@ -32,9 +23,6 @@
 [submodule "Submodules/yaml"]
 	path = Submodules/yaml
 	url = git@github.com:TommyP844/yaml-cpp.git
-[submodule "Submodules/tinyfd"]
-	path = Submodules/tinyfd
-	url = git@github.com:TommyP844/libtinyfiledialogs.git
 [submodule "Submodules/nativefiledialog"]
 	path = Submodules/nativefiledialog
 	url = git@github.com:TommyP844/nativefiledialog.git
@@ -44,9 +32,11 @@
 [submodule "Submodules/Assimp"]
 	path = Submodules/Assimp
 	url = https://github.com/TommyP844/assimp
+	ignore = all
 [submodule "Submodules/Coral"]
 	path = Submodules/Coral
 	url = https://github.com/StudioCherno/Coral.git
+	ignore = all
 [submodule "Submodules/JoltPhysics"]
 	path = Submodules/JoltPhysics
 	url = https://github.com/jrouwe/JoltPhysics.git
