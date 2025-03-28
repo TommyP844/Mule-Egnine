@@ -36,13 +36,11 @@ project "Mule Engine"
     }
 
     filter {"configurations:Debug"}
-        buildoptions {"/MDd"}
         links {
             debugLibs
         }
         
     filter {"configurations:Release"}
-        buildoptions {"/MD"}
         links {
             releaseLibs
         }

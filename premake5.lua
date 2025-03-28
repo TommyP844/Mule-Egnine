@@ -4,6 +4,10 @@ workspace "Mule"
 
     dir = os.getcwd();
 
+    filter "configurations:Debug"
+        staticruntime "Off"
+        runtime "Debug"
+
     includes = {
         dir .. "/Submodules/imgui",
         dir .. "/Submodules/glfw/include",

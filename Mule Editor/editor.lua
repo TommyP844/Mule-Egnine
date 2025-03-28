@@ -31,7 +31,7 @@ project "Mule Editor"
         "nativefiledialog",
         "ImGuizmo",
         libs,
-        "coral.Native"
+        "Coral.Native"
     }
 
     files {
@@ -40,13 +40,11 @@ project "Mule Editor"
     }
 
     filter {"configurations:Debug"}
-        buildoptions {"/MDd"}
         links {
             debugLibs
         }
         
     filter {"configurations:Release"}
-        buildoptions {"/MD"}
         links {
             releaseLibs
         }
