@@ -62,6 +62,10 @@ namespace Mule
 		mSystem->SetPhysicsSettings(mSettings);
 
 		mSystem->SetGravity({ mGravity.x, mGravity.y, mGravity.x });
+
+		mKinematicContactListener.SetBodyInterface(&mSystem->GetBodyInterface());
+
+		mSystem->SetContactListener(&mKinematicContactListener);
 	}
 
 	void PhysicsContext3D::Shutdown()
@@ -86,7 +90,14 @@ namespace Mule
 
 	void PhysicsContext3D::Step(float dt)
 	{
+		mKinematicContactListener.ClearPositionUpdates();
 		mSystem->Update(dt, 16, mTempAllocator, mJobSystem);
+		
+		auto& bodyInterface = mSystem->GetBodyInterface();
+		for (auto [bodyId, pos] : mKinematicContactListener.GetPositionUpdates())
+		{
+			bodyInterface.SetPosition(bodyId, pos, JPH::EActivation::DontActivate);
+		}
 	}
 
 	PhysicsObjectHandle PhysicsContext3D::CreateRigidBody3D(const RigidBody3DInfo& info)
@@ -130,6 +141,9 @@ namespace Mule
 		bodySettings.mMotionType = motionType;
 		bodySettings.mObjectLayer = 0; //info.CollisionLayers;
 		bodySettings.mMassPropertiesOverride.mMass = info.Mass;
+		bodySettings.mMotionQuality = JPH::EMotionQuality::LinearCast;
+		bodySettings.mCollideKinematicVsNonDynamic = true;
+		bodySettings.mAllowSleeping = false;
 		bodySettings.SetShape(trsShape);
 		
 		JPH::BodyID id = bodyInterface.CreateAndAddBody(bodySettings, JPH::EActivation::Activate);

@@ -5,6 +5,7 @@
 #include "RigidBody3D.h"
 #include "CollisionLayer.h"
 #include "Shape3D/Shape3D.h"
+#include "KinematicContactListener.h"
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/PhysicsSystem.h>
@@ -59,9 +60,13 @@ namespace Mule
 		JPH::JobSystem* mJobSystem;
 		JPH::TempAllocator* mTempAllocator;
 		
+		// Operational Objects
 		ObjectLayerPairFilterImpl mObjectPairFilter;
 		BPLayerInterfaceImpl mBroadphaseInterfaceImpl;
 		ObjectVsBroadPhaseLayerFilterImpl mObjectVsBroadPhaseLayerFilterImpl;
+
+		// Contact Listener
+		KinematicContactListener mKinematicContactListener;
 
 		std::random_device mRandomDevice;
 		PhysicsObjectHandle GenerateHandle();
