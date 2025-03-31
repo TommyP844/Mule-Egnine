@@ -660,6 +660,16 @@ namespace Mule
 
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT; // Target depth aspect
 		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;  // Ensure color attachment writes are finished
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                 // Prepare for transfer operations
+
+			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;  // Ensure color writes are completed
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;           // Allow transfer reads
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Target color aspect
+			}
 		else
 		{
 			SPDLOG_ERROR("Invalid layout transition");
@@ -702,6 +712,24 @@ namespace Mule
 		region.dstSubresource.mipLevel = copyInfo.DstMipLevel;
 		
 		vkCmdCopyImage(mCommandBuffer, src->GetImage(), src->GetVulkanImage().Layout, dst->GetImage(), dst->GetVulkanImage().Layout, 1, &region);
+	}
+
+	void CommandBuffer::ReadTexture(WeakRef<ITexture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const
+	{
+		VkBufferImageCopy region = {};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;  // Tightly packed
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { (int)x, (int)y, 0 };
+		region.imageExtent = { width, height, 1};
+
+		// Copy the image to the staging buffer
+		vkCmdCopyImageToBuffer(mCommandBuffer, texture->GetVulkanImage().Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			buffer->GetBuffer(), 1, &region);
 	}
 
 	void CommandBuffer::BindGraphicsPipeline(WeakRef<GraphicsShader> shader)

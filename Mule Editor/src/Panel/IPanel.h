@@ -11,7 +11,8 @@ public:
 
 	virtual void OnAttach() = 0;
 	virtual void OnUIRender(float dt) = 0;
-	virtual void OnEvent(Ref<IEditorEvent> event) = 0;
+	virtual void OnEditorEvent(Ref<IEditorEvent> event) = 0;
+	virtual void OnEngineEvent(Ref<Mule::Event> event) = 0;
 
 	void SetContext(WeakRef<EditorContext> editorContext, WeakRef<Mule::EngineContext> context) { mEditorContext = editorContext; mEngineContext = context; }
 	void Open() { mIsOpen = true; }

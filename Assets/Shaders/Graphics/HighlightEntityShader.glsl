@@ -12,24 +12,29 @@ layout(push_constant) uniform PushConstantBlock {
     mat4 transform;
 };
 
+struct CameraData
+{
+    mat4 View;
+    mat4 Proj;
+	vec3 Pos;
+};
+
+layout(binding = 0) uniform CameraBuffer {
+    CameraData Camera;
+};
 
 void main()
 {
-	gl_Position = transform * vec4(position, 1);
+	gl_Position = Camera.Proj * Camera.View * transform * vec4(position, 1);
 }
 
 #FRAGMENT
 #version 460 core
 
-layout(location = 1) out float Entity;
-layout(location = 2) out uint EntityId;
+layout(location = 2) out float Entity;
 
-layout(push_constant) uniform PushConstantBlock {
-    layout(offset = 64) uint id;
-};
 
 void main()
 {
 	Entity = 1.0;
-	EntityId = id;
 }

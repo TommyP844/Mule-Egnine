@@ -38,6 +38,33 @@ namespace Mule
 		return e;
 	}
 
+	Entity Scene::CopyEntity(Entity entity)
+	{
+		Entity e = CreateEntity(entity.Name() + "-Copy");
+
+		//CopyComponent<RootComponent>(entity, entity);
+		//CopyComponent<MetaComponent>(entity, entity);
+		CopyComponent<TransformComponent>(e, entity);
+		CopyComponent<CameraComponent>(e, entity);
+		CopyComponent<EnvironmentMapComponent>(e, entity);
+		CopyComponent<PointLightComponent>(e, entity);
+		CopyComponent<SpotLightComponent>(e, entity);
+		CopyComponent<DirectionalLightComponent>(e, entity);
+		CopyComponent<MeshComponent>(e, entity);
+		CopyComponent<ScriptComponent>(e, entity);
+		CopyComponent<RigidBody3DComponent>(e, entity);
+		CopyComponent<BoxColliderComponent>(e, entity);
+		CopyComponent<SphereColliderComponent>(e, entity);
+
+		for (auto child : entity.Children())
+		{
+			auto childEntity = CopyEntity(child);
+			e.AddChild(childEntity);
+		}
+
+		return e;
+	}
+
 	template<typename T>
 	inline void Scene::CopyComponent(Entity dst, Entity src)
 	{
@@ -55,27 +82,9 @@ namespace Mule
 		auto scene = MakeRef<Scene>(mEngineContext);
 		scene->SetHandle(Handle());
 
-		for (auto e : mRegistry.view<MetaComponent>())
+		for (auto e : Iterate<RootComponent>())
 		{
-			auto oldEntity = Entity(e, this);
-
-			auto& meta = mRegistry.get<MetaComponent>(e);
-			
-			auto entity = scene->CreateEntity(meta.Name, meta.Guid);
-
-			//CopyComponent<RootComponent>(entity, oldEntity);
-			//CopyComponent<MetaComponent>(entity, oldEntity);
-			CopyComponent<TransformComponent>(entity, oldEntity);
-			CopyComponent<CameraComponent>(entity, oldEntity);
-			CopyComponent<EnvironmentMapComponent>(entity, oldEntity);
-			CopyComponent<PointLightComponent>(entity, oldEntity);
-			CopyComponent<SpotLightComponent>(entity, oldEntity);
-			CopyComponent<DirectionalLightComponent>(entity, oldEntity);
-			CopyComponent<MeshComponent>(entity, oldEntity);
-			CopyComponent<ScriptComponent>(entity, oldEntity);		
-			CopyComponent<RigidBody3DComponent>(entity, oldEntity);		
-			CopyComponent<BoxColliderComponent>(entity, oldEntity);		
-			CopyComponent<SphereColliderComponent>(entity, oldEntity);		
+			CopyEntityToScene(scene, e);
 		}
 
 		return scene;
@@ -225,6 +234,33 @@ namespace Mule
 				rigidBody3d->SetPosition(transform.Translation);
 			}
 		}
+	}
+
+	Entity Scene::CopyEntityToScene(WeakRef<Scene> scene, Entity entity)
+	{
+		auto& meta = entity.GetComponent<MetaComponent>();
+
+		auto e = scene->CreateEntity(meta.Name, meta.Guid);
+
+		CopyComponent<TransformComponent>(e, entity);
+		CopyComponent<CameraComponent>(e, entity);
+		CopyComponent<EnvironmentMapComponent>(e, entity);
+		CopyComponent<PointLightComponent>(e, entity);
+		CopyComponent<SpotLightComponent>(e, entity);
+		CopyComponent<DirectionalLightComponent>(e, entity);
+		CopyComponent<MeshComponent>(e, entity);
+		CopyComponent<ScriptComponent>(e, entity);
+		CopyComponent<RigidBody3DComponent>(e, entity);
+		CopyComponent<BoxColliderComponent>(e, entity);
+		CopyComponent<SphereColliderComponent>(e, entity);
+
+		for (auto child : entity.Children())
+		{
+			auto childEntity = CopyEntityToScene(scene, child);
+			e.AddChild(childEntity);
+		}
+
+		return e;
 	}
 
 	void Scene::OnCameraComponentConstruct(entt::registry& registry, entt::entity id)

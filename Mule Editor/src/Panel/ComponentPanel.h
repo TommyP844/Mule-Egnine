@@ -10,7 +10,8 @@ public:
 
 	virtual void OnAttach() override;
 	virtual void OnUIRender(float dt) override;
-	virtual void OnEvent(Ref<IEditorEvent> event) override {}
+	virtual void OnEditorEvent(Ref<IEditorEvent> event) override {}
+	virtual void OnEngineEvent(Ref<Mule::Event> event) override {}
 
 private:
 	template<typename T>

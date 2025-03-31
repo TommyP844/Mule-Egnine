@@ -43,6 +43,6 @@ void PerformancePanel::OnUIRender(float dt)
 	ImGui::End();
 }
 
-void PerformancePanel::OnEvent(Ref<IEditorEvent> event)
+void PerformancePanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
 }

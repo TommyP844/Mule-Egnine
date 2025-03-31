@@ -16,6 +16,7 @@
 #include "Graphics/DescriptorSetLayout.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/ComputeShader.h"
+#include "Graphics/Buffer/StagingBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -68,6 +69,7 @@ namespace Mule
 		Ref<Semaphore> CreateSemaphore();
 		Ref<FrameBuffer> CreateFrameBuffer(const FramebufferDescription& frameBufferDesc);
 		Ref<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description);
+		Ref<StagingBuffer> CreateStagingBuffer(uint32_t size);
 
 
 		WeakRef<GraphicsQueue> GetGraphicsQueue() const { return mGraphicsQueue; }

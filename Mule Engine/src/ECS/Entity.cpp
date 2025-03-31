@@ -1,11 +1,10 @@
 #include "ECS/Entity.h"
 
 #include "ECS/Components.h"
+#include "Asset/Asset.h"
 
 #include <spdlog/spdlog.h>
-
-#include "Asset/Asset.h"
-#include "ECS/Components.h"
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace Mule 
 {
@@ -23,6 +22,18 @@ namespace Mule
 	{
 		auto& transform = GetComponent<TransformComponent>();
 		return transform;
+	}
+
+	glm::mat4 Entity::GetTransform() const
+	{
+		auto& meta = GetComponent<MetaComponent>();
+		
+		if (meta.Parent)
+		{
+			return meta.Parent.GetTransform() * GetComponent<TransformComponent>().TRS();
+		}
+		
+		return GetComponent<TransformComponent>().TRS();		
 	}
 
 	Entity Entity::Parent()
@@ -83,6 +94,16 @@ namespace Mule
 		return meta.Parent;
 	}
 
+	bool Entity::HasChild(Entity child)
+	{
+		auto& meta = GetComponent<MetaComponent>();
+		if (std::find(meta.Children.begin(), meta.Children.end(), child) != meta.Children.end())
+		{
+			return true;
+		}
+		return false;
+	}
+
 	void Entity::AddModel(WeakRef<Model> model)
 	{
 		mScene->SetModified();
@@ -113,24 +134,47 @@ namespace Mule
 
 	void Entity::AddModelNodeRecursive(const ModelNode& node)
 	{
-
-		for (auto& mesh : node.GetMeshes())
+		if (node.GetMeshes().size() == 1)
 		{
-			std::string name = mesh->Name().empty() ? "Mesh" : mesh->Name();
-			auto child = mScene->CreateEntity(name);
-			AddChild(child);
-
-			MeshComponent& meshComponent = child.AddComponent<MeshComponent>();
+			auto mesh = node.GetMeshes()[0];
+			auto& meshComponent = AddComponent<MeshComponent>();
 
 			meshComponent.Visible = true;
 			meshComponent.MeshHandle = mesh->Handle();
 			meshComponent.MaterialHandle = mesh->GetDefaultMaterialHandle();
+		}
+		else
+		{
+			for (auto& mesh : node.GetMeshes())
+			{
+				std::string name = mesh->Name().empty() ? "Mesh" : mesh->Name();
+				auto child = mScene->CreateEntity(name);
+				AddChild(child);
+				MeshComponent& meshComponent = child.AddComponent<MeshComponent>();
+
+				meshComponent.Visible = true;
+				meshComponent.MeshHandle = mesh->Handle();
+				meshComponent.MaterialHandle = mesh->GetDefaultMaterialHandle();
+			}
 		}
 
 		for (const auto& childNode : node.GetChildren())
 		{
 			std::string nodeName = childNode.GetName().empty() ? "Node" : childNode.GetName();
 			auto childEntity = mScene->CreateEntity(nodeName);
+			auto& transformComponent = childEntity.GetTransformComponent();
+			glm::mat4 mat = childNode.GetLocalTransform();
+			
+			glm::vec3 scale, skew, translation;
+			glm::quat rotation;
+			glm::vec4 perspective;
+			if (glm::decompose(mat, scale, rotation, translation, skew, perspective))
+			{
+				transformComponent.Translation = translation;
+				transformComponent.Rotation = glm::degrees(glm::eulerAngles(rotation));
+				transformComponent.Scale = scale;
+			}
+
 			AddChild(childEntity);
 			childEntity.AddModelNodeRecursive(childNode);
 		}

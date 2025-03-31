@@ -9,9 +9,15 @@
 SceneViewPanel::SceneViewPanel()
 	: 
 	IPanel("Scene View"),
-	mWidgetTranslation(false),
-	mWidgetRotation(false),
-	mWidgetScale(false)
+	mTranslationSnap({ 0.f }),
+	mRotationSnap({ 0.f }),
+	mScaleSnap({ 0.f }),
+	mGizmoSnap(nullptr),
+	mShowSettings(false),
+	mGizmoOp((ImGuizmo::OPERATION)0u),
+	mGizmoMode(ImGuizmo::MODE::WORLD),
+	mCameraMovementSpeed(10.f),
+	mIsWindowFocused(false)
 {
 }
 
@@ -38,6 +44,7 @@ void SceneViewPanel::OnUIRender(float dt)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 	if (ImGui::Begin(mName.c_str(), &mIsOpen, flags))
 	{
+		mIsWindowFocused = ImGui::IsWindowFocused();
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
 		ImVec2 region = ImGui::GetContentRegionAvail();
 		float height = ImGui::GetTextLineHeight() + ImGui::GetStyle().WindowPadding.y * 2.f;
@@ -74,9 +81,43 @@ void SceneViewPanel::OnUIRender(float dt)
 
 			ImGui::SameLine(region.x - ImGui::CalcTextSize(ICON_FA_GEAR).x - ImGui::GetStyle().WindowPadding.x * 2.f - ImGui::GetStyle().ItemInnerSpacing.x * 2.f);
 
+			ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 			if (ImGui::Button(ICON_FA_GEAR))
 			{
+				mShowSettings = !mShowSettings;
+			}
+			
+			if (mShowSettings)
+			{
+				const float settingsWindowWidth = 250.f;
+				ImGui::SetNextWindowPos({cursorPos.x - settingsWindowWidth + ImGui::CalcTextSize(ICON_FA_GEAR).x, cursorPos.y + ImGui::GetTextLineHeight() * 2});
+				ImGui::SetNextWindowSize({ settingsWindowWidth, 350 });
+				if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+				{
+					const glm::vec3& cameraPosition = mEditorContext->GetEditorCamera().GetPosition();
+					float nearPlane = mEditorContext->GetEditorCamera().GetNearPlane();
+					float fov = mEditorContext->GetEditorCamera().GetFOVDegrees();
+					float farPlane = mEditorContext->GetEditorCamera().GetFarPlane();
 
+					ImGui::SeparatorText("Camera");
+
+					ImGui::Text("Position: %.2f, %.2f, %.2f", cameraPosition.x, cameraPosition.y, cameraPosition.z);
+					if (ImGui::SliderFloat("FOV", &fov, 1.f, 179.f)) mEditorContext->GetEditorCamera().SetFOVDegrees(fov);
+					if (ImGui::SliderFloat("Near Plane", &nearPlane, 0.1f, farPlane - 1.f)) mEditorContext->GetEditorCamera().SetNearPlane(nearPlane);
+					if (ImGui::SliderFloat("Far Plane", &farPlane, nearPlane + 1.f, 10000.f)) mEditorContext->GetEditorCamera().SetFarPlane(farPlane);
+
+					ImGui::SeparatorText("Gizmos");
+					ImGui::Text("Translation Snap");
+					ImGui::DragFloat3("##TranslationSnap", &mTranslationSnap[0], 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+					ImGui::Separator();
+					ImGui::Text("Rotation Snap");
+					ImGui::DragFloat("##RotationSnap", &mRotationSnap[0], 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+					ImGui::Separator();
+					ImGui::Text("Scale Snap");
+					ImGui::DragFloat("##ScaleSnap", &mScaleSnap[0], 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+				}
+				ImGui::End();
 			}
 		}
 		ImGui::EndChild();
@@ -108,18 +149,110 @@ void SceneViewPanel::OnUIRender(float dt)
 		HandleDragDrop();
 		UpdateCamera(dt);
 		UpdateGizmos(cursorPos);
+		HandlePicking(cursorPos);
 	}
 	ImGui::PopStyleVar();
 	ImGui::End();
 }
 
+void SceneViewPanel::OnEngineEvent(Ref<Mule::Event> event)
+{
+	if (!mIsWindowFocused) return;
+
+	Mule::Camera& camera = mEditorContext->GetEditorCamera();
+	
+
+	if (event->Type == Mule::EventType::KeyboardEvent)
+	{
+		WeakRef<Mule::KeyboardEvent> keyboardEvent = event;
+		Mule::KeyCode key = keyboardEvent->GetKey();
+		Mule::KeyCode modifier = keyboardEvent->GetModifier();
+		bool pressed = keyboardEvent->IsKeyPressed();
+
+		if (modifier == Mule::KeyCode::None && pressed == true)
+		{
+			glm::vec3 cameraPosition = camera.GetPosition();
+			bool isEditing = mEditorContext->GetSimulationState() == SimulationState::Editing;
+
+			switch (key)
+			{
+			case Mule::KeyCode::Key_DELETE:
+			{
+				auto selectedEntity = mEditorContext->GetSelectedEntity();
+				if (selectedEntity)
+				{
+					mEngineContext->GetScene()->DestroyEntity(selectedEntity);
+					mEditorContext->SetSelectedEntity(Mule::Entity());
+				}
+			}
+			break;
+			case Mule::KeyCode::Key_R:
+				if (mGizmoOp == ImGuizmo::OPERATION::ROTATE)
+				{
+					mGizmoOp = (ImGuizmo::OPERATION)0u;
+					mGizmoSnap = nullptr;
+				}
+				else
+				{
+					mGizmoOp = ImGuizmo::OPERATION::ROTATE;
+					mGizmoSnap = &mRotationSnap[0];
+					mGizmoMode = ImGuizmo::MODE::WORLD;
+				}
+				break;
+			case Mule::KeyCode::Key_T:
+				if (mGizmoOp == ImGuizmo::OPERATION::TRANSLATE)
+				{
+					mGizmoOp = (ImGuizmo::OPERATION)0u;
+					mGizmoSnap = nullptr;
+				}
+				else
+				{
+					mGizmoOp = ImGuizmo::OPERATION::TRANSLATE;
+					mGizmoSnap = &mTranslationSnap[0];
+					mGizmoMode = ImGuizmo::MODE::WORLD;
+				}
+				break;
+			case Mule::KeyCode::Key_Y:
+				if (mGizmoOp == ImGuizmo::OPERATION::SCALE)
+				{
+					mGizmoOp = (ImGuizmo::OPERATION)0u;
+					mGizmoSnap = nullptr;
+				}
+				else
+				{
+					mGizmoOp = ImGuizmo::OPERATION::SCALE;
+					mGizmoSnap = &mScaleSnap[0];
+					mGizmoMode = ImGuizmo::MODE::LOCAL;
+				}
+				break;
+
+			}
+			camera.SetPosition(cameraPosition);
+		}
+		else
+		{
+			if (modifier == Mule::KeyCode::Mod_CONTROL && key == Mule::KeyCode::Key_D && pressed)
+			{
+				auto selectedEntity = mEditorContext->GetSelectedEntity();
+				if (selectedEntity)
+				{
+					auto newEntity = mEngineContext->GetScene()->CopyEntity(selectedEntity);
+					mEditorContext->SetSelectedEntity(newEntity);
+				}
+			}
+		}
+	}
+}
+
 void SceneViewPanel::UpdateCamera(float dt)
 {
-	if (ImGui::IsWindowFocused())
+	auto simulationState = mEditorContext->GetSimulationState();
+	if (ImGui::IsWindowFocused() && simulationState == SimulationState::Editing)
 	{
 		Mule::Camera& camera = mEditorContext->GetEditorCamera();
+		float speed = mCameraMovementSpeed * dt;
 		glm::vec3 cameraPosition = camera.GetPosition();
-		const float speed = 10.f * dt;
+
 		if (ImGui::IsKeyDown(ImGuiKey_W))
 		{
 			cameraPosition += camera.GetForwardDir() * speed;
@@ -136,15 +269,16 @@ void SceneViewPanel::UpdateCamera(float dt)
 		{
 			cameraPosition += camera.GetRightDir() * speed;
 		}
-		if (ImGui::IsKeyDown(ImGuiKey_R))
+		if (ImGui::IsKeyDown(ImGuiKey_Q))
 		{
 			cameraPosition += camera.GetWorldUp() * speed;
 		}
-		if (ImGui::IsKeyDown(ImGuiKey_F))
+		if (ImGui::IsKeyDown(ImGuiKey_E))
 		{
 			cameraPosition -= camera.GetWorldUp() * speed;
 		}
 		camera.SetPosition(cameraPosition);
+
 
 		static glm::vec2 mousePos = { 0, 0 };
 		static bool leftPressed = false;
@@ -169,46 +303,31 @@ void SceneViewPanel::UpdateCamera(float dt)
 
 void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 {
-	if (ImGui::IsWindowFocused())
-	{
-		if (ImGui::IsKeyPressed(ImGuiKey_T))
-			mWidgetTranslation = !mWidgetTranslation;
-		if (ImGui::IsKeyPressed(ImGuiKey_Y))
-			mWidgetRotation = !mWidgetRotation;
-		if (ImGui::IsKeyPressed(ImGuiKey_U))
-			mWidgetScale = !mWidgetScale;
-	}
-
 	if (mEditorContext->GetSelectedEntity())
 	{
 		ImGuizmo::SetOrthographic(false);  // Set to true if using an orthographic camera
 		ImGuizmo::SetDrawlist();
 		ImGuizmo::SetRect(cursorPos.x, cursorPos.y, mWidth, mHeight);
 
-		uint32_t operation = 0;
-		if (mWidgetTranslation) operation |= ImGuizmo::OPERATION::TRANSLATE;
-		if (mWidgetRotation) operation |= ImGuizmo::OPERATION::ROTATE;
-		if (mWidgetScale) operation |= ImGuizmo::OPERATION::SCALE;
-
-		if (operation != 0)
+		if (mGizmoOp != 0)
 		{
 			Mule::Camera& camera = mEditorContext->GetEditorCamera();
 			Mule::TransformComponent& transform = mEditorContext->GetSelectedEntity().GetTransformComponent();
 			glm::mat4 proj = camera.GetProj();
 			glm::mat4 view = camera.GetView();
 
-			glm::mat4 transformMatrix = transform.TRS();
-			if (ImGuizmo::Manipulate(&view[0][0], &proj[0][0], (ImGuizmo::OPERATION)operation, ImGuizmo::MODE::WORLD, &transformMatrix[0][0]))
+			glm::mat4 transformMatrix = mEditorContext->GetSelectedEntity().GetTransform();
+			if (ImGuizmo::Manipulate(&view[0][0], 
+				&proj[0][0], 
+				mGizmoOp,
+				mGizmoMode, 
+				&transformMatrix[0][0],
+				nullptr,
+				mGizmoSnap))
 			{
 				ImGuizmo::DecomposeMatrixToComponents(&transformMatrix[0][0], &transform.Translation[0], &transform.Rotation[0], &transform.Scale[0]);
 			}
 		}
-	}
-	else
-	{
-		mWidgetRotation = false;
-		mWidgetScale = false;
-		mWidgetTranslation = false;
 	}
 }
 
@@ -249,6 +368,36 @@ void SceneViewPanel::HandleDragDrop()
 			}
 		}
 			break;
+		}
+	}
+}
+
+void SceneViewPanel::HandlePicking(ImVec2 cursorPos)
+{
+	if (!ImGui::IsItemHovered())
+		return;
+
+	if (ImGuizmo::IsUsingAny())
+		return;
+
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+	{
+		ImVec2 mousePos = ImGui::GetMousePos();
+
+		uint32_t x = mousePos.x - cursorPos.x;
+		uint32_t y = mousePos.y - cursorPos.y;
+
+		WeakRef<Mule::SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
+		Mule::Guid guid = sceneRenderer->Pick(x, y);
+		if(guid != 0ull)
+		{
+			auto scene = mEngineContext->GetScene();
+			if (scene)
+			{
+				auto entity = scene->GetEntityByGUID(guid);
+				if(entity)
+					mEditorContext->SetSelectedEntity(entity);
+			}
 		}
 	}
 }

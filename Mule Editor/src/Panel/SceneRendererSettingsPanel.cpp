@@ -20,6 +20,6 @@ void SceneRendererSettingsPanel::OnUIRender(float dt)
 	ImGui::End();
 }
 
-void SceneRendererSettingsPanel::OnEvent(Ref<IEditorEvent> event)
+void SceneRendererSettingsPanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
 }

@@ -10,6 +10,7 @@
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/DescriptorSet.h"
 #include "Graphics/ComputeShader.h"
+#include "Graphics/Buffer/StagingBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -51,6 +52,7 @@ namespace Mule
 		// Texture
 		void TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout);
 		void CopyTexture(WeakRef<ITexture> src, WeakRef<ITexture> dst, const TextureCopyInfo& copyInfo) const;
+		void ReadTexture(WeakRef<ITexture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const;
 
 		// Shader
 		void BindGraphicsPipeline(WeakRef<GraphicsShader> shader);

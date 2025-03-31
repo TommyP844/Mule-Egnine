@@ -6,12 +6,13 @@
 #include "Graphics/Texture/TextureCube.h"
 #include "Graphics/Texture/Texture2D.h"
 #include "Graphics/Material.h"
-#include "ECS/Scene.h"
-#include "Asset/AssetManager.h"
-#include "GPUObjects.h"
-#include "GuidArray.h"
 #include "Graphics/RenderGraph/RenderGraph.h"
 #include "Graphics/RenderGraph/RenderPassStats.h"
+#include "GuidArray.h"
+#include "GPUObjects.h"
+#include "ECS/Scene.h"
+#include "ECS/Entity.h"
+#include "Asset/AssetManager.h"
 
 // STD
 #include <vector>
@@ -43,6 +44,8 @@ namespace Mule
 		void OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
 		void OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
 
+		Guid Pick(uint32_t x, uint32_t y);
+
 		WeakRef<Semaphore> GetSemaphore() const;
 		WeakRef<FrameBuffer> GetFrameBuffer() const;
 
@@ -70,15 +73,18 @@ namespace Mule
 		// Timing
 		std::vector<SceneRendererStats> mTiming;
 
+		// Render Passes
 		void RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx);
 		void RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx);
 		void RenderEnvironmentCallback(const RenderGraph::PassContext& ctx);
 		void RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx);
+		bool RenderEntityChildrenHighlight(Entity e, WeakRef<CommandBuffer> cmd, WeakRef<GraphicsShader> shader);
 
 		// Render Graph Passes
 		const std::string GEOMETRY_PASS_NAME = "OpaqueGeometryPass";
 		const std::string ENVIRONMENT_PASS_NAME = "EnvironmentPass";
 		const std::string TRANPARENT_GEOMETRY_PASS_NAME = "TransparentGeometryPass";
+		const std::string ENTITY_HIGHLIGHT_PASS_NAME = "EntityHighlightPass";
 
 		// Resources
 		const std::string FRAMEBUFFER_ID = "Framebuffer";
@@ -88,6 +94,8 @@ namespace Mule
 		const std::string OPAQUE_GEOMETRY_SHADER_ID = "OpaqueGeometryShader";
 		const std::string TRANPARENT_GEOMETRY_SHADER_ID = "TransparentGeometryShader";
 		const std::string ENVIRONMENT_SHADER_ID = "EnvironmentShader";
+		const std::string ENTITY_HIGHLIGHT_SHADER_ID = "EntityHighlightShader";
+		const std::string ENTITY_OUTLINE_SHADER_ID = "EntityOutlineShader";
 
 		// Descriptor Sets
 		const std::string GEOMETRY_SHADER_DSL_ID = "GeometryShaderDSL";
@@ -98,6 +106,12 @@ namespace Mule
 
 		const std::string ENVIRONMENT_SHADER_DSL_ID = "EnvironmentShaderDSL";
 		const std::string ENVIRONMENT_SHADER_DS_ID = "EnvironmentShaderDS";
+
+		const std::string ENTITY_HIGHLIGHT_DSL_ID = "EntityHighlightDSL";
+		const std::string ENTITY_HIGHLIGHT_DS_ID = "EntityHighlightDS";
+
+		const std::string ENTITY_OUTLINE_DSL_ID = "EntityOutlineDSL";
+		const std::string ENTITY_OUTLINE_DS_ID = "EntityOutlineDS";
 
 		// Buffers
 		const std::string CAMERA_BUFFER_ID = "CameraUB";

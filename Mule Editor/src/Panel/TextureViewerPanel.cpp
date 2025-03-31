@@ -79,7 +79,7 @@ void TextureViewerPanel::OnUIRender(float dt)
 	ImGui::End();
 }
 
-void TextureViewerPanel::OnEvent(Ref<IEditorEvent> event)
+void TextureViewerPanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
 }
 

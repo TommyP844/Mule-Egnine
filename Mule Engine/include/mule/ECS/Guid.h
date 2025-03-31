@@ -32,6 +32,11 @@ namespace Mule
 			return mHandle != other.mHandle;
 		}
 
+		bool operator!=(uint64_t num)
+		{
+			return mHandle != num;
+		}
+
 		operator size_t()
 		{
 			return mHandle;

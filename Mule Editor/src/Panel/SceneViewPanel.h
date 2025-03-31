@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IPanel.h"
+#include <ImGuizmo.h>
 
 class SceneViewPanel : public IPanel
 {
@@ -8,17 +9,24 @@ public:
 	SceneViewPanel();
 	~SceneViewPanel() {}
 
-	virtual void OnAttach() override;
-	virtual void OnUIRender(float dt) override;
-	virtual void OnEvent(Ref<IEditorEvent> event) override {}
+	void OnAttach() override;
+	void OnUIRender(float dt) override;
+	void OnEditorEvent(Ref<IEditorEvent> event) override {}
+	void OnEngineEvent(Ref<Mule::Event> event) override;
 
 private:
 	float mWidth, mHeight;
-	bool mWidgetTranslation, mWidgetRotation, mWidgetScale;
+	bool mShowSettings, mIsWindowFocused;
+	glm::vec3 mTranslationSnap, mRotationSnap, mScaleSnap;
+	ImGuizmo::OPERATION mGizmoOp;
+	ImGuizmo::MODE mGizmoMode;
+	float* mGizmoSnap;
+	float mCameraMovementSpeed;
 
 	WeakRef<Mule::Texture2D> mBlackImage;
 
 	void UpdateCamera(float dt);
 	void UpdateGizmos(ImVec2 cursorPos);
 	void HandleDragDrop();
+	void HandlePicking(ImVec2 cursorPos);
 };

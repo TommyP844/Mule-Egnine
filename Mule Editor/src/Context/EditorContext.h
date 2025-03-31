@@ -22,7 +22,7 @@ public:
 	const fs::path& GetAssetsPath() const { return mAssetsPath; }
 	const std::string& GetProjectName() const { return mProjectName; }
 
-	void SetSelectedEntity(Mule::Entity e) { mSelectedEntity = e; }
+	void SetSelectedEntity(Mule::Entity e);
 	Mule::Entity GetSelectedEntity() const { return mSelectedEntity; }
 
 	Mule::Camera& GetEditorCamera() { return mEditorCamera; }

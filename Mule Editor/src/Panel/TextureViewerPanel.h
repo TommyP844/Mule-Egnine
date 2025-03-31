@@ -13,7 +13,8 @@ public:
 
 	void OnUIRender(float dt) override;
 
-	void OnEvent(Ref<IEditorEvent> event) override;
+	void OnEditorEvent(Ref<IEditorEvent> event) override;
+	void OnEngineEvent(Ref<Mule::Event> event) override {}
 
 	void SetTexture(Mule::AssetHandle textureHandle);
 

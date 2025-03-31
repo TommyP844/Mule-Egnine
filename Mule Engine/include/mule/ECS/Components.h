@@ -15,7 +15,7 @@
 
 namespace Mule
 {
-	// Only Used for checking if entity is a root component
+#pragma region Internal
 	struct RootComponent 
 	{
 		RootComponent() = default;
@@ -36,6 +36,15 @@ namespace Mule
 		std::vector<Entity> Children;
 	};
 
+	struct HighlightComponent
+	{
+		HighlightComponent() = default;
+		HighlightComponent(const HighlightComponent&) = default;
+		glm::vec3 Color = glm::vec3(253.f / 255.f, 166.f / 255.f, 58.f / 255.f);
+	};
+
+#pragma endregion
+
 	struct TransformComponent
 	{
 		TransformComponent() = default;
@@ -45,7 +54,7 @@ namespace Mule
 		glm::vec3 Rotation;
 		glm::vec3 Scale = glm::vec3(1.f);
 
-		glm::mat4 TRS()
+		glm::mat4 TRS() const
 		{
 			glm::mat4 translation = glm::translate(Translation);
 			glm::mat4 rotation = glm::toMat4(glm::quat(glm::radians(Rotation)));

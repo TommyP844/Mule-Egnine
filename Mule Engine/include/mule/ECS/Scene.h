@@ -24,6 +24,7 @@ namespace Mule
 		~Scene() {}
 
 		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid());
+		Entity CopyEntity(Entity entity);
 		Ref<Scene> Copy();
 		void DestroyEntity(Entity e);
 		Entity GetEntityByGUID(Guid guid);
@@ -91,6 +92,8 @@ namespace Mule
 
 		template<typename T>
 		static void CopyComponent(Entity dst, Entity src);
+
+		static Entity CopyEntityToScene(WeakRef<Scene> scene, Entity entity);
 
 		// Component Sinks
 		void OnCameraComponentConstruct(entt::registry& registry, entt::entity id);

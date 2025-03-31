@@ -119,6 +119,13 @@ namespace Mule
 			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
 			UpdateAssetHandle(mesh->Handle(), MULE_TORUS_MESH_HANDLE);
 		}
+
+		// Beveled Block
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Beveled Block.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_BEVELED_BLOCK_MESH_HANDLE);
+		}
 	}
 
 	EngineContext::~EngineContext()

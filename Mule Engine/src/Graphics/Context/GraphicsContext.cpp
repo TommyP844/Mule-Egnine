@@ -618,6 +618,11 @@ namespace Mule
 		return MakeRef<DescriptorSetLayout>(WeakRef<GraphicsContext>(this), description);
 	}
 
+	Ref<StagingBuffer> GraphicsContext::CreateStagingBuffer(uint32_t size)
+	{
+		return MakeRef<StagingBuffer>(this, size);
+	}
+
 	uint32_t GraphicsContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 	{
 		for (uint32_t i = 0; i < mMemoryProperties.memoryTypeCount; i++) {

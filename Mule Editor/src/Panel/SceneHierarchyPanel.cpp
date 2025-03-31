@@ -61,11 +61,19 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 
 void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 {
+	Mule::Entity selectedEntity = mEditorContext->GetSelectedEntity();
+
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (!e.HasChildren())
 		flags |= ImGuiTreeNodeFlags_Bullet;
-	if (mEditorContext->GetSelectedEntity() == e)
+	if (selectedEntity == e)
+	{
 		flags |= ImGuiTreeNodeFlags_Selected;
+	}
+
+	if (e.HasChild(selectedEntity))
+		ImGui::SetNextItemOpen(true);	
+	
 
 	Mule::Guid guid = e.Guid();
 

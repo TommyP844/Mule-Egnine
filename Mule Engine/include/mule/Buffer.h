@@ -21,7 +21,8 @@ namespace Mule
 
 		Buffer(uint64_t size)
 			:
-			mSize(size)
+			mSize(size),
+			mData(nullptr)
 		{
 			Allocate(size);
 		}

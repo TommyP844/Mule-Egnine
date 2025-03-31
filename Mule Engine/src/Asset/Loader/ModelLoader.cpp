@@ -30,7 +30,7 @@ namespace Mule
 	{
 		Assimp::Importer importer = Assimp::Importer();
 
-		int flags = aiPostProcessSteps::aiProcess_FlipWindingOrder | aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs;
+		int flags = aiPostProcessSteps::aiProcess_FlipWindingOrder | aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_CalcTangentSpace;
 
 		const aiScene* scene = importer.ReadFile(filepath.string(), flags);
 
@@ -82,7 +82,8 @@ namespace Mule
 
 	void ModelLoader::RecurseNodes(const aiNode* ainode, ModelNode& node, LoadInfo& info)
 	{
-		node.SetLocalTransform(toGlm(ainode->mTransformation));
+		glm::mat4 nodeTransfrom = toGlm(ainode->mTransformation);
+		node.SetLocalTransform(nodeTransfrom);
 		node.SetName(ainode->mName.C_Str());
 		
 		fs::path filepath = info.Filepath;
@@ -114,7 +115,7 @@ namespace Mule
 
 			v.Position = toGlm(mesh->mVertices[i]);
 			v.Normal = toGlm(mesh->mNormals[i]);
-			v.Tangent = toGlm(mesh->mTangents[i]);
+			v.Tangent = mesh->HasTangentsAndBitangents() ? toGlm(mesh->mTangents[i]) : glm::vec3(0.f);
 			v.UV = toGlm(mesh->mTextureCoords[0][i]);
 			v.Color = mesh->HasVertexColors(0) ? toGlm(mesh->mColors[0][i]) : glm::vec4(1.f);
 

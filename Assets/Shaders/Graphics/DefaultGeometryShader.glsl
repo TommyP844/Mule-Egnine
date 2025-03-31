@@ -1,4 +1,3 @@
-
 #VERTEX
 #version 460 core
 
@@ -57,6 +56,7 @@ layout(location = 2) in mat3 TBN;
 layout(location = 5) in vec3 normal;
 
 layout(location = 0) out vec4 FragColor;
+layout(location = 1) out uvec2 EntityId;
 
 struct Material 
 {
@@ -123,7 +123,7 @@ layout(set = 1, binding = 0) uniform sampler2D textures[];
 
 layout(push_constant) uniform PushConstantBlock {
     layout(offset = 64) uint MaterialIndex;
-    layout(offset = 68) uint NumCascades;
+    layout(offset = 72) uvec2 Id;
 };
 
 
@@ -318,5 +318,7 @@ void main()
 	#else
 		FragColor = vec4(color, 1.0);
 	#endif
+
+    EntityId = Id;
 }
 

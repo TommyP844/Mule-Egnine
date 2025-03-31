@@ -13,6 +13,7 @@ namespace Mule
 			mBuffer(VK_NULL_HANDLE),
 			mMemory(VK_NULL_HANDLE)
 		{}
+
 		virtual ~IShaderBuffer()
 		{
 			vkFreeMemory(mDevice, mMemory, nullptr);

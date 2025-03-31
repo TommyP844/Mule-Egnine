@@ -21,6 +21,9 @@ void PrimitiveObjectPanel::OnUIRender(float dt)
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
+		ImGui::Selectable("Beveled Block");
+		DragDropMeshSource(MULE_BEVELED_BLOCK_MESH_HANDLE, "Beveled Block");
+
 		ImGui::Selectable("Cube");
 		DragDropMeshSource(MULE_CUBE_MESH_HANDLE, "Cube");
 
@@ -39,7 +42,7 @@ void PrimitiveObjectPanel::OnUIRender(float dt)
 	ImGui::End();
 }
 
-void PrimitiveObjectPanel::OnEvent(Ref<IEditorEvent> event)
+void PrimitiveObjectPanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
 }
 

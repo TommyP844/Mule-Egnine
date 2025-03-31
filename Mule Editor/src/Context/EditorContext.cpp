@@ -15,6 +15,21 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 
 }
 
+void EditorContext::SetSelectedEntity(Mule::Entity e)
+{
+	if (mSelectedEntity)
+	{
+		mSelectedEntity.RemoveComponent<Mule::HighlightComponent>();
+	}
+
+	mSelectedEntity = e;
+
+	if (mSelectedEntity)
+	{
+		mSelectedEntity.AddComponent<Mule::HighlightComponent>();
+	}
+}
+
 void EditorContext::SetSimulationState(SimulationState state)
 {
 	mSimulationState = state;

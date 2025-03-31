@@ -27,6 +27,9 @@ namespace Mule
 		Guid Guid() const;
 		TransformComponent& GetTransformComponent();
 
+		// Get the hierarchy transform of the entity
+		glm::mat4 GetTransform() const;
+
 		Entity Parent();
 		const std::vector<Entity>& Children() const;
 		void Orphan();
@@ -34,6 +37,7 @@ namespace Mule
 		void AddChild(Entity child);
 		bool HasChildren();
 		bool IsChild();
+		bool HasChild(Entity child);
 
 		void AddModel(WeakRef<Model> model);
 		

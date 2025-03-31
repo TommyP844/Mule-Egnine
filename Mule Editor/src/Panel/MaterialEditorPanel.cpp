@@ -105,7 +105,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 	ImGui::End();
 }
 
-void MaterialEditorPanel::OnEvent(Ref<IEditorEvent> event)
+void MaterialEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
 }
 

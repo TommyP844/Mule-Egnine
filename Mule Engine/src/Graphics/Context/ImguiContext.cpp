@@ -324,12 +324,6 @@ namespace Mule
 			WeakRef<KeyboardEvent> e = event;
 			ImGuiKey key = mKeyMap[(uint32_t)e->GetKey()];
 			ImGui::GetIO().AddKeyEvent(key, e->IsKeyPressed());
-
-			if (e->GetModifier() != KeyCode::None)
-			{
-				ImGuiKey key = mKeyMap[(uint32_t)e->GetModifier()];
-				ImGui::GetIO().AddKeyEvent(key, e->IsKeyPressed());
-			}
 		}
 			break;
 		case EventType::MouseButtonEvent:

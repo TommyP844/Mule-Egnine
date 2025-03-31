@@ -82,6 +82,17 @@ void EditorLayer::OnEvent(Ref<Mule::Event> event)
 
 		break;
 	}
+
+	mComponentPanel.OnEngineEvent(event);
+	mSceneHierarchyPanel.OnEngineEvent(event);
+	mSceneViewPanel.OnEngineEvent(event);
+	mContentBrowserPanel.OnEngineEvent(event);
+	mAssetManagerPanel.OnEngineEvent(event);
+	mMaterialEditorPanel.OnEngineEvent(event);
+	mTextureViewerPanel.OnEngineEvent(event);
+	mSceneRendererSettingsPanel.OnEngineEvent(event);
+	mPrimitiveObjectPanel.OnEngineEvent(event);
+	mPerformancePanel.OnEngineEvent(event);
 }
 
 void EditorLayer::OnAttach()
@@ -251,16 +262,16 @@ void EditorLayer::OnUIRender(float dt)
 		break;
 		}
 
-		mComponentPanel.OnEvent(event);
-		mSceneHierarchyPanel.OnEvent(event);
-		mSceneViewPanel.OnEvent(event);
-		mContentBrowserPanel.OnEvent(event);
-		mAssetManagerPanel.OnEvent(event);
-		mMaterialEditorPanel.OnEvent(event);
-		mTextureViewerPanel.OnEvent(event);
-		mSceneRendererSettingsPanel.OnEvent(event);
-		mPrimitiveObjectPanel.OnEvent(event);
-		mPerformancePanel.OnEvent(event);
+		mComponentPanel.OnEditorEvent(event);
+		mSceneHierarchyPanel.OnEditorEvent(event);
+		mSceneViewPanel.OnEditorEvent(event);
+		mContentBrowserPanel.OnEditorEvent(event);
+		mAssetManagerPanel.OnEditorEvent(event);
+		mMaterialEditorPanel.OnEditorEvent(event);
+		mTextureViewerPanel.OnEditorEvent(event);
+		mSceneRendererSettingsPanel.OnEditorEvent(event);
+		mPrimitiveObjectPanel.OnEditorEvent(event);
+		mPerformancePanel.OnEditorEvent(event);
 	}
 
 	mEditorState->ClearEvents();

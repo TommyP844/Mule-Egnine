@@ -117,6 +117,10 @@ namespace Mule
 		
 		glfwSetKeyCallback(mWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 			Window* currWindow = (Window*)glfwGetWindowUserPointer(window);
+
+			if (!(action == GLFW_PRESS || action == GLFW_RELEASE))
+				return;	
+
 			Ref<KeyboardEvent> event = MakeRef<KeyboardEvent>((KeyCode)key, (bool)action, (KeyCode)mods);
 			currWindow->mEvents.push_back(event);
 

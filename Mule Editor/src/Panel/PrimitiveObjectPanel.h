@@ -11,7 +11,8 @@ public:
 	// Inherited via IPanel
 	void OnAttach() override;
 	void OnUIRender(float dt) override;
-	void OnEvent(Ref<IEditorEvent> event) override;
+	void OnEditorEvent(Ref<IEditorEvent> event) override;
+	virtual void OnEngineEvent(Ref<Mule::Event> event) override {}
 
 private:
 	void DragDropMeshSource(Mule::AssetHandle handle, const char* name);
