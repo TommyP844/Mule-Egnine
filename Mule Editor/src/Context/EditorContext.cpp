@@ -23,6 +23,9 @@ void EditorContext::SetSelectedEntity(Mule::Entity e)
 	}
 
 	mSelectedEntity = e;
+	auto sceneRenderer = mEngineContext->GetSceneRenderer();
+	if (sceneRenderer)
+		sceneRenderer->GetDebugOptions().SelectedEntity = e;
 
 	if (mSelectedEntity)
 	{

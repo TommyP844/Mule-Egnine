@@ -17,7 +17,8 @@ SceneViewPanel::SceneViewPanel()
 	mGizmoOp((ImGuizmo::OPERATION)0u),
 	mGizmoMode(ImGuizmo::MODE::WORLD),
 	mCameraMovementSpeed(10.f),
-	mIsWindowFocused(false)
+	mIsWindowFocused(false),
+	mOpenEntityPopup(false)
 {
 }
 
@@ -116,6 +117,16 @@ void SceneViewPanel::OnUIRender(float dt)
 					ImGui::Text("Scale Snap");
 					ImGui::DragFloat("##ScaleSnap", &mScaleSnap[0], 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
+					auto sceneRenderer = mEngineContext->GetSceneRenderer();
+					if (sceneRenderer)
+					{
+						auto& debugOptions = sceneRenderer->GetDebugOptions();
+						ImGui::SeparatorText("Scene Debug");
+						ImGui::Checkbox("Show All Physics Objects", &debugOptions.ShowAllPhysicsObjects);
+						ImGui::Checkbox("Show All Lights", &debugOptions.ShowAllLights);
+						ImGui::Checkbox("Show Selected Entity Colliders", &debugOptions.ShowSelectedEntityColliders);
+						ImGui::Checkbox("Show Selected Entity Lights", &debugOptions.ShowSelectedEntityLights);
+					}
 				}
 				ImGui::End();
 			}
@@ -153,6 +164,8 @@ void SceneViewPanel::OnUIRender(float dt)
 	}
 	ImGui::PopStyleVar();
 	ImGui::End();
+	
+	DisplayPopups();
 }
 
 void SceneViewPanel::OnEngineEvent(Ref<Mule::Event> event)
@@ -380,7 +393,7 @@ void SceneViewPanel::HandlePicking(ImVec2 cursorPos)
 	if (ImGuizmo::IsUsingAny())
 		return;
 
-	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 	{
 		ImVec2 mousePos = ImGui::GetMousePos();
 
@@ -394,10 +407,39 @@ void SceneViewPanel::HandlePicking(ImVec2 cursorPos)
 			auto scene = mEngineContext->GetScene();
 			if (scene)
 			{
+				auto selected = mEditorContext->GetSelectedEntity();
 				auto entity = scene->GetEntityByGUID(guid);
-				if(entity)
+
+				if (selected == entity)
+					mOpenEntityPopup = true;
+				else if(entity)
 					mEditorContext->SetSelectedEntity(entity);
 			}
 		}
+	}	
+}
+
+void SceneViewPanel::DisplayPopups()
+{
+	if (mOpenEntityPopup)
+	{
+		ImGui::OpenPopup("EntityPopup");
+		mOpenEntityPopup = false;
+	}
+
+	if (ImGui::BeginPopup("EntityPopup"))
+	{
+		auto entity = mEditorContext->GetSelectedEntity();
+		if (!entity)
+			ImGui::CloseCurrentPopup();
+
+		ImGui::Text(entity.Name().c_str());
+		ImGui::Separator();
+		if (ImGui::MenuItem("Delete"))
+		{
+			mEngineContext->GetScene()->DestroyEntity(mEditorContext->GetSelectedEntity());
+			mEditorContext->SetSelectedEntity(Mule::Entity());
+		}
+		ImGui::EndPopup();
 	}
 }

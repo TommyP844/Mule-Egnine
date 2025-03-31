@@ -3,6 +3,8 @@
 
 #include "Scripting/ScriptContext.h"
 
+#include "Graphics/Vertex.h"
+
 // Asset Loaders
 #include "Asset/Loader/ModelLoader.h"
 #include "Asset/Loader/SceneLoader.h"
@@ -125,6 +127,22 @@ namespace Mule
 			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Beveled Block.obj");
 			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
 			UpdateAssetHandle(mesh->Handle(), MULE_BEVELED_BLOCK_MESH_HANDLE);
+		}
+
+		// TODO: Wrap in macro
+
+		// Point Light Icon
+		{
+			auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/point-light-icon.png");
+			UpdateAssetHandle(texture->Handle(), MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE);
+			mSceneRenderer->AddTexture(texture);
+		}
+
+		// Spot Light
+		{
+			auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/spot-light-icon.png");
+			UpdateAssetHandle(texture->Handle(), MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
+			mSceneRenderer->AddTexture(texture);
 		}
 	}
 

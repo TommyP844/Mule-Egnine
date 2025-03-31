@@ -24,16 +24,24 @@ namespace Mule
 		return transform;
 	}
 
+	const TransformComponent& Entity::GetTransformComponent() const
+	{
+		return GetComponent<TransformComponent>();
+	}
+
 	glm::mat4 Entity::GetTransform() const
 	{
-		auto& meta = GetComponent<MetaComponent>();
-		
-		if (meta.Parent)
-		{
-			return meta.Parent.GetTransform() * GetComponent<TransformComponent>().TRS();
-		}
-		
-		return GetComponent<TransformComponent>().TRS();		
+		glm::mat4 transform = GetTransformRecursiveTR();
+		transform = glm::scale(transform, GetTransformComponent().Scale);
+
+		return transform;
+	}
+
+	glm::mat4 Entity::GetTransformTR() const
+	{
+		glm::mat4 transform = GetTransformRecursiveTR();
+
+		return transform;
 	}
 
 	Entity Entity::Parent()
@@ -178,5 +186,17 @@ namespace Mule
 			AddChild(childEntity);
 			childEntity.AddModelNodeRecursive(childNode);
 		}
+	}
+
+	glm::mat4 Entity::GetTransformRecursiveTR() const
+	{
+		auto& meta = GetComponent<MetaComponent>();
+
+		if (meta.Parent)
+		{
+			return meta.Parent.GetTransform() * GetComponent<TransformComponent>().GetTR();
+		}
+
+		return GetComponent<TransformComponent>().GetTR();
 	}
 }

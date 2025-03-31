@@ -266,6 +266,39 @@ namespace Mule
 			entityOutlineShaderDesc.Layouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_OUTLINE_DSL_ID) };
 			auto entityOutlineShader = mGraphicsContext->CreateComputeShader(entityOutlineShaderDesc);
 
+			GraphicsShaderDescription wireFrameShaderDesc{};
+			wireFrameShaderDesc.SourcePath = "../Assets/Shaders/Graphics/WireFrameShader.glsl";
+			wireFrameShaderDesc.Subpass = 0;
+			wireFrameShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
+			wireFrameShaderDesc.VertexLayout = staticVertexLayout;
+			wireFrameShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_HIGHLIGHT_DSL_ID) };
+			wireFrameShaderDesc.PushConstants = {
+				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
+				PushConstant(ShaderStage::Fragment, sizeof(glm::vec3))
+			};
+			wireFrameShaderDesc.CulleMode = CullMode::None;
+			wireFrameShaderDesc.EnableDepthTesting = false;
+			wireFrameShaderDesc.WriteDepth = false;
+			wireFrameShaderDesc.FillMode = FillMode::Wireframe;
+			auto wireFrameShader = mGraphicsContext->CreateGraphicsShader(wireFrameShaderDesc);
+
+			GraphicsShaderDescription billboardShaderDesc{};
+			billboardShaderDesc.SourcePath = "../Assets/Shaders/Graphics/BillBoardShader.glsl";
+			billboardShaderDesc.WriteDepth = false;
+			billboardShaderDesc.EnableDepthTesting = false;
+			billboardShaderDesc.BlendEnable = true;
+			billboardShaderDesc.CulleMode = CullMode::None;
+			billboardShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
+			billboardShaderDesc.Subpass = 0;
+			billboardShaderDesc.VertexLayout = staticVertexLayout;
+			billboardShaderDesc.PushConstants = {
+				PushConstant(ShaderStage::Vertex, 2 * sizeof(glm::vec4)),
+				PushConstant(ShaderStage::Fragment, sizeof(uint32_t))
+			};
+			billboardShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_HIGHLIGHT_DSL_ID), mGraph.GetResource<DescriptorSetLayout>(0, BINDLESS_TEXTURE_DSL_ID)};
+			auto billboardShader = mGraphicsContext->CreateGraphicsShader(billboardShaderDesc);
+			mAssetManager->InsertAsset(billboardShader);
+
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
 				mGraph.AddResource(i, OPAQUE_GEOMETRY_SHADER_ID, opaqueGeometryShader);
@@ -273,6 +306,8 @@ namespace Mule
 				mGraph.AddResource(i, ENVIRONMENT_SHADER_ID, environmentShader);
 				mGraph.AddResource(i, ENTITY_HIGHLIGHT_SHADER_ID, entityHighlightShader);
 				mGraph.AddResource(i, ENTITY_OUTLINE_SHADER_ID, entityOutlineShader);
+				mGraph.AddResource(i, WIRE_FRAME_SHADER_ID, wireFrameShader);
+				mGraph.AddResource(i, BILLBOARD_SHADER_ID, billboardShader);
 			}
 		}
 
@@ -299,6 +334,11 @@ namespace Mule
 			ENTITY_HIGHLIGHT_PASS_NAME,
 			{ TRANPARENT_GEOMETRY_PASS_NAME },
 			std::bind(&SceneRenderer::RenderEntityHighlightCallback, this, std::placeholders::_1));
+
+		mGraph.AddPass(
+			EDITOR_UI_PASS_NAME,
+			{ ENTITY_HIGHLIGHT_PASS_NAME },
+			std::bind(&SceneRenderer::RenderEditorUICallback, this, std::placeholders::_1));
 
 		mGraph.Compile();
 
@@ -436,6 +476,137 @@ namespace Mule
 		mGraph.NextFrame();
 		mGraph.Wait();
 		
+		mGraph.SetScene(scene);
+		mGraph.SetCamera(camera);
+
+		PrepareResources();
+
+		Timer executionTimer;
+		executionTimer.Start();
+		
+		mGraph.Execute(waitSemaphores);
+		
+		executionTimer.Stop();
+		timingInfo.CPUExecutionTime = executionTimer.Query();
+		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
+	}
+
+	void SceneRenderer::OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
+	{
+		Ref<Camera> camera = nullptr;
+		for (auto entity : scene->Iterate<CameraComponent>())
+		{
+			CameraComponent& cameraComponent = entity.GetComponent<CameraComponent>();
+			if (!cameraComponent.Active)
+				continue;
+			camera = cameraComponent.Camera;
+			break;
+		}
+
+		if (!camera)
+		{
+			return;
+		}
+
+		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
+		// We call next frame first so all graph queries after render will reflect the currect frame
+		mGraph.NextFrame();
+		mGraph.Wait();
+
+		mGraph.SetScene(scene);
+		mGraph.SetCamera(*camera);
+
+		PrepareResources();
+
+		Timer executionTimer;
+		executionTimer.Start();
+
+		mGraph.Execute(waitSemaphores);
+
+		executionTimer.Stop();
+		timingInfo.CPUExecutionTime = executionTimer.Query();
+		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
+	}
+
+	Guid SceneRenderer::Pick(uint32_t x, uint32_t y)
+	{
+		mGraph.Wait();
+		uint32_t index = mGraph.GetFrameIndex();
+		auto framebuffer = mGraph.GetResource<FrameBuffer>(index, FRAMEBUFFER_ID);
+
+		auto queue = mGraphicsContext->GetGraphicsQueue();
+		auto cmdPool = queue->CreateCommandPool();
+		auto cmd = cmdPool->CreateCommandBuffer();
+		auto fence = mGraphicsContext->CreateFence();
+		auto stagingBuffer = mGraphicsContext->CreateStagingBuffer(2 * sizeof(uint32_t));
+		
+		fence->Wait();
+		fence->Reset();
+		cmd->Begin();
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::TransferSrc);
+		cmd->ReadTexture(framebuffer->GetColorAttachment(1), x, y, 1, 1, stagingBuffer);
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
+
+		cmd->End();
+		queue->Submit({ cmd }, {}, {}, fence);
+		fence->Wait();
+		fence->Reset();
+		
+		// Get Results
+
+		Buffer buffer = stagingBuffer->ReadData();
+
+		uint64_t guidHigh = buffer.As<uint32_t>()[0];
+		uint64_t guidLow = buffer.As<uint32_t>()[1];
+		uint64_t data = guidHigh << 32 | guidLow;
+
+		return Guid(data);
+	}
+
+	WeakRef<Semaphore> SceneRenderer::GetSemaphore() const
+	{
+		return mGraph.GetSemaphore();
+	}
+
+	WeakRef<FrameBuffer> SceneRenderer::GetFrameBuffer() const
+	{
+		return mGraph.QueryResource<FrameBuffer>(FRAMEBUFFER_ID);
+	}
+	
+	void SceneRenderer::Resize(uint32_t width, uint32_t height)
+	{
+		for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
+		{
+			mResourceUpdates[i].Resize = true;
+			mResourceUpdates[i].ResizeWidth = width;
+			mResourceUpdates[i].ResizeHeight = height;
+		}
+	}
+
+	uint32_t SceneRenderer::QueryOrInsertTextureIndex(AssetHandle handle, uint32_t defaultIndex)
+	{
+		uint32_t index = mTextureArray.QueryIndex(handle);
+		if (index == UINT32_MAX)
+		{
+			if (handle != NullAssetHandle)
+			{
+				index = mTextureArray.Insert(handle, nullptr);
+			}
+			else
+			{
+				index = defaultIndex;
+			}
+		}
+
+		return index;
+	}
+
+	void SceneRenderer::PrepareResources()
+	{
+		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
+		WeakRef<Scene> scene = mGraph.GetPassContext().GetScene();
+		const Camera& camera = mGraph.GetPassContext().GetCamera();
+
 		Timer dataPrepTimer;
 		dataPrepTimer.Start();
 		// Data Prep
@@ -550,115 +721,12 @@ namespace Mule
 					cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ColorAttachment);
 					cmd->End();
 					queue->Submit({ cmd }, {}, {}, fence);
-					fence->Wait();					
+					fence->Wait();
 				}
 			}
 		}
 		dataPrepTimer.Stop();
 		timingInfo.CPUPrepareTime = dataPrepTimer.Query();
-
-		mGraph.SetCamera(camera);
-		mGraph.SetScene(scene);
-
-		Timer executionTimer;
-		executionTimer.Start();
-		
-		mGraph.Execute(waitSemaphores);
-		
-		executionTimer.Stop();
-		timingInfo.CPUExecutionTime = executionTimer.Query();
-		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
-	}
-
-	void SceneRenderer::OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
-	{
-		Ref<Camera> camera = nullptr;
-		for (auto entity : scene->Iterate<CameraComponent>())
-		{
-			CameraComponent& cameraComponent = entity.GetComponent<CameraComponent>();
-			if (!cameraComponent.Active)
-				continue;
-			camera = cameraComponent.Camera;
-			break;
-		}		
-
-		if (camera)
-		{
-			OnEditorRender(scene, *camera, waitSemaphores);
-		}
-	}
-
-	Guid SceneRenderer::Pick(uint32_t x, uint32_t y)
-	{
-		mGraph.Wait();
-		uint32_t index = mGraph.GetFrameIndex();
-		auto framebuffer = mGraph.GetResource<FrameBuffer>(index, FRAMEBUFFER_ID);
-
-		auto queue = mGraphicsContext->GetGraphicsQueue();
-		auto cmdPool = queue->CreateCommandPool();
-		auto cmd = cmdPool->CreateCommandBuffer();
-		auto fence = mGraphicsContext->CreateFence();
-		auto stagingBuffer = mGraphicsContext->CreateStagingBuffer(2 * sizeof(uint32_t));
-		
-		fence->Wait();
-		fence->Reset();
-		cmd->Begin();
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::TransferSrc);
-		cmd->ReadTexture(framebuffer->GetColorAttachment(1), x, y, 1, 1, stagingBuffer);
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
-
-		cmd->End();
-		queue->Submit({ cmd }, {}, {}, fence);
-		fence->Wait();
-		fence->Reset();
-		
-		// Get Results
-
-		Buffer buffer = stagingBuffer->ReadData();
-
-		uint64_t guidHigh = buffer.As<uint32_t>()[0];
-		uint64_t guidLow = buffer.As<uint32_t>()[1];
-		uint64_t data = guidHigh << 32 | guidLow;
-
-		return Guid(data);
-	}
-
-	WeakRef<Semaphore> SceneRenderer::GetSemaphore() const
-	{
-		return mGraph.GetSemaphore();
-	}
-
-	WeakRef<FrameBuffer> SceneRenderer::GetFrameBuffer() const
-	{
-		return mGraph.QueryResource<FrameBuffer>(FRAMEBUFFER_ID);
-	}
-	
-	void SceneRenderer::Resize(uint32_t width, uint32_t height)
-	{
-		for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
-		{
-			mResourceUpdates[i].Resize = true;
-			mResourceUpdates[i].ResizeWidth = width;
-			mResourceUpdates[i].ResizeHeight = height;
-		}
-	}
-
-	uint32_t SceneRenderer::QueryOrInsertTextureIndex(AssetHandle handle, uint32_t defaultIndex)
-	{
-		uint32_t index = mTextureArray.QueryIndex(handle);
-		if (index == UINT32_MAX)
-		{
-			if (handle != NullAssetHandle)
-			{
-				index = mTextureArray.Insert(handle, nullptr);
-			}
-			else
-			{
-				index = defaultIndex;
-			}
-		}
-
-		return index;
 	}
 
 	void SceneRenderer::RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx)
@@ -918,7 +986,6 @@ namespace Mule
 		// Dont run expensive compute shader if no highlight
 		if (!hasHighlight)
 		{
-			cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
 			return;
 		}
 
@@ -933,6 +1000,198 @@ namespace Mule
 		uint32_t height = framebuffer->GetHeight();
 		cmd->Execute(width / 16, height / 16, 1);
 
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
+		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
+	}
+
+	void SceneRenderer::RenderEditorUICallback(const RenderGraph::PassContext& ctx)
+	{
+		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
+		WeakRef<Scene> scene = ctx.GetScene();
+		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
+		WeakRef<RenderPass> renderpass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
+		WeakRef<GraphicsShader> wireFrameShader = ctx.Get<GraphicsShader>(WIRE_FRAME_SHADER_ID);
+		WeakRef<GraphicsShader> billboardShader = ctx.Get<GraphicsShader>(BILLBOARD_SHADER_ID);
+		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
+		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
+
+
+		cmd->BeginRenderPass(framebuffer, renderpass);
+		cmd->BindGraphicsPipeline(wireFrameShader);
+		cmd->BindGraphicsDescriptorSet(wireFrameShader, { DS });
+
+		glm::vec3 PhysicsColor = glm::vec3(1.0f, 0.0f, 0.0f);
+
+		if (mDebugOptions.ShowAllPhysicsObjects)
+		{
+			for (auto entity : scene->Iterate<BoxColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& boxColliderComponent = entity.GetComponent<BoxColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), boxColliderComponent.Offset);
+				offsetMat = glm::scale(offsetMat, boxColliderComponent.Extent);
+				transform = transform * offsetMat;
+
+				// Draw box
+				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			for (auto entity : scene->Iterate<SphereColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& sphereColliderComponent = entity.GetComponent<SphereColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), sphereColliderComponent.Offset);
+				offsetMat = glm::scale(offsetMat, glm::vec3(sphereColliderComponent.Radius));
+				transform = transform * offsetMat;
+
+				// Draw Sphere
+				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+		}
+
+		if (mDebugOptions.ShowAllLights)
+		{
+			cmd->BindGraphicsPipeline(billboardShader);
+			cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
+			auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
+
+			for (auto entity : scene->Iterate<SpotLightComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				uint32_t textureIndex = mTextureArray.QueryIndex(MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
+
+				if (mesh && textureIndex != UINT32_MAX)
+				{
+					glm::vec4 data[] = {
+						transform[3],
+						glm::vec4(2, 2, 0, 0)
+					};
+
+					cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+					cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			for (auto entity : scene->Iterate<PointLightComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+
+				uint32_t textureIndex = mTextureArray.QueryIndex(MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE);
+
+				if (mesh && textureIndex != UINT32_MAX)
+				{
+					glm::vec4 data[] = {
+						transform[3],
+						glm::vec4(2, 2, 0, 0)
+					};
+
+					cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+					cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+		}
+
+		if (mDebugOptions.SelectedEntity)
+		{
+			if (mDebugOptions.ShowSelectedEntityColliders)
+			{
+				cmd->BindGraphicsPipeline(wireFrameShader);
+				if (mDebugOptions.SelectedEntity.HasComponent<BoxColliderComponent>())
+				{
+					glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
+					auto& boxColliderComponent = mDebugOptions.SelectedEntity.GetComponent<BoxColliderComponent>();
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), boxColliderComponent.Offset);
+					offsetMat = glm::scale(offsetMat, boxColliderComponent.Extent);
+					transform = transform * offsetMat;
+
+					// Draw box
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
+					if (mesh)
+					{
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+				if (mDebugOptions.SelectedEntity.HasComponent<SphereColliderComponent>())
+				{
+					glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
+					auto& sphereColliderComponent = mDebugOptions.SelectedEntity.GetComponent<SphereColliderComponent>();
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), sphereColliderComponent.Offset);
+					offsetMat = glm::scale(offsetMat, glm::vec3(sphereColliderComponent.Radius));
+					transform = transform * offsetMat;
+
+					// Draw box
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
+					if (mesh)
+					{
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+			}
+
+			if (mDebugOptions.ShowSelectedEntityLights)
+			{
+				cmd->BindGraphicsPipeline(billboardShader);
+				cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
+				glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
+
+				if (mDebugOptions.SelectedEntity.HasComponent<PointLightComponent>())
+				{
+					uint32_t textureIndex = mTextureArray.QueryIndex(MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE);
+
+					if (mesh && textureIndex != UINT32_MAX)
+					{
+						glm::vec4 data[] = {
+							transform[3],
+							glm::vec4(2, 2, 0, 0)
+						};
+
+						cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+						cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+				if (mDebugOptions.SelectedEntity.HasComponent<SpotLightComponent>())
+				{
+					uint32_t textureIndex = mTextureArray.QueryIndex(MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
+
+					if (mesh && textureIndex != UINT32_MAX)
+					{
+						glm::vec4 data[] = {
+							transform[3],
+							glm::vec4(2, 2, 0, 0)
+						};
+
+						cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+						cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+			}
+		}
+
+		cmd->EndRenderPass();
 		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
 	}
 }

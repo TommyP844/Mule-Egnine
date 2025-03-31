@@ -25,6 +25,11 @@ namespace Mule::RenderGraph
 	{
 	}
 	
+	const PassContext& RenderGraph::GetPassContext() const
+	{
+		return mPerFrameData[mFrameIndex].Ctx;
+	}
+
 	void RenderGraph::SetCamera(const Camera& camera)
 	{
 		for (uint32_t i = 0; i < mFrameCount; i++)

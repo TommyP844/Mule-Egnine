@@ -8,6 +8,10 @@
 #define MULE_WHITE_TEXTURE_HANDLE 102
 #define MULE_BDRF_LUT_TEXTURE_HANDLE 103
 
+// Icons
+#define MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE 104
+#define MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE 105
+
 #pragma endregion
 
 	// Default shader handles range from: 1000 - 1999

@@ -26,9 +26,11 @@ namespace Mule
 		const std::string& Name() const;
 		Guid Guid() const;
 		TransformComponent& GetTransformComponent();
+		const TransformComponent& GetTransformComponent() const;
 
 		// Get the hierarchy transform of the entity
 		glm::mat4 GetTransform() const;
+		glm::mat4 GetTransformTR() const;
 
 		Entity Parent();
 		const std::vector<Entity>& Children() const;
@@ -106,5 +108,6 @@ namespace Mule
 		WeakRef<Scene> mScene;
 
 		void AddModelNodeRecursive(const ModelNode& node);
+		glm::mat4 GetTransformRecursiveTR() const;
 	};
 }

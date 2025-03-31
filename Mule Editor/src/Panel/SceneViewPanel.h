@@ -22,6 +22,7 @@ private:
 	ImGuizmo::MODE mGizmoMode;
 	float* mGizmoSnap;
 	float mCameraMovementSpeed;
+	bool mOpenEntityPopup;
 
 	WeakRef<Mule::Texture2D> mBlackImage;
 
@@ -29,4 +30,5 @@ private:
 	void UpdateGizmos(ImVec2 cursorPos);
 	void HandleDragDrop();
 	void HandlePicking(ImVec2 cursorPos);
+	void DisplayPopups();
 };

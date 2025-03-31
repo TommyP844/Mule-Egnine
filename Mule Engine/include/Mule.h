@@ -56,3 +56,6 @@
 // Scripting
 #include "Scripting/ScriptClass.h"
 #include "Scripting/ScriptInstance.h"
+
+// Core
+#include "Timer.h"

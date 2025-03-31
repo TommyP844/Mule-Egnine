@@ -76,7 +76,7 @@ namespace Mule
 			if (mMinimized) continue;
 			
 			OnUpdate(dt);
-
+			
 			if (graphicsContext->BeginFrame())
 			{
 				OnRender(dt);

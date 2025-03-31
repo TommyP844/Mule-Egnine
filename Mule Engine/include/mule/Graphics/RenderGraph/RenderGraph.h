@@ -34,6 +34,8 @@ namespace Mule::RenderGraph
 		template<typename T>
 		WeakRef<T> GetResource(uint32_t frameIndex, const std::string& name) const;
 
+		const PassContext& GetPassContext() const;
+
 		void SetCamera(const Camera& camera);
 		void SetScene(WeakRef<Scene> scene);
 

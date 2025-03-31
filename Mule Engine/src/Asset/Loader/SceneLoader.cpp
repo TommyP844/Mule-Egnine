@@ -38,8 +38,6 @@ namespace Mule
 		
 		Ref<Scene> scene = MakeRef<Scene>(mEngineContext);
 		scene->SetFilePath(filepath);
-		mEngineContext->SetScene(scene);
-
 
 		for (auto node : root["entities"])
 		{
@@ -47,7 +45,6 @@ namespace Mule
 		}
 
 		scene->ClearModified();
-		mEngineContext->SetScene(nullptr);
 
 		return scene;
 	}
@@ -133,10 +130,10 @@ namespace Mule
 		DESERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", Mule::SphereColliderComponent);
 		DESERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", Mule::BoxColliderComponent);
 
-		if (node["Script"])
-		{
-			DeserializeScriptComponentYAML(node["Script"], e);
-		}
+		//if (node["Script"])
+		//{
+		//	DeserializeScriptComponentYAML(node["Script"], e);
+		//}
 
 		for (auto childNode : node["Children"])
 		{

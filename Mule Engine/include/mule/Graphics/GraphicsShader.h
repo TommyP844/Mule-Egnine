@@ -25,6 +25,12 @@ namespace Mule
 		None = VK_CULL_MODE_NONE
 	};
 
+	enum class FillMode {
+		Solid = VK_POLYGON_MODE_FILL,
+		Wireframe = VK_POLYGON_MODE_LINE,
+		Point = VK_POLYGON_MODE_POINT
+	};
+
 	struct PushConstant
 	{
 		PushConstant() = default;
@@ -50,6 +56,8 @@ namespace Mule
 		bool WriteDepth = true;
 		std::vector<std::pair<std::string, std::string>> Macros = {};
 		bool BlendEnable = false;
+		FillMode FillMode = FillMode::Solid;
+		float LineWidth = 1.0f;
 	};
 
 	class GraphicsShader : public Asset<AssetType::Shader>

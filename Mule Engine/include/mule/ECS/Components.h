@@ -62,6 +62,13 @@ namespace Mule
 			return translation * rotation * scale;
 		}
 
+		glm::mat4 GetTR() const
+		{
+			glm::mat4 translation = glm::translate(Translation);
+			glm::mat4 rotation = glm::toMat4(glm::quat(glm::radians(Rotation)));
+			return translation * rotation;
+		}
+
 		glm::quat GetOrientation()
 		{
 			return glm::quat(glm::radians(Rotation));

@@ -101,6 +101,7 @@ void EditorLayer::OnAttach()
 
 	mAssetLoaderThread = std::async(std::launch::async, [&]() {
 		std::vector<std::future<void>> futures;
+
 		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
 		{
 			if (dir.is_directory()) continue;
@@ -109,6 +110,8 @@ void EditorLayer::OnAttach()
 			fs::path filePath = dir.path();
 
 			const std::set<std::string> modelExtensions = { ".gltf" };
+			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+
 			if (modelExtensions.contains(extension))
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
@@ -121,22 +124,7 @@ void EditorLayer::OnAttach()
 					mEngineContext->LoadAsset<Mule::ScriptClass>(filePath);
 					}));
 			}
-		}
-
-		for (const auto& f : futures)
-			f.wait();
-		futures.clear();
-
-		for (auto dir : fs::recursive_directory_iterator(mEditorState->GetAssetsPath()))
-		{
-			if (dir.is_directory()) continue;
-
-			std::string extension = dir.path().extension().string();
-			fs::path filePath = dir.path();
-
-			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-
-			if (imageExtensions.contains(extension))
+			else if (imageExtensions.contains(extension))
 			{
 				auto asset = mEngineContext->GetAssetByFilepath(dir.path());
 				if (!asset)
@@ -159,11 +147,19 @@ void EditorLayer::OnAttach()
 					}));
 			}
 			else if (extension == ".scene")
+				futures.push_back(std::async(std::launch::async, [=]() {
 				mEngineContext->LoadAsset<Mule::Scene>(filePath);
-		} 
+					}));
+		}
+
+		for (auto& future : futures)
+		{
+			future.wait();
+		}
+
 		});
 
-	mAssetLoaderThread.wait();
+	//mAssetLoaderThread.wait();
 }
 
 void EditorLayer::OnUpdate(float dt)

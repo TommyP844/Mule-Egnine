@@ -122,14 +122,14 @@ namespace Mule
 			rasterizationState.flags = 0;
 			rasterizationState.depthClampEnable;
 			rasterizationState.rasterizerDiscardEnable;
-			rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+			rasterizationState.polygonMode = (VkPolygonMode)mDescription.FillMode;
 			rasterizationState.cullMode = (VkCullModeFlagBits)mDescription.CulleMode;
 			rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			rasterizationState.depthBiasEnable = VK_FALSE;
 			rasterizationState.depthBiasConstantFactor;
 			rasterizationState.depthBiasClamp;
 			rasterizationState.depthBiasSlopeFactor;
-			rasterizationState.lineWidth = 1.f;
+			rasterizationState.lineWidth = mDescription.LineWidth;
 		}
 
 		// MultiSample state
