@@ -469,7 +469,7 @@ namespace Mule
 		mMaterialArray.Remove(materialHandle);
 	}
 
-	void SceneRenderer::OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
+	bool SceneRenderer::OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
 		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
 		// We call next frame first so all graph queries after render will reflect the currect frame
@@ -489,9 +489,11 @@ namespace Mule
 		executionTimer.Stop();
 		timingInfo.CPUExecutionTime = executionTimer.Query();
 		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
+
+		return true;
 	}
 
-	void SceneRenderer::OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
+	bool SceneRenderer::OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
 		Ref<Camera> camera = nullptr;
 		for (auto entity : scene->Iterate<CameraComponent>())
@@ -505,7 +507,7 @@ namespace Mule
 
 		if (!camera)
 		{
-			return;
+			return false;
 		}
 
 		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
@@ -526,6 +528,8 @@ namespace Mule
 		executionTimer.Stop();
 		timingInfo.CPUExecutionTime = executionTimer.Query();
 		timingInfo.RenderPassStats = mGraph.GetRenderPassStats();
+
+		return true;
 	}
 
 	Guid SceneRenderer::Pick(uint32_t x, uint32_t y)
@@ -1016,27 +1020,30 @@ namespace Mule
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
 		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
 
-
 		cmd->BeginRenderPass(framebuffer, renderpass);
 		cmd->BindGraphicsPipeline(wireFrameShader);
 		cmd->BindGraphicsDescriptorSet(wireFrameShader, { DS });
 
-		glm::vec3 PhysicsColor = glm::vec3(1.0f, 0.0f, 0.0f);
+		glm::vec3 colliderColor = glm::vec3(1.0f, 0.0f, 0.0f);
+		glm::vec3 triggerColor = glm::vec3(0.f, 0.f, 1.f);
 
 		if (mDebugOptions.ShowAllPhysicsObjects)
 		{
 			for (auto entity : scene->Iterate<BoxColliderComponent>())
 			{
 				glm::mat4 transform = entity.GetTransformTR();
-				auto& boxColliderComponent = entity.GetComponent<BoxColliderComponent>();
+				auto& collider = entity.GetComponent<BoxColliderComponent>();
 
-				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), boxColliderComponent.Offset);
-				offsetMat = glm::scale(offsetMat, boxColliderComponent.Extent);
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, collider.Extent);
 				transform = transform * offsetMat;
 
 				// Draw box
 				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+				if (collider.Trigger)
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
 				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
 				if (mesh)
 				{
@@ -1047,20 +1054,44 @@ namespace Mule
 			for (auto entity : scene->Iterate<SphereColliderComponent>())
 			{
 				glm::mat4 transform = entity.GetTransformTR();
-				auto& sphereColliderComponent = entity.GetComponent<SphereColliderComponent>();
+				auto& collider = entity.GetComponent<SphereColliderComponent>();
 
-				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), sphereColliderComponent.Offset);
-				offsetMat = glm::scale(offsetMat, glm::vec3(sphereColliderComponent.Radius));
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
 				transform = transform * offsetMat;
 
 				// Draw Sphere
 				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+				if (collider.Trigger)
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
 				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
 				if (mesh)
 				{
 					cmd->BindAndDrawMesh(mesh, 1);
 				}
+			}
+
+			for (auto entity : scene->Iterate<CapsuleColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<CapsuleColliderComponent>();
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				float radius = collider.Radius;
+				float halfHeight = collider.HalfHeight;
+				offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
+				transform = transform * offsetMat;
+				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}			
 			}
 		}
 
@@ -1110,38 +1141,86 @@ namespace Mule
 
 		if (mDebugOptions.SelectedEntity)
 		{
-			if (mDebugOptions.ShowSelectedEntityColliders)
+			Entity entity = mDebugOptions.SelectedEntity;
+			glm::mat4 entityTransform = entity.GetTransformTR();
+
+			if (mDebugOptions.ShowSelectedEntityColliders && !mDebugOptions.ShowAllPhysicsObjects)
 			{
 				cmd->BindGraphicsPipeline(wireFrameShader);
-				if (mDebugOptions.SelectedEntity.HasComponent<BoxColliderComponent>())
+				if (entity.HasComponent<BoxColliderComponent>())
 				{
-					glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
-					auto& boxColliderComponent = mDebugOptions.SelectedEntity.GetComponent<BoxColliderComponent>();
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), boxColliderComponent.Offset);
-					offsetMat = glm::scale(offsetMat, boxColliderComponent.Extent);
-					transform = transform * offsetMat;
+					auto& collider = mDebugOptions.SelectedEntity.GetComponent<BoxColliderComponent>();
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+					offsetMat = glm::scale(offsetMat, collider.Extent);
+					glm::mat4 transform = entityTransform * offsetMat;
 
 					// Draw box
 					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+					if(collider.Trigger)
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+					else
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
 					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
 					if (mesh)
 					{
 						cmd->BindAndDrawMesh(mesh, 1);
 					}
 				}
-				if (mDebugOptions.SelectedEntity.HasComponent<SphereColliderComponent>())
+				if (entity.HasComponent<SphereColliderComponent>())
 				{
-					glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
-					auto& sphereColliderComponent = mDebugOptions.SelectedEntity.GetComponent<SphereColliderComponent>();
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), sphereColliderComponent.Offset);
-					offsetMat = glm::scale(offsetMat, glm::vec3(sphereColliderComponent.Radius));
-					transform = transform * offsetMat;
+					auto& collider = entity.GetComponent<SphereColliderComponent>();
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+					offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
+					glm::mat4 transform = entityTransform * offsetMat;
 
 					// Draw box
 					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &PhysicsColor[0], sizeof(glm::vec3));
+					if (collider.Trigger)
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+					else
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
 					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
+					if (mesh)
+					{
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+				if (entity.HasComponent<CapsuleColliderComponent>())
+				{
+					auto& collider = entity.GetComponent<CapsuleColliderComponent>();
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+					float radius = collider.Radius;
+					float halfHeight = collider.HalfHeight;
+					offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
+					glm::mat4 transform = entityTransform * offsetMat;
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					if (collider.Trigger)
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+					else
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
+					if (mesh)
+					{
+						cmd->BindAndDrawMesh(mesh, 1);
+					}
+				}
+				if (entity.HasComponent<PlaneColliderComponent>())
+				{
+					auto& collider = entity.GetComponent<PlaneColliderComponent>();
+					
+					glm::mat3 rotMatrix = entityTransform;
+					glm::vec3 normal = glm::vec3(0.f, 1.f, 0.f);
+					glm::vec3 dir = glm::normalize(rotMatrix * normal);
+
+					glm::mat4 offsetMat = glm::translate(glm::mat4(1.f), dir * collider.Offset);
+					glm::mat4 transform = offsetMat * entityTransform;
+
+					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					if (collider.Trigger)
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+					else
+						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
 					if (mesh)
 					{
 						cmd->BindAndDrawMesh(mesh, 1);
@@ -1149,7 +1228,7 @@ namespace Mule
 				}
 			}
 
-			if (mDebugOptions.ShowSelectedEntityLights)
+			if (mDebugOptions.ShowSelectedEntityLights && !mDebugOptions.ShowAllLights)
 			{
 				cmd->BindGraphicsPipeline(billboardShader);
 				cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });

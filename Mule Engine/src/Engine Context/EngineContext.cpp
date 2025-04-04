@@ -29,7 +29,7 @@ namespace Mule
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
 		mScriptContext = MakeRef<ScriptContext>(this);
 
-		mAssetManager->RegisterLoader<SceneLoader>(this, mScriptContext);
+		mAssetManager->RegisterLoader<SceneLoader>(this);
 		mAssetManager->RegisterLoader<ScriptLoader>();
 		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
@@ -127,6 +127,13 @@ namespace Mule
 			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Beveled Block.obj");
 			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
 			UpdateAssetHandle(mesh->Handle(), MULE_BEVELED_BLOCK_MESH_HANDLE);
+		}
+
+		// Capsule
+		{
+			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Capsule.obj");
+			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+			UpdateAssetHandle(mesh->Handle(), MULE_CAPSULE_MESH_HANDLE);
 		}
 
 		// TODO: Wrap in macro

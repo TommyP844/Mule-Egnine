@@ -36,10 +36,17 @@ namespace Mule
 
 #pragma region Physics
 
-	float GetRigidBody3DMass(PhysicsObjectHandle handle);
-	void SetRigidBody3DMass(PhysicsObjectHandle handle, float mass);
-	void MoveRigidBody3DKinematic(PhysicsObjectHandle handle, glm::vec3 position, glm::quat rotation, float dt);
-
+	float GetRigidBodyMass(uint64_t entityGuid);
+	void SetRigidBodyMass(uint64_t entityGuid, float mass);
+	void MoveRigidBodyKinematic(uint64_t entityGuid, glm::vec3 position, glm::quat rotation, float dt);
+	void AddRigidBodyForce(uint64_t entityGuid, glm::vec3 force);
+	void AddRigidBodyTorque(uint64_t entityGuid, glm::vec3 torque);
+	void AddRigidBodyImpulse(uint64_t entityGuid, glm::vec3 impulse);
+	void AddRigidBodyAngularImpulse(uint64_t entityGuid, glm::vec3 angularImpulse);
+	void SetRigidBodyLinearVelocity(uint64_t entityGuid, glm::vec3 velocity);
+	void SetRigidBodyAngularVelocity(uint64_t entityGuid, glm::vec3 angularVelocity);
+	glm::vec3 GetRigidBodyLinearVelocity(uint64_t entityGuid);
+	
 #pragma endregion
 
 }

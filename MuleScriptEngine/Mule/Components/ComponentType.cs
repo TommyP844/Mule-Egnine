@@ -15,7 +15,7 @@ namespace Mule.Components
                 return 3;
             if (typeof(T) == typeof(CameraComponent))
                 return 4;
-            if (typeof(T) == typeof(RigidBody3DComponent))
+            if (typeof(T) == typeof(RigidBody))
                 return 11;
 
             return uint.MaxValue;

@@ -16,7 +16,7 @@ namespace Mule
 	class SceneLoader : public IAssetLoader<Scene, AssetType::Scene>
 	{
 	public:
-		SceneLoader(WeakRef<EngineContext> engineContext, WeakRef<ScriptContext> scriptContext);
+		SceneLoader(WeakRef<EngineContext> engineContext);
 		virtual ~SceneLoader() {}
 
 
@@ -27,12 +27,9 @@ namespace Mule
 		virtual void SaveBinary(Ref<Scene> asset) override;
 
 	private:
-		WeakRef<ScriptContext> mScriptContext;
 		WeakRef<EngineContext> mEngineContext;
 
 		YAML::Node SerializeEntityYAML(Entity e);
 		Entity DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene);
-
-		void DeserializeScriptComponentYAML(const YAML::Node& node, Entity e);
 	};
 }

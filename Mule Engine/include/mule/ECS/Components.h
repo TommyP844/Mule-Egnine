@@ -4,14 +4,15 @@
 #include "ECS/Entity.h"
 
 #include "Graphics/Camera.h"
-#include "Scripting/ScriptContext.h"
-#include "Physics/PhysicsContext3D.h" // For PhysicsObjectHandle
-
-#include <string>
+#include "Scripting/ScriptFieldInfo.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#include <string>
+#include <unordered_map>
+
 
 namespace Mule
 {
@@ -141,34 +142,69 @@ namespace Mule
 		ScriptComponent() = default;
 		ScriptComponent(const ScriptComponent&) = default;
 
-		ScriptHandle Handle;
+		std::string ScriptName;
+		std::unordered_map<std::string, ScriptFieldInfo> Fields;
 	};
 
 #pragma region Physics
 
-	struct RigidBody3DComponent
+	struct RigidBodyComponent
 	{
-		RigidBody3DComponent() = default;
-		RigidBody3DComponent(const RigidBody3DComponent&) = default;
-		PhysicsObjectHandle Handle;
+		RigidBodyComponent() = default;
+		RigidBodyComponent(const RigidBodyComponent&) = default;
 		float Mass = 1.f;
 		BodyType BodyType = BodyType::Dynamic;
 	};
 
-	struct IBaseCollider
+	struct RigidBodyConstraintComponent
 	{
-		glm::vec3 Offset;
-		bool Trigger;
+		RigidBodyConstraintComponent() = default;
+		RigidBodyConstraintComponent(const RigidBodyConstraintComponent&) = default;
+
+		bool LockTranslationX = false;
+		bool LockTranslationY = false;
+		bool LockTranslationZ = false;
+
+		bool LockRotationX = false;
+		bool LockRotationY = false;
+		bool LockRotationZ = false;
 	};
 
-	struct SphereColliderComponent : IBaseCollider
+	struct IBaseColliderComponent
 	{
-		float Radius;
+		glm::vec3 Offset = glm::vec3(0.f);
+		bool Trigger = false;
 	};
 
-	struct BoxColliderComponent : IBaseCollider
+	struct SphereColliderComponent : IBaseColliderComponent
 	{
-		glm::vec3 Extent;
+		SphereColliderComponent() = default;
+		SphereColliderComponent(const SphereColliderComponent&) = default;
+		float Radius = 1.f;
+	};
+
+	struct BoxColliderComponent : IBaseColliderComponent
+	{
+		BoxColliderComponent() = default;
+		BoxColliderComponent(const BoxColliderComponent&) = default;
+		glm::vec3 Extent = glm::vec3(1.f);
+	};
+
+	struct PlaneColliderComponent : IBaseColliderComponent
+	{
+		PlaneColliderComponent() = default;
+		PlaneColliderComponent(const PlaneColliderComponent&) = default;
+
+		float Offset = 0.f;
+	};
+
+	struct CapsuleColliderComponent : IBaseColliderComponent
+	{
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+
+		float Radius = 1.f;
+		float HalfHeight = 1.f;
 	};
 
 #pragma endregion

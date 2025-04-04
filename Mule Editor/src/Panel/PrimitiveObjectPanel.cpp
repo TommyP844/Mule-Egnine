@@ -24,11 +24,17 @@ void PrimitiveObjectPanel::OnUIRender(float dt)
 		ImGui::Selectable("Beveled Block");
 		DragDropMeshSource(MULE_BEVELED_BLOCK_MESH_HANDLE, "Beveled Block");
 
-		ImGui::Selectable("Cube");
-		DragDropMeshSource(MULE_CUBE_MESH_HANDLE, "Cube");
+		ImGui::Selectable("Capsule");
+		DragDropMeshSource(MULE_CAPSULE_MESH_HANDLE, "Capsule");
 
 		ImGui::Selectable("Cone");
 		DragDropMeshSource(MULE_CONE_MESH_HANDLE, "Cone");
+
+		ImGui::Selectable("Cube");
+		DragDropMeshSource(MULE_CUBE_MESH_HANDLE, "Cube");
+
+		ImGui::Selectable("Cylinder");
+		DragDropMeshSource(MULE_CYLINDER_MESH_HANDLE, "Cylinder");
 		
 		ImGui::Selectable("Plane");
 		DragDropMeshSource(MULE_PLANE_MESH_HANDLE, "Torus");

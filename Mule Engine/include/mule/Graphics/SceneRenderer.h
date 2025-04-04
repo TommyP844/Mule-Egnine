@@ -51,8 +51,8 @@ namespace Mule
 		void UpdateMaterial(WeakRef<Material> material);
 		void RemoveMaterial(AssetHandle materialHandle);
 
-		void OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
-		void OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
+		bool OnEditorRender(WeakRef<Scene> scene, const Camera& camera, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
+		bool OnRender(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
 
 		Guid Pick(uint32_t x, uint32_t y);
 

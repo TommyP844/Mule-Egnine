@@ -35,9 +35,16 @@ namespace Mule
 
         #region Physics
 
-        internal static unsafe delegate*<ulong, float> GetRigidBody3DMass;
-        internal static unsafe delegate*<ulong, float, void> SetRigidBody3DMass;
-        internal static unsafe delegate*<ulong, Vector3, Quaternion, float, void> MoveRigidBody3DKinematic;
+        internal static unsafe delegate*<ulong, float> GetRigidBodyMass;
+        internal static unsafe delegate*<ulong, float, void> SetRigidBodyMass;
+        internal static unsafe delegate*<ulong, Vector3, Quaternion, float, void> MoveRigidBodyKinematic;
+        internal static unsafe delegate*<ulong, Vector3, void> AddRigidBodyForce;
+        internal static unsafe delegate*<ulong, Vector3, void> AddRigidBodyTorque;
+        internal static unsafe delegate*<ulong, Vector3, void> AddRigidBodyImpulse;
+        internal static unsafe delegate*<ulong, Vector3, void> AddRigidBodyAngularImpulse;
+        internal static unsafe delegate*<ulong, Vector3, void> SetRigidBodyLinearVelocity;
+        internal static unsafe delegate*<ulong, Vector3, void> SetRigidBodyAngularVelocity;
+        internal static unsafe delegate*<ulong, Vector3> GetRigidBodyLinearVelocity;
 
         #endregion
     }

@@ -24,12 +24,10 @@
 namespace Mule
 {
 
-	SceneLoader::SceneLoader(WeakRef<EngineContext> engineContext, WeakRef<ScriptContext> scriptContext)
+	SceneLoader::SceneLoader(WeakRef<EngineContext> engineContext)
 		:
-		mScriptContext(scriptContext),
 		mEngineContext(engineContext)
 	{
-		YAML::convert<Mule::ScriptComponent>::gScriptContext = mScriptContext;
 	}
 
 	Ref<Scene> SceneLoader::LoadText(const fs::path& filepath)
@@ -94,15 +92,18 @@ namespace Mule
 
 		node["Transform"] = e.GetComponent<Mule::TransformComponent>();
 
-		SERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("Script", Mule::ScriptComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("RigidBody3D", Mule::RigidBody3DComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", Mule::SphereColliderComponent);
-		SERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", Mule::BoxColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("Camera", CameraComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", EnvironmentMapComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("Mesh", MeshComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("PointLight", PointLightComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", DirectionalLightComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("Script", ScriptComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("RigidBody", RigidBodyComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", SphereColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", BoxColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("CapsuleCollider", CapsuleColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("PlaneCollider", PlaneColliderComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("RigidBodyConstraint", RigidBodyConstraintComponent);
 
 		YAML::Node childNode;
 		for (auto child : e.Children())
@@ -121,19 +122,19 @@ namespace Mule
 		auto& transformComponent = e.GetComponent<Mule::TransformComponent>();
 		transformComponent = node["Transform"].as<Mule::TransformComponent>();
 
-		DESERIALIZE_COMPONENT_IF_EXISTS("Camera", Mule::CameraComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", Mule::EnvironmentMapComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", Mule::MeshComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", Mule::DirectionalLightComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", Mule::PointLightComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("RigidBody3D", Mule::RigidBody3DComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", Mule::SphereColliderComponent);
-		DESERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", Mule::BoxColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("Camera", CameraComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("EnvironmentMap", EnvironmentMapComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("Mesh", MeshComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("DirectionalLight", DirectionalLightComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("PointLight", PointLightComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("RigidBody", RigidBodyComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("SphereCollider", SphereColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("BoxCollider", BoxColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("CapsuleCollider", CapsuleColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("PlaneCollider", PlaneColliderComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("RigidBodyConstraint", RigidBodyConstraintComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("Script", ScriptComponent);
 
-		//if (node["Script"])
-		//{
-		//	DeserializeScriptComponentYAML(node["Script"], e);
-		//}
 
 		for (auto childNode : node["Children"])
 		{
@@ -142,54 +143,5 @@ namespace Mule
 		}
 
 		return e;
-	}
-
-	void SceneLoader::DeserializeScriptComponentYAML(const YAML::Node& node, Entity e)
-	{
-		if (!node["Class"]) return;
-
-		std::string className = node["Class"].as<std::string>();
-		Mule::ScriptHandle handle = node["Handle"].as<Mule::ScriptHandle>();
-
-		bool success = mScriptContext->CreateInstance(className, e.Guid(), handle);
-		if (success)
-		{
-			auto& scriptComponent = e.AddComponent<ScriptComponent>();
-			scriptComponent.Handle = handle;
-
-			const auto& scriptType = mScriptContext->GetType(className);
-			auto scriptInstance = mScriptContext->GetScriptInstance(handle);
-
-			for (auto fieldNode : node["Fields"])
-			{
-				std::string fieldName = fieldNode["Name"].as<std::string>();
-				Mule::ScriptFieldType fieldType = (Mule::ScriptFieldType)fieldNode["Type"].as<uint32_t>();
-
-				if (!scriptType.DoesFieldExist(fieldName))
-					continue;
-
-				const auto& field = scriptType.GetField(fieldName);
-				if (field.Type != fieldType)
-					continue;
-
-
-#define DESERIALIZE_SCRIPT_FIELD(type) scriptInstance->SetFieldValue<type>(fieldName, fieldNode["Value"].as<type>());
-				switch (fieldType)
-				{
-				case Mule::ScriptFieldType::Bool: DESERIALIZE_SCRIPT_FIELD(bool); break;
-				case Mule::ScriptFieldType::Int16: DESERIALIZE_SCRIPT_FIELD(int16_t); break;
-				case Mule::ScriptFieldType::Int32: DESERIALIZE_SCRIPT_FIELD(int32_t); break;
-				case Mule::ScriptFieldType::Int64: DESERIALIZE_SCRIPT_FIELD(int64_t); break;
-				case Mule::ScriptFieldType::UInt16: DESERIALIZE_SCRIPT_FIELD(uint16_t); break;
-				case Mule::ScriptFieldType::UInt32: DESERIALIZE_SCRIPT_FIELD(uint32_t); break;
-				case Mule::ScriptFieldType::UInt64: DESERIALIZE_SCRIPT_FIELD(uint64_t); break;
-				case Mule::ScriptFieldType::Float: DESERIALIZE_SCRIPT_FIELD(float); break;
-				case Mule::ScriptFieldType::Double: DESERIALIZE_SCRIPT_FIELD(double); break;
-					//case Mule::FieldType::Decimal: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
-					//case Mule::FieldType::UIntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(unsigned long*); break;
-					//case Mule::FieldType::IntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
-				}
-			}
-		}
 	}
 }

@@ -1,9 +1,15 @@
 #include "ECS/Scene.h"
+
 #include "ECS/Entity.h"
 #include "ECS/Components.h"
+
 #include "Engine Context/EngineContext.h"
 #include "Physics/Shape3D/BoxShape.h"
 #include "Physics/Shape3D/SphereShape.h"
+#include "Physics/Shape3D/CapsuleShape.h"
+#include "Physics/Shape3D/PlaneShape.h"
+
+#include "Scripting/ScriptContext.h"
 
 #include <entt/entt.hpp>
 
@@ -40,10 +46,10 @@ namespace Mule
 
 	Entity Scene::CopyEntity(Entity entity)
 	{
-		Entity e = CreateEntity(entity.Name() + "-Copy");
+		Entity e = CreateEntity(entity.Name());
 
-		//CopyComponent<RootComponent>(entity, entity);
-		//CopyComponent<MetaComponent>(entity, entity);
+		CopyComponent<RootComponent>(entity, entity);
+		CopyComponent<MetaComponent>(entity, entity);
 		CopyComponent<TransformComponent>(e, entity);
 		CopyComponent<CameraComponent>(e, entity);
 		CopyComponent<EnvironmentMapComponent>(e, entity);
@@ -52,9 +58,12 @@ namespace Mule
 		CopyComponent<DirectionalLightComponent>(e, entity);
 		CopyComponent<MeshComponent>(e, entity);
 		CopyComponent<ScriptComponent>(e, entity);
-		CopyComponent<RigidBody3DComponent>(e, entity);
+		CopyComponent<RigidBodyComponent>(e, entity);
 		CopyComponent<BoxColliderComponent>(e, entity);
 		CopyComponent<SphereColliderComponent>(e, entity);
+		CopyComponent<CapsuleColliderComponent>(e, entity);
+		CopyComponent<PlaneColliderComponent>(e, entity);
+		CopyComponent<RigidBodyConstraintComponent>(e, entity);
 
 		for (auto child : entity.Children())
 		{
@@ -125,16 +134,17 @@ namespace Mule
 	void Scene::OnPlayStart()
 	{
 		// Physics
-		mPhysicsContext3D.Init();
+		mPhysicsContext.Init();
 		
-		for (auto entity : mRegistry.view<RigidBody3DComponent>())
+		for (auto entity : mRegistry.view<RigidBodyComponent>())
 		{
 			Entity e(entity, this);
 
 			auto& transformComponent = GetComponent<TransformComponent>(entity);
-			auto& rigidbodyComponent = GetComponent<RigidBody3DComponent>(entity);
+			auto& rigidbodyComponent = GetComponent<RigidBodyComponent>(entity);
 
 			RigidBody3DInfo info;
+			info.Guid = e.Guid();
 			info.Position = transformComponent.Translation;
 			info.Orientation = transformComponent.GetOrientation();
 			info.Type = rigidbodyComponent.BodyType;
@@ -154,11 +164,29 @@ namespace Mule
 
 				info.Shape = MakeRef<BoxShape>(collider.Extent, collider.Offset, collider.Trigger);
 			}
+			else if (HasComponent<CapsuleColliderComponent>(entity))
+			{
+				auto& collider = GetComponent<CapsuleColliderComponent>(entity);
+
+				info.Shape = MakeRef<CapsuleShape>(collider.Radius, collider.HalfHeight, collider.Offset, collider.Trigger);
+			}
+			else if (HasComponent<PlaneColliderComponent>(entity))
+			{
+				auto& collider = GetComponent<PlaneColliderComponent>(entity);
+
+				glm::mat3 transform = e.GetTransformTR();
+				glm::vec3 normal = glm::vec3(0.f, 1.f, 0.f);
+				glm::vec3 dir = glm::normalize(transform * normal);
+
+				glm::vec4 plane = glm::vec4(dir, collider.Offset);
+
+				info.Shape = MakeRef<PlaneShape>(plane, collider.Trigger);
+			}
 
 			if (!info.Shape)
 				continue;
 
-			rigidbodyComponent.Handle = mPhysicsContext3D.CreateRigidBody3D(info);	
+			mPhysicsContext.CreateRigidBody(info);	
 		}
 
 		auto scriptContext = mEngineContext->GetScriptContext();
@@ -167,36 +195,30 @@ namespace Mule
 			Entity e(entity, this);
 
 			const auto& scriptComponent = e.GetComponent<ScriptComponent>();
-			auto scriptHandle = scriptComponent.Handle;
-
-			auto scriptInstance = scriptContext->GetScriptInstance(scriptHandle);
-
-			if (!scriptInstance)
-				continue;
-
-			scriptInstance->OnStart();
+			
+			scriptContext->CreateInstance(scriptComponent.ScriptName, e.Guid(), scriptComponent.Fields);
+			scriptContext->OnStart(e.Guid());
 		}
 	}
 
 	void Scene::OnPlayStop()
 	{
-		mPhysicsContext3D.Shutdown();
+		mPhysicsContext.Shutdown();
 	}
 
 	// TODO: get viewport width / height
 	void Scene::OnUpdate(float dt)
 	{
-		mPhysicsContext3D.Step(dt);
+		mPhysicsContext.Step(dt);
 
-		for (auto entity : mRegistry.view<RigidBody3DComponent>())
+		for (auto entity : mRegistry.view<RigidBodyComponent>())
 		{
 			auto& transform = GetComponent<TransformComponent>(entity);
-			auto& rigidBodyComponent = GetComponent<RigidBody3DComponent>(entity);
+			auto& rigidBodyComponent = GetComponent<RigidBodyComponent>(entity);
+			auto& metaComponent = GetComponent<MetaComponent>(entity);
 
-			auto rigidBody = mPhysicsContext3D.GetRigidBody(rigidBodyComponent.Handle);
-
-			transform.Translation = rigidBody->GetPosition();
-			transform.Rotation = rigidBody->GetRotation();
+			transform.Translation = mPhysicsContext.GetPosition(metaComponent.Guid);
+			transform.Rotation = mPhysicsContext.GetRotation(metaComponent.Guid);
 		}
 
 		for (auto entity : mRegistry.view<CameraComponent>())
@@ -215,23 +237,15 @@ namespace Mule
 		{
 			Entity e(entity, this);
 
-			const auto& scriptComponent = e.GetComponent<ScriptComponent>();
-			auto scriptHandle = scriptComponent.Handle;
+			scriptContext->OnUpdate(e.Guid(), dt);
 
-			auto scriptInstance = scriptContext->GetScriptInstance(scriptHandle);
-			
-			if (!scriptInstance)
-				continue;
-
-			scriptInstance->OnUpdate(dt);
-
-			if (HasComponent<RigidBody3DComponent>(entity))
+			if (HasComponent<RigidBodyComponent>(entity))
 			{
 				auto& transform = GetComponent<TransformComponent>(entity);
-				auto& rigidBody3dComponent = GetComponent<RigidBody3DComponent>(entity);
+				auto& rigidBody3dComponent = GetComponent<RigidBodyComponent>(entity);
+				auto& metaComponent = GetComponent<MetaComponent>(entity);
 
-				auto rigidBody3d = mPhysicsContext3D.GetRigidBody(rigidBody3dComponent.Handle);
-				rigidBody3d->SetPosition(transform.Translation);
+				mPhysicsContext.SetPosition(metaComponent.Guid, transform.Translation);
 			}
 		}
 	}
@@ -250,9 +264,12 @@ namespace Mule
 		CopyComponent<DirectionalLightComponent>(e, entity);
 		CopyComponent<MeshComponent>(e, entity);
 		CopyComponent<ScriptComponent>(e, entity);
-		CopyComponent<RigidBody3DComponent>(e, entity);
+		CopyComponent<RigidBodyComponent>(e, entity);
 		CopyComponent<BoxColliderComponent>(e, entity);
 		CopyComponent<SphereColliderComponent>(e, entity);
+		CopyComponent<CapsuleColliderComponent>(e, entity);
+		CopyComponent<PlaneColliderComponent>(e, entity);
+		CopyComponent<RigidBodyConstraintComponent>(e, entity);
 
 		for (auto child : entity.Children())
 		{

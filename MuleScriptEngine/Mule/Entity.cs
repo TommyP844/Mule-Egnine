@@ -33,6 +33,9 @@ namespace Mule
             if (nativePtr == IntPtr.Zero)
                 throw new Exception("Component does not exist");
 
+            if(typeof(T) == typeof(RigidBody))
+                return (T)Activator.CreateInstance(typeof(T), nativePtr, _guid);
+
             return (T)Activator.CreateInstance(typeof(T), nativePtr);
 
         }

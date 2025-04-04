@@ -6,6 +6,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "ECS/Components.h"
+#include "Scripting/ScriptFieldType.h"
 
 namespace YAML {
 
@@ -315,55 +316,79 @@ namespace YAML {
     template<>
     struct convert<Mule::ScriptComponent> {
         static Node encode(const Mule::ScriptComponent& script) {
-            Node node;
+            Node node; 
 
-            auto scriptInstance = gScriptContext->GetScriptInstance(script.Handle);
+			node["ScriptName"] = script.ScriptName;
 
-            if (scriptInstance)
-            {
-                node["Class"] = scriptInstance->GetName();
-                node["Handle"] = script.Handle;
-
-                node["Fields"];
-
-                for (const auto& [name, field] : gScriptContext->GetType(scriptInstance->GetName()).GetFields())
+			for (auto& [name, field] : script.Fields)
+			{                
+				Node fieldNode;
+				fieldNode["Name"] = name;
+				fieldNode["Type"] = (uint32_t)field.GetType();
+				
+                switch (field.GetType())
                 {
-                    Node fieldNode;
-
-                    fieldNode["Type"] = (uint32_t)field.Type;
-                    fieldNode["Name"] = field.Name;
-
-#define SERIALIZE_SCRIPT_FIELD_VALUE(type) fieldNode["Value"] = scriptInstance->GetFieldValue<type>(field.Name);
-                    switch (field.Type)
-                    {
-                    case Mule::ScriptFieldType::Bool: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
-                    case Mule::ScriptFieldType::Int16: SERIALIZE_SCRIPT_FIELD_VALUE(int16_t); break;
-                    case Mule::ScriptFieldType::Int32: SERIALIZE_SCRIPT_FIELD_VALUE(int32_t); break;
-                    case Mule::ScriptFieldType::Int64: SERIALIZE_SCRIPT_FIELD_VALUE(int64_t); break;
-                    case Mule::ScriptFieldType::UInt16: SERIALIZE_SCRIPT_FIELD_VALUE(uint16_t); break;
-                    case Mule::ScriptFieldType::UInt32: SERIALIZE_SCRIPT_FIELD_VALUE(uint32_t); break;
-                    case Mule::ScriptFieldType::UInt64: SERIALIZE_SCRIPT_FIELD_VALUE(uint64_t); break;
-                    case Mule::ScriptFieldType::Float: SERIALIZE_SCRIPT_FIELD_VALUE(float); break;
-                    case Mule::ScriptFieldType::Double: SERIALIZE_SCRIPT_FIELD_VALUE(double); break;
-                        //case Mule::FieldType::Decimal: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
-                        //case Mule::FieldType::UIntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(unsigned long*); break;
-                        //case Mule::FieldType::IntPtr: SERIALIZE_SCRIPT_FIELD_VALUE(bool); break;
-                    }
-
-
-                    node["Fields"].push_back(fieldNode);
+                case Mule::ScriptFieldType::Int: fieldNode["Value"] = field.GetValue<int32_t>(); break;
+                case Mule::ScriptFieldType::Float: fieldNode["Value"] = field.GetValue<float>(); break;
+                case Mule::ScriptFieldType::Double: fieldNode["Value"] = field.GetValue<double>(); break;
+                case Mule::ScriptFieldType::String: fieldNode["Value"] = field.GetValue<std::string>(); break;
+                case Mule::ScriptFieldType::Vector2: fieldNode["Value"] = field.GetValue<glm::vec2>(); break;
+                case Mule::ScriptFieldType::Vector3: fieldNode["Value"] = field.GetValue<glm::vec3>(); break;
+                case Mule::ScriptFieldType::Vector4: fieldNode["Value"] = field.GetValue<glm::vec4>(); break;
+                //case Mule::ScriptFieldType::Entity: fieldNode["Value"] = field.GetValue<int32_t>(); break;
+                default:break;  
                 }
-            }
+
+				node["Fields"].push_back(fieldNode);
+			}
 
             return node;
         }
 
-        static WeakRef<Mule::ScriptContext> gScriptContext;
+		static bool decode(const Node& node, Mule::ScriptComponent& script) {
+
+            script.ScriptName = node["ScriptName"].as<std::string>();
+
+            for (auto fieldNode : node["Fields"])
+            {
+                std::string name = fieldNode["Name"].as<std::string>();
+                Mule::ScriptFieldType type = (Mule::ScriptFieldType)fieldNode["Type"].as<uint32_t>();
+
+                switch (type)
+                {
+                case Mule::ScriptFieldType::Int: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<int32_t>());
+                    break;
+                case Mule::ScriptFieldType::Float: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<float>());
+                    break;
+                case Mule::ScriptFieldType::Double: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<double>());
+                    break;
+                case Mule::ScriptFieldType::String: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<std::string>());
+                    break;
+                case Mule::ScriptFieldType::Vector2: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<glm::vec2>());
+                    break;
+                case Mule::ScriptFieldType::Vector3: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<glm::vec3>());
+                    break;
+                case Mule::ScriptFieldType::Vector4: 
+                    script.Fields[name] = Mule::ScriptFieldInfo(type, fieldNode["Value"].as<glm::vec4>());
+                    break;
+                    //case Mule::ScriptFieldType::Entity: fieldNode["Value"] = field.GetValue<int32_t>(); break;
+                default:break;
+                }
+            }
+
+			return true;
+		}
     };
 
     template<>
-    struct convert<Mule::RigidBody3DComponent> {
-        static Node encode(const Mule::RigidBody3DComponent& rigidBody) {
+    struct convert<Mule::RigidBodyComponent> {
+        static Node encode(const Mule::RigidBodyComponent& rigidBody) {
             Node node;
 
             node["Mass"] = rigidBody.Mass;
@@ -372,10 +397,40 @@ namespace YAML {
             return node;
         }
 
-        static bool decode(const Node& node, Mule::RigidBody3DComponent& rigidBody) {
+        static bool decode(const Node& node, Mule::RigidBodyComponent& rigidBody) {
 
             rigidBody.Mass = node["Mass"].as<float>();
             rigidBody.BodyType = (Mule::BodyType)node["BodyType"].as<uint32_t>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::RigidBodyConstraintComponent> {
+        static Node encode(const Mule::RigidBodyConstraintComponent& constraint) {
+            Node node;
+
+            node["LockTranslationX"] = constraint.LockTranslationX;
+            node["LockTranslationY"] = constraint.LockTranslationY;
+            node["LockTranslationZ"] = constraint.LockTranslationZ;
+
+            node["LockRotationX"] = constraint.LockRotationX;
+            node["LockRotationY"] = constraint.LockRotationY;
+            node["LockRotationZ"] = constraint.LockRotationZ;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::RigidBodyConstraintComponent& constraint) {
+
+            constraint.LockTranslationX = node["LockTranslationX"].as<bool>();
+            constraint.LockTranslationY = node["LockTranslationY"].as<bool>();
+            constraint.LockTranslationZ = node["LockTranslationZ"].as<bool>();
+
+            constraint.LockRotationX = node["LockRotationX"].as<bool>();
+            constraint.LockRotationY = node["LockRotationY"].as<bool>();
+            constraint.LockRotationZ = node["LockRotationZ"].as<bool>();
 
             return true;
         }
@@ -420,6 +475,48 @@ namespace YAML {
             collider.Trigger = node["Trigger"].as<bool>();
             collider.Offset = node["Offset"].as<glm::vec3>();
             collider.Extent = node["Extent"].as<glm::vec3>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::CapsuleColliderComponent> {
+        static Node encode(const Mule::CapsuleColliderComponent& capsule) {
+            Node node;
+
+            node["Trigger"] = capsule.Trigger;
+            node["Offset"] = capsule.Offset;
+            node["Radius"] = capsule.Radius;
+            node["HalfHeight"] = capsule.HalfHeight;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::CapsuleColliderComponent& capsule) {
+
+            capsule.Trigger = node["Trigger"].as<bool>();
+            capsule.Offset = node["Offset"].as<glm::vec3>();
+            capsule.Radius = node["Radius"].as<float>();
+            capsule.HalfHeight = node["HalfHeight"].as<float>();
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mule::PlaneColliderComponent> {
+        static Node encode(const Mule::PlaneColliderComponent& plane) {
+            Node node;
+
+            node["Trigger"] = plane.Trigger;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::PlaneColliderComponent& plane) {
+
+            plane.Trigger = node["Trigger"].as<bool>();
 
             return true;
         }

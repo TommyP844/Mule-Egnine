@@ -10,7 +10,6 @@
 
 namespace Mule
 {
-
 	void ExceptionCallback(std::string_view InMessage)
 	{
 		SPDLOG_ERROR("C# Exception: {}", InMessage);
@@ -51,7 +50,7 @@ namespace Mule
 			if (name.find("`1")) // Skip Generics
 				continue;
 
-			mTypes[name] = ScriptType(type, &mEngineAssembly);
+			mTypes[name] = type;
 		}
 	}
 
@@ -77,57 +76,6 @@ namespace Mule
 			return;
 		}
 
-		struct ClassMemeber
-		{
-			std::any Value;
-			ScriptFieldType Type;
-		};
-
-		struct ClassInstance
-		{
-			std::string ClassName;
-			uint32_t Id;
-			std::unordered_map<std::string, ClassMemeber> Fields;
-		};
-
-		std::unordered_map<ScriptHandle, ClassInstance> scriptValues;
-		for (auto [handle, instance] : mScriptInstances)
-		{
-			auto& oldInstance = scriptValues[handle];
-			oldInstance.ClassName = instance.second->GetName();
-			oldInstance.Id = instance.first;
-			auto& valueMap = oldInstance.Fields;
-			auto type = mTypes[instance.second->mClassName];
-
-#define GET_FIELD_AS_ANY(enumType, type) { std::make_any<type>(instance.second->GetFieldValue<type>(fieldName)), enumType };
-
-			for (auto [fieldName, field] : type.GetFields())
-			{
-				if (field.Accessibility != FieldAccessibility::Public)
-					continue;
-
-				switch (field.Type)
-				{
-				case ScriptFieldType::Bool: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Bool, bool); break;
-				case ScriptFieldType::Byte: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Byte, unsigned char); break;
-				case ScriptFieldType::Int16: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Int16, int16_t); break;
-				case ScriptFieldType::UInt16: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::UInt16, uint16_t); break;
-				case ScriptFieldType::Int32: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Int32, int32_t); break;
-				case ScriptFieldType::UInt32: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::UInt32, uint32_t); break;
-				case ScriptFieldType::Int64: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Int64, int64_t); break;
-				case ScriptFieldType::UInt64: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::UInt64, uint64_t); break;
-				case ScriptFieldType::Float: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Float, float); break;
-				case ScriptFieldType::Double: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::Double, double); break;
-				case ScriptFieldType::String: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::String, std::string); break;
-				case ScriptFieldType::IntPtr: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::IntPtr, void*); break;
-				case ScriptFieldType::UIntPtr: valueMap[fieldName] = GET_FIELD_AS_ANY(ScriptFieldType::UIntPtr, void*); break;
-				}
-				
-			}
-
-			instance.second->mObject.Destroy();
-		}
-
 		if (mUserAssembly.GetLoadStatus() == Coral::AssemblyLoadStatus::Success)
 		{
 			mInstance.UnloadAssemblyLoadContext(mUserLoadContext);
@@ -142,77 +90,23 @@ namespace Mule
 			return;
 		}
 
+		mTypes.clear();
 		for (auto type : mUserAssembly.GetTypes())
 		{
 			std::string name = type->GetFullName();
-			mTypes[name] = ScriptType(type, &mUserAssembly);
-		}
-
-		for (auto [handle, instanceData] : scriptValues)
-		{
-			// User may have deleted class
-			auto iter = mTypes.find(instanceData.ClassName);
-			if (iter == mTypes.end())
-				continue;
-
-			auto& type = iter->second;
-			
-			bool success = CreateInstance(instanceData.ClassName, instanceData.Id, handle);
-			if (!success)
-			{
-				SPDLOG_ERROR("Failed to copy script, {}", instanceData.ClassName);
-				continue;
-			}
-
-			auto instance = GetScriptInstance(handle);
-
-
-			for (auto [name, member] : instanceData.Fields)
-			{
-				if (!type.DoesFieldExist(name))
-					continue;
-
-				const auto& field = type.GetField(name);
-				if (field.Accessibility != FieldAccessibility::Public)
-					continue;
-
-				if (field.Type != member.Type)
-					continue;
-
-				
-
-				switch (member.Type)
-				{
-				case ScriptFieldType::Bool:		instance->SetFieldValue<bool>(name, std::any_cast<bool>(member.Value));	break;
-				case ScriptFieldType::Byte:		instance->SetFieldValue<unsigned char>(name, std::any_cast<unsigned char>(member.Value)); break;
-				case ScriptFieldType::Int16:	instance->SetFieldValue<int16_t>(name, std::any_cast<int16_t>(member.Value));	break;
-				case ScriptFieldType::UInt16:	instance->SetFieldValue<uint16_t>(name, std::any_cast<uint16_t>(member.Value));	break;
-				case ScriptFieldType::Int32:	instance->SetFieldValue<int32_t>(name, std::any_cast<int32_t>(member.Value));	break;
-				case ScriptFieldType::UInt32:	instance->SetFieldValue<uint32_t>(name, std::any_cast<uint32_t>(member.Value));	break;
-				case ScriptFieldType::Int64:	instance->SetFieldValue<int64_t>(name, std::any_cast<int64_t>(member.Value));	break;
-				case ScriptFieldType::UInt64:	instance->SetFieldValue<uint64_t>(name, std::any_cast<uint64_t>(member.Value));	break;
-				case ScriptFieldType::Float:	instance->SetFieldValue<float>(name, std::any_cast<float>(member.Value));	break;
-				case ScriptFieldType::Double:	instance->SetFieldValue<double>(name, std::any_cast<double>(member.Value));	break;
-				case ScriptFieldType::String:	instance->SetFieldValue<std::string>(name, std::any_cast<std::string>(member.Value));	break;
-				case ScriptFieldType::IntPtr:	instance->SetFieldValue<void*>(name, std::any_cast<void*>(member.Value));	break;
-				case ScriptFieldType::UIntPtr:	instance->SetFieldValue<void*>(name, std::any_cast<void*>(member.Value));	break;
-				}
-			}
+			mTypes[name] = type;
+			for(auto method : type->GetMethods())
+			mTypeMethods[name].insert(method.GetName());
 		}
 	}
 
-	ScriptHandle ScriptContext::CreateInstance(const std::string& name, Guid guid)
+	bool ScriptContext::DoesInstanceExist(Guid guid) const
 	{
-		ScriptHandle handle = GenerateScriptHandle();
-		if (!CreateInstance(name, guid, handle))
-		{
-			return NullScriptHandle;
-		}
-
-		return handle;
+		auto iter = mScriptInstances.find(guid);
+		return iter != mScriptInstances.end();
 	}
 
-	bool ScriptContext::CreateInstance(const std::string& name, Guid guid, ScriptHandle handle)
+	bool ScriptContext::CreateInstance(const std::string& name, Guid guid, const std::unordered_map<std::string, ScriptFieldInfo>& fieldData)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
@@ -223,43 +117,34 @@ namespace Mule
 			return false;
 		}
 
-		Coral::Type* type = iter->second.mType;
+		Coral::Type* type = iter->second;
 
 		Coral::ManagedObject object = type->CreateInstance();
 		uint64_t h = guid;
 		object.SetFieldValue("_guid", h);
 
-		Ref<ScriptInstance> instance = MakeRef<ScriptInstance>(type->GetFullName(), object);
+		if (mScriptInstances.find(guid) != mScriptInstances.end())
+		{
+			mScriptInstances.at(guid).Destroy();
+		}
 
-		mScriptInstances[handle] = { guid, instance };
+		for (auto& [name, field] : fieldData)
+		{
+			switch (field.GetType())
+			{
+			case ScriptFieldType::Int: object.SetFieldValue(name, field.GetValue<int32_t>()); break;
+			case ScriptFieldType::Float: object.SetFieldValue(name, field.GetValue<float>()); break;
+			case ScriptFieldType::Double: object.SetFieldValue(name, field.GetValue<double>()); break;
+			case ScriptFieldType::String: object.SetFieldValue(name, field.GetValue<std::string>()); break;
+			case ScriptFieldType::Vector2: object.SetFieldValue(name, field.GetValue<glm::vec2>()); break;
+			case ScriptFieldType::Vector3: object.SetFieldValue(name, field.GetValue<glm::vec3>()); break;
+			case ScriptFieldType::Vector4: object.SetFieldValue(name, field.GetValue<glm::vec4>()); break;
+			}
+		}
+
+		mScriptInstances[guid] = object;
 
 		return true;
-	}
-
-	WeakRef<ScriptInstance> ScriptContext::GetScriptInstance(ScriptHandle handle)
-	{
-		if (handle == NullScriptHandle)
-			return nullptr;
-
-		std::lock_guard<std::mutex> lock(mMutex);
-
-		auto iter = mScriptInstances.find(handle);
-		if (iter == mScriptInstances.end())
-			return nullptr;
-
-		return iter->second.second;
-	}
-
-	const ScriptType& ScriptContext::GetType(const std::string& name)
-	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
-		auto iter = mTypes.find(name);
-		if (iter == mTypes.end())
-		{
-			return {};
-		}
-		return iter->second;
 	}
 
 	bool ScriptContext::DoesTypeExist(const std::string& className) const
@@ -270,13 +155,122 @@ namespace Mule
 		return iter != mTypes.end();
 	}
 
-	ScriptHandle ScriptContext::GenerateScriptHandle()
+	std::unordered_map<std::string, ScriptFieldInfo> ScriptContext::GetScriptFields(const std::string& name) const
 	{
-		std::random_device device;
-		std::uniform_int_distribution<uint64_t> dist(1, UINT64_MAX);
-		ScriptHandle handle = dist(device);
+		std::unordered_map<std::string, ScriptFieldInfo> fields;
 
-		return handle;
+		auto iter = mTypes.find(name);
+		if (iter == mTypes.end())
+		{
+			SPDLOG_WARN("Script Class does not exist: {}", name);
+			return {};
+		}
+
+		Coral::Type* type = iter->second;
+		for (auto field : type->GetFields())
+		{
+			ScriptFieldType type = GetTypeFromName(field.GetType().GetFullName());
+			if (type == ScriptFieldType::None)
+				continue;
+			
+			fields[field.GetName()] = ScriptFieldInfo(type);
+		}
+
+		return fields;
+	}
+
+	std::unordered_map<std::string, ScriptFieldInfo> ScriptContext::RefreshScriptFields(const std::string className, const std::unordered_map<std::string, ScriptFieldInfo>& fieldData) const
+	{
+		std::unordered_map<std::string, ScriptFieldInfo> fields = GetScriptFields(className);
+
+		for (auto& [fieldName, field] : fields)
+		{
+			auto iter = fieldData.find(fieldName);
+			if (iter == fieldData.end())
+				continue;
+
+			ScriptFieldInfo oldField = fieldData.at(fieldName);
+
+			if (field.GetType() == oldField.GetType())
+			{
+				switch (field.GetType())
+				{
+				case ScriptFieldType::Int: field.SetValue(oldField.GetValue<int32_t>()); break;
+				case ScriptFieldType::Float: field.SetValue(oldField.GetValue<float>()); break;
+				case ScriptFieldType::Double: field.SetValue(oldField.GetValue<double>()); break;
+				case ScriptFieldType::String: field.SetValue(oldField.GetValue<std::string>()); break;
+				case ScriptFieldType::Vector2: field.SetValue(oldField.GetValue<glm::vec2>()); break;
+				case ScriptFieldType::Vector3: field.SetValue(oldField.GetValue<glm::vec3>()); break;
+				case ScriptFieldType::Vector4: field.SetValue(oldField.GetValue<glm::vec4>()); break;
+				}
+			}
+		}
+
+		return fields;
+	}
+
+	void ScriptContext::OnAwake(Guid guid) const
+	{
+		std::lock_guard<std::mutex> lock(mMutex);
+		if (!DoesInstanceExist(guid))
+		{
+			SPDLOG_ERROR("Script instance does not exist");
+			return;
+		}
+
+		bool hasOnAwake = ScriptHasMethod(guid, "Awake");
+				
+		if (hasOnAwake)
+		{
+			const Coral::ManagedObject& object = mScriptInstances.at(guid);
+			object.InvokeMethod("Awake");
+		}
+		else
+		{
+			SPDLOG_WARN("Script instance does not have Awake method");
+		}
+	}
+
+	void ScriptContext::OnStart(Guid guid) const
+	{
+		std::lock_guard<std::mutex> lock(mMutex);
+		if (!DoesInstanceExist(guid))
+		{
+			SPDLOG_ERROR("Script instance does not exist");
+			return;
+		}
+		bool hasOnStart = ScriptHasMethod(guid, "OnStart");
+
+		if (hasOnStart)
+		{
+			const Coral::ManagedObject& object = mScriptInstances.at(guid);
+			object.InvokeMethod("OnStart");
+		}
+	}
+
+	void ScriptContext::OnUpdate(Guid guid, float dt) const
+	{
+		std::lock_guard<std::mutex> lock(mMutex);
+		if (!DoesInstanceExist(guid))
+		{
+			SPDLOG_ERROR("Script instance does not exist");
+			return;
+		}
+		bool hasOnUpdate = ScriptHasMethod(guid, "OnUpdate");
+
+		if (hasOnUpdate)
+		{
+			const Coral::ManagedObject& object = mScriptInstances.at(guid);
+			object.InvokeMethod("OnUpdate", dt);
+		}
+	}
+
+	void ScriptContext::OnTriggerEnter(Guid guid, Guid other) const
+	{
+	}
+
+	void ScriptContext::OnTriggerLeave(Guid guid, Guid other) const
+	{
 	}
 
 	void ScriptContext::UploadInternalCalls()
@@ -301,11 +295,48 @@ namespace Mule
 		ADD_INTERNAL_CALL(UpdateCameraVPMatrix);
 
 		// Physics
-		ADD_INTERNAL_CALL(SetRigidBody3DMass);
-		ADD_INTERNAL_CALL(GetRigidBody3DMass);
-		ADD_INTERNAL_CALL(MoveRigidBody3DKinematic);
+		ADD_INTERNAL_CALL(SetRigidBodyMass);
+		ADD_INTERNAL_CALL(GetRigidBodyMass);
+		ADD_INTERNAL_CALL(MoveRigidBodyKinematic);
+		ADD_INTERNAL_CALL(AddRigidBodyForce);
+		ADD_INTERNAL_CALL(AddRigidBodyImpulse);
+		ADD_INTERNAL_CALL(AddRigidBodyTorque);
+		ADD_INTERNAL_CALL(AddRigidBodyAngularImpulse);
+		ADD_INTERNAL_CALL(SetRigidBodyLinearVelocity);
+		ADD_INTERNAL_CALL(SetRigidBodyAngularVelocity);
+		ADD_INTERNAL_CALL(GetRigidBodyLinearVelocity);
 
 		mEngineAssembly.UploadInternalCalls();
+	}
+
+	bool ScriptContext::ScriptHasMethod(Guid guid, const std::string& methodName) const
+	{
+		Coral::ManagedObject object = mScriptInstances.at(guid);
+		const Coral::Type& type = object.GetType();
+		const std::set<std::string>& methods = mTypeMethods.at(type.GetFullName());
+		return methods.contains(methodName);
+	}
+
+	ScriptFieldType ScriptContext::GetTypeFromName(const std::string& name) const
+	{
+		if(name == "System.Int32")
+			return ScriptFieldType::Int;
+		else if(name == "System.Single")
+			return ScriptFieldType::Float;
+		else if (name == "System.Double")
+			return ScriptFieldType::Double;
+		else if (name == "System.String")
+			return ScriptFieldType::String;
+		else if (name == "System.Numerics.Vector2")
+			return ScriptFieldType::Vector2;
+		else if (name == "System.Numerics.Vector3")
+			return ScriptFieldType::Vector3;
+		else if (name == "System.Numerics.Vector4")
+			return ScriptFieldType::Vector4;
+		else if (name == "Mule..Entity")
+			return ScriptFieldType::Entity;
+
+		return ScriptFieldType::None;
 	}
 
 }

@@ -51,4 +51,6 @@ private:
 
 	SimulationState mSimulationState = SimulationState::Editing;
 	Mule::Camera mEditorCamera;
+
+	std::future<void> mAssetLoaderThread;
 };

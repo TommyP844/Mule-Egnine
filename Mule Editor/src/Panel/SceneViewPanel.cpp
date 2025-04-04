@@ -174,7 +174,6 @@ void SceneViewPanel::OnEngineEvent(Ref<Mule::Event> event)
 
 	Mule::Camera& camera = mEditorContext->GetEditorCamera();
 	
-
 	if (event->Type == Mule::EventType::KeyboardEvent)
 	{
 		WeakRef<Mule::KeyboardEvent> keyboardEvent = event;
@@ -238,7 +237,10 @@ void SceneViewPanel::OnEngineEvent(Ref<Mule::Event> event)
 					mGizmoMode = ImGuizmo::MODE::LOCAL;
 				}
 				break;
-
+			case Mule::KeyCode::Key_ESCAPE:
+				if (mEditorContext->GetSimulationState() == SimulationState::Simulation)
+					mEditorContext->SetSimulationState(SimulationState::Editing);
+				break;
 			}
 			camera.SetPosition(cameraPosition);
 		}

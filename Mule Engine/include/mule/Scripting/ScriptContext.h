@@ -3,9 +3,6 @@
 #include "Ref.h"
 #include "WeakRef.h"
 
-#include "ScriptInstance.h"
-#include "ScriptType.h"
-
 #include <string>
 #include <filesystem>
 #include <unordered_map>
@@ -17,14 +14,12 @@
 #include <Coral/Attribute.hpp>
 
 #include "Engine Context/EngineContext.h"
+#include "Scripting/ScriptFieldInfo.h"
 
 namespace fs = std::filesystem;
 
 namespace Mule
 {
-	typedef uint64_t ScriptHandle;
-	constexpr ScriptHandle NullScriptHandle = 0;
-
 	class ScriptContext
 	{
 	public:
@@ -34,13 +29,18 @@ namespace Mule
 		void LoadUserDLL(const fs::path& dll);
 		void ReloadDLL();
 
-		ScriptHandle CreateInstance(const std::string& name, Guid guid);
-		bool CreateInstance(const std::string& name, Guid guid, ScriptHandle handle);
-
-		WeakRef<ScriptInstance> GetScriptInstance(ScriptHandle handle);
-
+		bool DoesInstanceExist(Guid guid) const;
+		bool CreateInstance(const std::string& name, Guid guid, const std::unordered_map<std::string, ScriptFieldInfo>& fieldData = {});
 		bool DoesTypeExist(const std::string& className) const;
-		const ScriptType& GetType(const std::string& name);
+
+		std::unordered_map<std::string, ScriptFieldInfo> GetScriptFields(const std::string& className) const;
+		std::unordered_map<std::string, ScriptFieldInfo> RefreshScriptFields(const std::string className, const std::unordered_map<std::string, ScriptFieldInfo>& fieldData) const;
+
+		void OnAwake(Guid guid) const;
+		void OnStart(Guid guid) const;
+		void OnUpdate(Guid guid, float dt) const;
+		void OnTriggerEnter(Guid guid, Guid other) const;
+		void OnTriggerLeave(Guid guid, Guid other) const;
 
 	private:
 		mutable std::mutex mMutex;
@@ -54,10 +54,14 @@ namespace Mule
 		Coral::ManagedAssembly mEngineAssembly;
 		Coral::ManagedAssembly mUserAssembly;
 		fs::path mUserAssemblyPath;
-		std::unordered_map<ScriptHandle, std::pair<Guid, Ref<ScriptInstance>>> mScriptInstances;
-		std::unordered_map<std::string, ScriptType> mTypes;
+		std::unordered_map<Guid, Coral::ManagedObject> mScriptInstances;
+
+		std::unordered_map<std::string, Coral::Type*> mTypes;
+		std::unordered_map<std::string, std::set<std::string>> mTypeMethods;
 
 		void UploadInternalCalls();
-		ScriptHandle GenerateScriptHandle();
+		bool ScriptHasMethod(Guid guid, const std::string& methodName) const;
+
+		ScriptFieldType GetTypeFromName(const std::string& name) const;
 	};
 }

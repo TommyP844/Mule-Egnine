@@ -68,10 +68,13 @@ void ComponentPanel::OnUIRender(float dt)
 				ADD_COMPONENT("Spot Light", Mule::SpotLightComponent);
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Physics 3D"))
+			if (ImGui::BeginMenu("Physics"))
 			{
-				ADD_COMPONENT("Rigid Body 3D", Mule::RigidBody3DComponent);
+				ADD_COMPONENT("Rigid Body", Mule::RigidBodyComponent);
+				ADD_COMPONENT("Rigid Body Constraint", Mule::RigidBodyConstraintComponent);
 				ADD_COMPONENT("Box Collider", Mule::BoxColliderComponent);
+				ADD_COMPONENT("Capsule Collider", Mule::CapsuleColliderComponent);
+				ADD_COMPONENT("Plane Collider", Mule::PlaneColliderComponent);
 				ADD_COMPONENT("Sphere Collider", Mule::SphereColliderComponent);
 				ImGui::EndMenu();
 			}
@@ -216,7 +219,7 @@ void ComponentPanel::OnUIRender(float dt)
 			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
 			});
 
-		DisplayComponent<Mule::RigidBody3DComponent>("Rigid Body 3D", e, [&](Mule::RigidBody3DComponent& rigidBody3d) {
+		DisplayComponent<Mule::RigidBodyComponent>("Rigid Body", e, [&](Mule::RigidBodyComponent& rigidBody3d) {
 
 			DisplayRow("Mass");
 			ImGui::DragFloat("##Mass", &rigidBody3d.Mass, 0.1f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -245,6 +248,28 @@ void ComponentPanel::OnUIRender(float dt)
 
 			});
 
+		DisplayComponent<Mule::RigidBodyConstraintComponent>("Rigid Body Constraint", e, [&](Mule::RigidBodyConstraintComponent& constraint) {
+
+			DisplayRow("Lock Translation X");
+			ImGui::Checkbox("##LTX", &constraint.LockTranslationX);
+
+			DisplayRow("Lock Translation Y");
+			ImGui::Checkbox("##LTY", &constraint.LockTranslationY);
+
+			DisplayRow("Lock Translation Z");
+			ImGui::Checkbox("##LTZ", &constraint.LockTranslationZ);
+
+			DisplayRow("Lock Rotation X");
+			ImGui::Checkbox("##LRX", &constraint.LockRotationX);
+
+			DisplayRow("Lock Rotation Y");
+			ImGui::Checkbox("##LRY", &constraint.LockRotationY);
+
+			DisplayRow("Lock Rotation Z");
+			ImGui::Checkbox("##LRZ", &constraint.LockRotationZ);
+
+			});
+
 		DisplayComponent<Mule::BoxColliderComponent>("Box Collider", e, [&](Mule::BoxColliderComponent& box) {
 
 			DisplayRow("Extent");
@@ -256,6 +281,31 @@ void ComponentPanel::OnUIRender(float dt)
 			DisplayRow("Offset");
 			ImGui::InputFloat3("##Offset", &box.Offset[0]);
 
+			});
+
+		DisplayComponent<Mule::CapsuleColliderComponent>("Capsule Collider", e, [&](Mule::CapsuleColliderComponent& capsule) {
+
+			DisplayRow("Radius");
+			ImGui::DragFloat("##Radius", &capsule.Radius, 0.05f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Half Height");
+			ImGui::DragFloat("##HalfHeight", &capsule.HalfHeight, 0.05f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
+			DisplayRow("Trigger");
+			ImGui::Checkbox("##Trigger", &capsule.Trigger);
+
+			DisplayRow("Offset");
+			ImGui::InputFloat3("##Offset", &capsule.Offset[0]);
+
+			});
+
+		DisplayComponent<Mule::PlaneColliderComponent>("Plane Component", e, [&](Mule::PlaneColliderComponent& plane) {
+			
+			DisplayRow("Offset");
+			ImGui::DragFloat("##Offset", &plane.Offset, 0.05f, -FLT_MAX, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+			
+			DisplayRow("Trigger");
+			ImGui::Checkbox("##Trigger", &plane.Trigger);
 			});
 
 		DisplayComponent<Mule::SphereColliderComponent>("Sphere Collider", e, [&](Mule::SphereColliderComponent& sphere) {
@@ -272,13 +322,13 @@ void ComponentPanel::OnUIRender(float dt)
 			});
 
 		DisplayComponent<Mule::ScriptComponent>(ICON_FA_PEN" Script", e, [&](Mule::ScriptComponent& script) {
-
-			WeakRef<Mule::ScriptContext> scriptContext = mEngineContext->GetScriptContext();
-			WeakRef<Mule::ScriptInstance> scriptInstance = scriptContext->GetScriptInstance(script.Handle);
-
-			std::string scriptName = "(Null)";
-			if(scriptInstance)
-				scriptName = scriptInstance->GetName();
+			bool hasScript = false;
+			std::string scriptName = "(Empty)";
+			if (!script.ScriptName.empty())
+			{
+				scriptName = script.ScriptName;
+				hasScript = true;
+			}
 
 			DisplayRow("Script");
 			ImGui::BeginDisabled();
@@ -290,119 +340,82 @@ void ComponentPanel::OnUIRender(float dt)
 			{
 				if (ddf.AssetType == Mule::AssetType::Script)
 				{
-					// TODO: descroy current object if exists
-
 					auto scriptClass = mEngineContext->GetAsset<Mule::ScriptClass>(ddf.AssetHandle);
-					auto scriptContext = mEngineContext->GetScriptContext();
 
 					fs::path p = scriptClass->Name();
 					std::string scriptClassName = p.filename().replace_extension().string();
-					script.Handle = scriptContext->CreateInstance(scriptClassName, e.Guid());
+					script.ScriptName = scriptClassName;
+					script.Fields = mEngineContext->GetScriptContext()->GetScriptFields(scriptClassName);
 				}
 			}
 
-			if (scriptInstance)
+			if (hasScript)
 			{
-				const Mule::ScriptType& scriptType = scriptContext->GetType(scriptInstance->GetName());
-
-				for (const auto& [name, field] : scriptType.GetFields())
-				{
-					if (field.Accessibility != Mule::FieldAccessibility::Public)
-						continue;
-
-					DisplayRow(field.Name.c_str());					
-
-					std::string fieldName = "##" + field.Name;
-
-					switch (field.Type)
+				for (auto& [name, field] : script.Fields)
+				{				
+					DisplayRow(name.c_str());		
+				
+					std::string fieldName = "##" + name;
+				
+					switch (field.GetType())
 					{
-					case Mule::ScriptFieldType::Bool:
+					case Mule::ScriptFieldType::Int:
 					{
-						bool value = scriptInstance->GetFieldValue<bool>(field.Name);
-						if (ImGui::Checkbox(fieldName.c_str(), &value))
+						auto value = field.GetValue<int32_t>();
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S32, &value))
 						{
-							scriptInstance->SetFieldValue(field.Name, value);
+							field.SetValue(value);
 						}
 					}
 						break;
-					case Mule::ScriptFieldType::UInt16:
-					{
-						auto value = scriptInstance->GetFieldValue<uint16_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U16, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
-					case Mule::ScriptFieldType::UInt32:
-					{
-						auto value = scriptInstance->GetFieldValue<uint32_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U32, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
-					case Mule::ScriptFieldType::UInt64:
-					{
-						auto value = scriptInstance->GetFieldValue<uint64_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_U64, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
-					case Mule::ScriptFieldType::Int16:
-					{
-						auto value = scriptInstance->GetFieldValue<int16_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S16, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
-					case Mule::ScriptFieldType::Int32:
-					{
-						auto value = scriptInstance->GetFieldValue<int32_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S32, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
-					case Mule::ScriptFieldType::Int64:
-					{
-						auto value = scriptInstance->GetFieldValue<int64_t>(field.Name);
-						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_S64, &value))
-						{
-							scriptInstance->SetFieldValue(field.Name, value);
-						}
-					}
-					break;
 					case Mule::ScriptFieldType::Float:
 					{
-						float value = scriptInstance->GetFieldValue<float>(field.Name);
-						if (ImGui::InputFloat(fieldName.c_str(), &value))
+						auto value = field.GetValue<float>();
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_Float, &value))
 						{
-							scriptInstance->SetFieldValue(field.Name, static_cast<float>(value));
+							field.SetValue(value);
 						}
 					}
-					break;
+						break;
 					case Mule::ScriptFieldType::Double:
 					{
-						double value = scriptInstance->GetFieldValue<double>(field.Name);
-						if (ImGui::InputDouble(fieldName.c_str(), &value))
+						auto value = field.GetValue<double>();
+						if (ImGui::InputScalar(fieldName.c_str(), ImGuiDataType_Double, &value))
 						{
-							scriptInstance->SetFieldValue(field.Name, static_cast<double>(value));
+							field.SetValue(value);
+						}
+					}
+						break;
+					case Mule::ScriptFieldType::Vector2:
+					{
+						auto value = field.GetValue<glm::vec2>();
+						if (ImGui::DragFloat2(fieldName.c_str(), &value[0]))
+						{
+							field.SetValue(value);
+						}
+					}
+						break;
+					case Mule::ScriptFieldType::Vector3:
+					{
+						auto value = field.GetValue<glm::vec3>();
+						if (ImGui::DragFloat3(fieldName.c_str(), &value[0]))
+						{
+							field.SetValue(value);
+						}
+					}
+						break;
+					case Mule::ScriptFieldType::Vector4:
+					{
+						auto value = field.GetValue<glm::vec4>();
+						if (ImGui::DragFloat4(fieldName.c_str(), &value[0]))
+						{
+							field.SetValue(value);
 						}
 					}
 					break;
-
-
 					default:
 						break;
 					}
-
 				}
 			}
 

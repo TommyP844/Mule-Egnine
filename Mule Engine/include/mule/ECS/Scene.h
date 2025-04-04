@@ -5,7 +5,7 @@
 #include "Guid.h"
 #include "Asset/Asset.h"
 
-#include "Physics/PhysicsContext3D.h"
+#include "Physics/PhysicsContext.h"
 
 #include <entt/entt.hpp>
 
@@ -79,13 +79,13 @@ namespace Mule
 		void ClearModified() { mModified = false; }
 		bool IsModified() const { return mModified; }
 
-		PhysicsContext3D& GetPhysicsContext() { return mPhysicsContext3D; }
+		PhysicsContext& GetPhysicsContext() { return mPhysicsContext; }
 
 	private:
 		float mViewportWidth = 1.f;
 		float mViewportHeight = 1.f;
 		WeakRef<EngineContext> mEngineContext;
-		PhysicsContext3D mPhysicsContext3D;
+		PhysicsContext mPhysicsContext;
 		entt::registry mRegistry;
 		std::unordered_map<Guid, entt::entity> mEntityLookup;
 		bool mModified;

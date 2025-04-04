@@ -41,7 +41,7 @@ namespace Mule
 		case DIRECTIONAL_LIGHT_COMPONENT_ID: GET_COMPONENT_PTR(e.GetComponent<DirectionalLightComponent>(), ptr); break;
 		case MESH_LIGHT_COMPONENT_ID: GET_COMPONENT_PTR(e.GetComponent<MeshComponent>(), ptr); break;
 		case SCRIPT_LIGHT_COMPONENT_ID: GET_COMPONENT_PTR(e.GetComponent<SpotLightComponent>(), ptr); break;
-		case RIGID_BODY_3D_COMPONENT: GET_COMPONENT_PTR(e.GetComponent<RigidBody3DComponent>(), ptr); break;
+		case RIGID_BODY_3D_COMPONENT: GET_COMPONENT_PTR(e.GetComponent<RigidBodyComponent>(), ptr); break;
 		}
 
 		return ptr;
@@ -191,49 +191,64 @@ namespace Mule
 
 #pragma region Physics
 
-	float GetRigidBody3DMass(PhysicsObjectHandle handle)
+	float GetRigidBodyMass(uint64_t entityGuid)
 	{
 		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
-
-		auto rigidBody = physicsContext.GetRigidBody(handle);
-
-		if (!rigidBody)
-		{
-			SPDLOG_WARN("Invalid rigid body: {}", __FUNCTION__);
-			return 0.f;
-		}
-
-		return rigidBody->GetMass();
+		return physicsContext.GetMass(entityGuid);
 	}
 
-	void SetRigidBody3DMass(PhysicsObjectHandle handle, float mass)
+	void SetRigidBodyMass(uint64_t entityGuid, float mass)
 	{
 		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
-
-		auto rigidBody = physicsContext.GetRigidBody(handle);
-
-		if (!rigidBody)
-		{
-			SPDLOG_WARN("Invalid rigid body: {}", __FUNCTION__);
-			return;
-		}
-
-		rigidBody->SetMass(mass);
+		physicsContext.SetMass(entityGuid, mass);
 	}
 
-	void MoveRigidBody3DKinematic(PhysicsObjectHandle handle, glm::vec3 position, glm::quat rotation, float dt)
+	void MoveRigidBodyKinematic(uint64_t entityGuid, glm::vec3 position, glm::quat rotation, float dt)
 	{
 		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.MoveKinematic(entityGuid, position, rotation, dt);
+	}
 
-		auto rigidBody = physicsContext.GetRigidBody(handle);
+	void AddRigidBodyForce(uint64_t entityGuid, glm::vec3 force)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.AddForce(entityGuid, force);
+	}
 
-		if (!rigidBody)
-		{
-			SPDLOG_WARN("Invalid rigid body: {}", __FUNCTION__);
-			return;
-		}
+	void AddRigidBodyTorque(uint64_t entityGuid, glm::vec3 torque)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.AddTorque(entityGuid, torque);
+	}
 
-		rigidBody->MoveKinematic(position, rotation, dt);
+	void AddRigidBodyImpulse(uint64_t entityGuid, glm::vec3 impulse)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.AddImpulse(entityGuid, impulse);
+	}
+
+	void AddRigidBodyAngularImpulse(uint64_t entityGuid, glm::vec3 angularImpulse)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.AddAngularImpulse(entityGuid, angularImpulse);
+	}
+
+	void SetRigidBodyLinearVelocity(uint64_t entityGuid, glm::vec3 velocity)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.SetLinearVelocity(entityGuid, velocity);
+	}
+
+	void SetRigidBodyAngularVelocity(uint64_t entityGuid, glm::vec3 angularVelocity)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		physicsContext.SetAngularVelocity(entityGuid, angularVelocity);
+	}
+
+	glm::vec3 GetRigidBodyLinearVelocity(uint64_t entityGuid)
+	{
+		auto& physicsContext = gEngineContext->GetScene()->GetPhysicsContext();
+		return physicsContext.GetLinearVelocity(entityGuid);
 	}
 
 #pragma endregion

@@ -1,11 +1,14 @@
 #pragma once
 
+#include "ECS/Guid.h"
 #include "WeakRef.h"
 #include "Ref.h"
-#include "RigidBody3D.h"
 #include "CollisionLayer.h"
 #include "Shape3D/Shape3D.h"
 #include "KinematicContactListener.h"
+
+// Constraints
+#include "Constraint/RotationConstraint.h"
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/PhysicsSystem.h>
@@ -13,13 +16,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <random>
-#include <unordered_map>
+#include <map>
 
 namespace Mule
 {
-	typedef uint64_t PhysicsObjectHandle;
-
 	enum BodyType : uint32_t
 	{
 		Dynamic,
@@ -29,6 +29,7 @@ namespace Mule
 
 	struct RigidBody3DInfo
 	{
+		Guid Guid;
 		glm::vec3 Position;
 		glm::quat Orientation;
 		BodyType Type;
@@ -37,11 +38,11 @@ namespace Mule
 		Ref<Shape3D> Shape;
 	};
 
-	class PhysicsContext3D
+	class PhysicsContext
 	{
 	public:
-		PhysicsContext3D();
-		~PhysicsContext3D();
+		PhysicsContext();
+		~PhysicsContext();
 
 		void Init();
 		void Shutdown();
@@ -51,8 +52,22 @@ namespace Mule
 
 		void Step(float dt);
 
-		PhysicsObjectHandle CreateRigidBody3D(const RigidBody3DInfo& info);
-		WeakRef<RigidBody3D> GetRigidBody(PhysicsObjectHandle handle);
+		void CreateRigidBody(const RigidBody3DInfo& info);
+		
+		glm::vec3 GetPosition(Guid entityGuid) const;
+		glm::vec3 GetRotation(Guid entityGuid) const;
+		float GetMass(Guid entityGuid) const;
+		glm::vec3 GetLinearVelocity(Guid entityGuid) const;
+		
+		void MoveKinematic(Guid entityGuid, const glm::vec3& targetPosition, const glm::quat& targetRotation, float timeToMove);
+		void SetPosition(Guid entityGuid, const glm::vec3& position);
+		void SetMass(Guid entityGuid, float mass);
+		void AddForce(Guid entityGuid, const glm::vec3& force);
+		void AddTorque(Guid entityGuid, const glm::vec3& torque);
+		void AddImpulse(Guid entityGuid, const glm::vec3& impulse);
+		void AddAngularImpulse(Guid entityGuid, const glm::vec3& angularImpulse);
+		void SetLinearVelocity(Guid entityGuid, const glm::vec3& velocity);
+		void SetAngularVelocity(Guid entityGuid, const glm::vec3& angularVelocity);
 
 	private:
 		JPH::PhysicsSystem* mSystem;
@@ -68,10 +83,7 @@ namespace Mule
 		// Contact Listener
 		KinematicContactListener mKinematicContactListener;
 
-		std::random_device mRandomDevice;
-		PhysicsObjectHandle GenerateHandle();
-
-		std::unordered_map<PhysicsObjectHandle, Ref<RigidBody3D>> mBodies;
+		std::map<Guid, JPH::BodyID> mBodies;
 
 		glm::vec3 mGravity;
 	};

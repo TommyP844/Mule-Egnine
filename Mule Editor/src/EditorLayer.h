@@ -49,8 +49,6 @@ private:
 
 	bool mShowDemoWindow = false;
 
-	std::future<void> mAssetLoaderThread;
-
 	// Popups
 	bool mNewScenePopup = false;
 	bool mNewMaterialPopup = false;

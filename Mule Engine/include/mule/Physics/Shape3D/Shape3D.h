@@ -10,7 +10,8 @@ namespace Mule
 		Box,
 		Convex,
 		HeightField,
-		Capsule
+		Capsule,
+		Plane
 	};
 
 	class Shape3D
