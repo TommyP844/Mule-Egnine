@@ -11,14 +11,14 @@
 #include "Graphics/RenderPass.h"
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/SwapchainframeBuffer.h"
-#include "Graphics/GraphicsShader.h"
+#include "Graphics/Shader/GraphicsShader.h"
+#include "Graphics/Shader/ComputeShader.h"
 #include "Graphics/DescriptorSet.h"
 #include "Graphics/DescriptorSetLayout.h"
 #include "Graphics/Mesh.h"
-#include "Graphics/ComputeShader.h"
 #include "Graphics/Buffer/StagingBuffer.h"
 
-#include <vulkan/vulkan.h>
+#include <Volk/volk.h>
 
 // STD
 #include <mutex>
@@ -62,7 +62,7 @@ namespace Mule
 		Ref<DescriptorSet> CreateDescriptorSet(const DescriptorSetDescription& description);
 		Ref<UniformBuffer> CreateUniformBuffer(uint32_t bytes);
 		Ref<Mesh> CreateMesh(const MeshDescription& description);
-		Ref<GraphicsShader> CreateGraphicsShader(const GraphicsShaderDescription& description);
+		Ref<GraphicsShader> CreateGraphicsShader(const fs::path& filepath);
 		Ref<ComputeShader> CreateComputeShader(const ComputeShaderDescription& description);
 		Ref<RenderPass> CreateRenderPass(const RenderPassDescription& renderPassDescription);
 		Ref<Fence> CreateFence();
@@ -86,6 +86,7 @@ namespace Mule
 		uint32_t GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return mMemoryProperties; }
 		VkSampler GetLinearSampler() const { return mLinearSampler; }
+		VkFormat GetSurfaceFormat() const { return mSurfaceFormat.format; }
 
 	private:
 		std::mutex mMutex;

@@ -37,14 +37,8 @@ namespace Mule::RenderGraph
 			return resource->Get();
 		}
 
-		void SetScene(WeakRef<Scene> scene) { mScene = scene; }
-		WeakRef<Scene> GetScene() const { return mScene; }
-
 		void SetCamera(const Camera& camera) { mCamera = camera; }
 		const Camera& GetCamera() const { return mCamera; }
-
-		void SetCommandBuffer(WeakRef<CommandBuffer> cmd) { mCommandBuffer = cmd; }
-		WeakRef<CommandBuffer> GetCommandBuffer() const { return mCommandBuffer; }
 
 	private:
 		std::unordered_map<std::string, Ref<IResource>> mResources;

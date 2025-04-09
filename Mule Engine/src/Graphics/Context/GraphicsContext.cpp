@@ -5,6 +5,8 @@
 #include "GLFW/glfw3.h"
 #include "GLFW/glfw3native.h"
 
+#define VOLK_IMPLEMENTATION
+#include "Volk/volk.h"
 
 // STD
 #include <set>
@@ -56,6 +58,14 @@ namespace Mule
 
 #pragma region Instance
 
+		
+		VkResult result = volkInitialize();
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Volk failed to init, Code: {}", (uint32_t)result);
+			exit(1);
+		}
+
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.apiVersion = VK_API_VERSION_1_3;
@@ -74,7 +84,7 @@ namespace Mule
 		instanceInfo.flags = 0;
 		instanceInfo.pApplicationInfo = nullptr;
 		  
-		VkResult result = vkCreateInstance(&instanceInfo, nullptr, &mInstance);
+		result = vkCreateInstance(&instanceInfo, nullptr, &mInstance);
 		if (result == VK_SUCCESS)
 		{
 			SPDLOG_INFO("Vulkan initialized");
@@ -84,6 +94,9 @@ namespace Mule
 			SPDLOG_ERROR("Vulkan failed to init, Code: {}", (uint32_t)result);
 			exit(1);
 		}
+
+		volkLoadInstance(mInstance);
+
 #pragma endregion
 
 #pragma region Debug
@@ -122,7 +135,7 @@ namespace Mule
 			SPDLOG_ERROR("Failed to find physical devices that support vulkan");
 			exit(1);
 		}
-
+		
 		for (int i = 0; i < physicalDeviceCount; i++)
 		{
 			auto& physicalDevice = physicalDevices[i];
@@ -170,6 +183,16 @@ namespace Mule
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE; // Enable anisotropy
 
+		VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT dynamicRenderingUnusedAttachmentsFeatures{};
+		dynamicRenderingUnusedAttachmentsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
+		dynamicRenderingUnusedAttachmentsFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
+		dynamicRenderingUnusedAttachmentsFeatures.pNext = nullptr;
+
+		VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
+		dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+		dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+		dynamicRenderingFeatures.pNext = &dynamicRenderingUnusedAttachmentsFeatures;
+
 		// Enable descriptor indexing features
 		VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
 		indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
@@ -177,7 +200,7 @@ namespace Mule
 		indexingFeatures.runtimeDescriptorArray = VK_TRUE;
 		indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 		indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-		//indexingFeatures.pNext = &deviceFeatures;
+		indexingFeatures.pNext = &dynamicRenderingFeatures;
 
 		// Enable separate depth-stencil layouts
 		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures{};
@@ -222,15 +245,18 @@ namespace Mule
 			"VK_KHR_separate_depth_stencil_layouts",
 			"VK_KHR_create_renderpass2",
 			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-			VK_KHR_MAINTENANCE1_EXTENSION_NAME
+			VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+			"VK_KHR_depth_stencil_resolve",
+			"VK_EXT_dynamic_rendering_unused_attachments"
 		};
 		
-		float priority = 1.f;
+		float priorities[2] = { 1.f, 1.f };
 		VkDeviceQueueCreateInfo deviceQueueCreateInfo{};
 		deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueCreateInfo.flags = 0;
 		deviceQueueCreateInfo.queueFamilyIndex = requestedQueueFamily;
-		deviceQueueCreateInfo.pQueuePriorities = &priority;
+		deviceQueueCreateInfo.pQueuePriorities = priorities;
 		deviceQueueCreateInfo.queueCount = 2;
 		deviceQueueCreateInfo.pNext = nullptr;
 
@@ -255,6 +281,8 @@ namespace Mule
 			SPDLOG_ERROR("Failed to create vulkan logical device");
 			exit(1);
 		}
+
+		volkLoadDevice(mDevice);
 
 		VkQueue queue = VK_NULL_HANDLE;
 		VkQueue queue2 = VK_NULL_HANDLE;
@@ -558,9 +586,9 @@ namespace Mule
 		return MakeRef<Mesh>(WeakRef<GraphicsContext>(this), description);
 	}
 
-	Ref<GraphicsShader> GraphicsContext::CreateGraphicsShader(const GraphicsShaderDescription& description)
+	Ref<GraphicsShader> GraphicsContext::CreateGraphicsShader(const fs::path& filepath)
 	{
-		return MakeRef<GraphicsShader>(mDevice, description);
+		return MakeRef<GraphicsShader>(this, filepath);
 	}
 
 	Ref<ComputeShader> GraphicsContext::CreateComputeShader(const ComputeShaderDescription& description)

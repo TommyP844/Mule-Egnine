@@ -27,7 +27,6 @@ namespace Mule
 		uint32_t Width;
 		uint32_t Height;
 		uint32_t LayerCount = 1;
-		WeakRef<RenderPass> RenderPass = nullptr;
 		std::vector<AttachmentDesc> Attachments;
 		AttachmentDesc DepthAttachment;
 	};
@@ -38,7 +37,6 @@ namespace Mule
 		FrameBuffer(WeakRef<GraphicsContext> context, const FramebufferDescription& desc);
 		~FrameBuffer();
 
-		VkFramebuffer GetHandle() const { return mFrameBuffer; }
 		int GetWidth() const { return mDesc.Width; }
 		int GetHeight() const { return mDesc.Height; }
 		std::vector<VkClearValue> GetClearValues() const { return mClearValues; };
@@ -55,7 +53,6 @@ namespace Mule
 
 	private:
 		WeakRef<GraphicsContext> mContext;
-		VkFramebuffer mFrameBuffer;
 		FramebufferDescription mDesc;
 
 		std::vector<Ref<Texture2D>> mColorAttachments;

@@ -1,3 +1,12 @@
+#SETUP
+
+CullMode = None
+DepthTest = False 
+DepthWrite = False
+Attachment = { Location = 0, Format = RGBA32F, BlendEnable = False }
+DepthFormat = D32F
+
+
 #VERTEX
 #version 460 core
 

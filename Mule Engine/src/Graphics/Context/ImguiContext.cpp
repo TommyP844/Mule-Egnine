@@ -59,11 +59,23 @@ namespace Mule
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		initInfo.PipelineCache = VK_NULL_HANDLE;
 		initInfo.Subpass = 0;
-		initInfo.UseDynamicRendering = false;
+		initInfo.UseDynamicRendering = true;
 		initInfo.Allocator = nullptr;
 		initInfo.CheckVkResultFn = check_vk_result;
-		initInfo.RenderPass = mFrameBuffer->GetRenderPass();
+		initInfo.RenderPass = nullptr;
+
+		VkFormat colorFormats[1] = { graphicsContext->GetSurfaceFormat() };
+
+		initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
+		initInfo.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+		initInfo.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+		initInfo.PipelineRenderingCreateInfo.pNext = nullptr;
+		initInfo.PipelineRenderingCreateInfo.viewMask = 0;
 		ImGui_ImplVulkan_Init(&initInfo);
+
+#pragma region Style
 
 		ImGui::GetStyle().Colors[ImGuiCol_Text] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
 		ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -110,6 +122,8 @@ namespace Mule
 		ImGui::GetStyle().Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.35f);
 
 		ImGui::GetStyle().FrameRounding = 5.f;
+
+#pragma endregion
 
 #pragma region KeyMap
 
@@ -268,7 +282,6 @@ namespace Mule
 	void ImGuiContext::EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores)
 	{
 		FrameData& frameData = mFrameData[mFrameIndex];
-		mFrameBuffer->SetClearValue(0, glm::vec4(0.f, 0.f, 0.f, 1.f));
 		mFrameBuffer = mContext->GetSwapchainFrameBuffer();
 		
 		frameData.Fence->Wait();

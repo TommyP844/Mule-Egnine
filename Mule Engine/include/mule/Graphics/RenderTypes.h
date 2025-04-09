@@ -3,7 +3,7 @@
 #include <string>
 #include <typeinfo>
 
-#include <vulkan/vulkan.h>
+#include <Volk/volk.h>
 
 namespace Mule
 {
@@ -33,6 +33,8 @@ namespace Mule
 		TesselationEvaluation = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 
 		Compute = VK_SHADER_STAGE_COMPUTE_BIT,
+
+		Setup,
 
 		None = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM
 	};
@@ -148,7 +150,7 @@ namespace Mule
 		{}
 		uint32_t Binding;
 		DescriptorType Type;
-		ShaderStage Stage;
+		ShaderStage Stage = ShaderStage::None;
 		uint32_t ArrayCount = 1;
 	};
 }

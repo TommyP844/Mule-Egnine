@@ -6,13 +6,13 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/RenderPass.h"
 #include "Graphics/SwapchainframeBuffer.h"
-#include "Graphics/GraphicsShader.h"
+#include "Graphics/Shader/GraphicsShader.h"
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/DescriptorSet.h"
-#include "Graphics/ComputeShader.h"
+#include "Graphics/Shader/ComputeShader.h"
 #include "Graphics/Buffer/StagingBuffer.h"
 
-#include <vulkan/vulkan.h>
+#include <Volk/volk.h>
 
 namespace Mule
 {
@@ -30,7 +30,7 @@ namespace Mule
 
 		// Framebuffers
 		void BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer);
-		void BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass, bool clearFramebuffer = false);
+		void BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<GraphicsShader> shader, bool clearFramebuffer = false);
 		void NextPass();
 		void EndRenderPass();
 
@@ -55,7 +55,6 @@ namespace Mule
 		void ReadTexture(WeakRef<ITexture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const;
 
 		// Shader
-		void BindGraphicsPipeline(WeakRef<GraphicsShader> shader);
 		void BindComputePipeline(WeakRef<ComputeShader> shader);
 		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size);
 		void SetPushConstants(WeakRef<ComputeShader> shader, void* data, uint32_t size);

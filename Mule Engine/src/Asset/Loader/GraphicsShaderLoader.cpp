@@ -1,9 +1,10 @@
 #include "Asset/Loader/GraphicsShaderLoader.h"
 
+#include "Engine Context/EngineContext.h"
 
 namespace Mule
 {
-	GraphicsShaderLoader::GraphicsShaderLoader(WeakRef<GraphicsContext> context)
+	GraphicsShaderLoader::GraphicsShaderLoader(WeakRef<EngineContext> context)
 		:
 		mContext(context)
 	{
@@ -11,12 +12,7 @@ namespace Mule
 
 	Ref<GraphicsShader> GraphicsShaderLoader::LoadText(const fs::path& filepath)
 	{
-		return nullptr;
-	}
-
-	Ref<GraphicsShader> GraphicsShaderLoader::LoadText(const GraphicsShaderDescription& description)
-	{
-		return mContext->CreateGraphicsShader(description);
+		return mContext->GetGraphicsContext()->CreateGraphicsShader(filepath);
 	}
 
 	void GraphicsShaderLoader::SaveText(Ref<GraphicsShader> asset)

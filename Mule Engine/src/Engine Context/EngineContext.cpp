@@ -34,7 +34,7 @@ namespace Mule
 		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
 		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);
-		mAssetManager->RegisterLoader<GraphicsShaderLoader>(mGraphicsContext);
+		mAssetManager->RegisterLoader<GraphicsShaderLoader>(this);
 		mAssetManager->RegisterLoader<MaterialLoader>();
 
 		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
@@ -150,6 +150,29 @@ namespace Mule
 			auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/spot-light-icon.png");
 			UpdateAssetHandle(texture->Handle(), MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
 			mSceneRenderer->AddTexture(texture);
+		}
+
+		// Graphics Shaders
+		{
+			auto shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/DefaultGeometryShader.glsl");
+			UpdateAssetHandle(shader->Handle(), MULE_GEOMETRY_SHADER_HANDLE);
+
+			// TODO: Transparent geometry shader
+
+			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/EnvironmentMapShader.glsl");
+			UpdateAssetHandle(shader->Handle(), MULE_ENVIRONMENT_MAP_SHADER_HANDLE);
+
+			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/HighlightEntityShader.glsl");
+			UpdateAssetHandle(shader->Handle(), MULE_ENTITY_MASK_SHADER_HANDLE);
+
+			//auto shader = mAssetManager->LoadAsset<ComputeShader>("../Assets/Shaders/Compute/HighlightShader.glsl");
+			//UpdateAssetHandle(shader->Handle(), MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
+
+			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/WireFrameShader.glsl");
+			UpdateAssetHandle(shader->Handle(), MULE_WIRE_FRAME_SHADER_HANDLE);
+
+			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/BillBoardShader.glsl");
+			UpdateAssetHandle(shader->Handle(), MULE_BILLBOARD_SHADER_HANDLE);
 		}
 	}
 

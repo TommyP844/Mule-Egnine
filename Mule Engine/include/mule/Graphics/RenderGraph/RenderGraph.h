@@ -12,6 +12,8 @@
 #include "Graphics/Execution/CommandPool.h"
 #include "Graphics/Execution/Semaphore.h"
 #include "Graphics/Execution/Fence.h"
+#include "ECS/Scene.h"
+#include "Asset/AssetManager.h"
 
 #include <string>
 #include <vector>
@@ -25,7 +27,7 @@ namespace Mule::RenderGraph
 	{
 	public:
 		RenderGraph() = default;
-		RenderGraph(WeakRef<GraphicsContext> context);
+		RenderGraph(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
 		~RenderGraph();
 
 		template<typename T>
@@ -36,12 +38,19 @@ namespace Mule::RenderGraph
 
 		const PassContext& GetPassContext() const;
 
+		WeakRef<FrameBuffer> GetCurrentFrameBuffer() const;
 		void SetCamera(const Camera& camera);
-		void SetScene(WeakRef<Scene> scene);
-
-		void AddPass(const std::string& name, const std::vector<std::string>& dependecies, std::function<void(const PassContext&)> func);
+		void Resize(uint32_t width, uint32_t height);
+		void CreateFramebuffer(const FramebufferDescription& desc);
+		void SetFinalLayouts(std::vector<std::pair<uint32_t, ImageLayout>> layouts);
+		void AddPass(
+			const std::string& name, 
+			const std::vector<std::string>& dependecies, 
+			AssetHandle shaderHandle,
+			std::vector<std::pair<uint32_t, ImageLayout>> requiredLayouts,
+			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> func);
 		void Compile();
-		void Execute(const std::vector<WeakRef<Semaphore>>& waitSemaphores);
+		void Execute(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
 		void NextFrame();
 
 		// Querys resource from the pass context used in the render passes
@@ -61,27 +70,37 @@ namespace Mule::RenderGraph
 
 	private:
 		WeakRef<GraphicsContext> mGraphicsContext;
+		WeakRef<AssetManager> mAssetManager;
 		Ref<CommandPool> mCommandPool;
 		WeakRef<GraphicsQueue> mCommandQueue;
 
 		struct RenderPassInfo
 		{
+			AssetHandle ShaderHandle = NullAssetHandle;
 			std::vector<std::string> Dependecies = {};
-			std::function<void(const PassContext&)> CallBack = nullptr;
+			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> CallBack = nullptr;
+			std::vector<std::pair<uint32_t, ImageLayout>> RequiredLayouts = {};
 		};
 
 		struct PerFrameData
 		{
 			PassContext Ctx;
+			Ref<FrameBuffer> Framebuffer;
+			std::vector<std::pair<uint32_t, ImageLayout>> FinalLayouts = {};
+			Ref<CommandBuffer> LayoutTransitionCommandBuffer;
+			Ref<Fence> LayoutTransitionFence;
+			Ref<Semaphore> RenderingFinishedSemaphore;
 		};
 
 		struct PerPassData
 		{
-			std::function<void(const PassContext&)> Callback;
+			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> Callback;
 			std::vector<Ref<CommandBuffer>> CommandBuffers;
 			std::vector<Ref<Semaphore>> Semaphores;
 			std::vector<Ref<Fence>> Fences;
 			RenderPassStats Stats;
+			AssetHandle ShaderHandle;
+			std::vector<std::pair<uint32_t, ImageLayout>> RequiredLayouts = {};
 		};
 
 		std::vector<std::unordered_map<std::string, Ref<IResource>>> mResources;
@@ -90,8 +109,6 @@ namespace Mule::RenderGraph
 		std::vector<PerFrameData> mPerFrameData;
 		uint32_t mFrameCount, mFrameIndex;
 		bool mIsValid;
-
-
 	};
 }
 

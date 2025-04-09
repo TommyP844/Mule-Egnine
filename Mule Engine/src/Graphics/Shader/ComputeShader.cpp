@@ -1,5 +1,5 @@
 
-#include "Graphics/ComputeShader.h"
+#include "Graphics/Shader/ComputeShader.h"
 
 #include "Graphics/Context/GraphicsContext.h"
 

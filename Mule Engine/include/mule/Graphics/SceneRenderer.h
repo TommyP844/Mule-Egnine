@@ -1,7 +1,9 @@
 #pragma once
 
+
 // Engine
 #include "Graphics/Execution/Semaphore.h"
+#include "Graphics/Execution/CommandBuffer.h"
 #include "Graphics/Context/GraphicsContext.h"
 #include "Graphics/Texture/TextureCube.h"
 #include "Graphics/Texture/Texture2D.h"
@@ -16,6 +18,10 @@
 
 // STD
 #include <vector>
+
+#ifdef min
+#undef min
+#endif
 
 namespace Mule
 {
@@ -87,14 +93,14 @@ namespace Mule
 		// Debug
 		SceneRendererDebugOptions mDebugOptions;
 
-		void PrepareResources();
+		void PrepareResources(const Camera& camera, WeakRef<Scene> scene);
 
 		// Render Passes
-		void RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx);
-		void RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx);
-		void RenderEnvironmentCallback(const RenderGraph::PassContext& ctx);
-		void RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx);
-		void RenderEditorUICallback(const RenderGraph::PassContext& ctx);
+		void RenderSolidGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderTransparentGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderEnvironmentCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderEntityHighlightCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderEditorUICallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
 		bool RenderEntityChildrenHighlight(Entity e, WeakRef<CommandBuffer> cmd, WeakRef<GraphicsShader> shader);
 
 		// Render Graph Passes
@@ -103,19 +109,6 @@ namespace Mule
 		const std::string TRANPARENT_GEOMETRY_PASS_NAME = "TransparentGeometryPass";
 		const std::string ENTITY_HIGHLIGHT_PASS_NAME = "EntityHighlightPass";
 		const std::string EDITOR_UI_PASS_NAME = "EditorUIPass";
-
-		// Resources
-		const std::string FRAMEBUFFER_ID = "Framebuffer";
-		const std::string GEOMETRY_RENDER_PASS_ID = "GeometryRenderPass";
-
-		// Shaders
-		const std::string OPAQUE_GEOMETRY_SHADER_ID = "OpaqueGeometryShader";
-		const std::string TRANPARENT_GEOMETRY_SHADER_ID = "TransparentGeometryShader";
-		const std::string ENVIRONMENT_SHADER_ID = "EnvironmentShader";
-		const std::string ENTITY_HIGHLIGHT_SHADER_ID = "EntityHighlightShader";
-		const std::string ENTITY_OUTLINE_SHADER_ID = "EntityOutlineShader";
-		const std::string WIRE_FRAME_SHADER_ID = "WireFrameShader";
-		const std::string BILLBOARD_SHADER_ID = "BillboardShader";
 
 		// Descriptor Sets
 		const std::string GEOMETRY_SHADER_DSL_ID = "GeometryShaderDSL";

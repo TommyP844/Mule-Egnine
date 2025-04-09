@@ -67,7 +67,9 @@ workspace "Mule"
         "JPH_USE_LZCNT",
         "JPH_USE_TZCNT",
         "JPH_USE_F16C",
-        "JPH_USE_FMADD"
+        "JPH_USE_FMADD",
+        "VK_NO_PROTOTYPES",
+        "NOMINMAX"
     }
 
     -- Coral

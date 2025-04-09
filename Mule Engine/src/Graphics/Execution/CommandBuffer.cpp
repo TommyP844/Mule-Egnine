@@ -380,77 +380,125 @@ namespace Mule
 
 	void CommandBuffer::BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer)
 	{
-		VkRenderPassBeginInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		info.renderPass = framebuffer->GetRenderPass();
-		info.framebuffer = framebuffer->GetHandle();
-		auto clearValues = framebuffer->GetClearValues();
-		info.clearValueCount = clearValues.size();
-		info.pClearValues = clearValues.data();
-
 		VkRect2D rect{};
 		rect.offset.x = 0;
 		rect.offset.y = 0;
 		rect.extent.width = framebuffer->GetWidth();
 		rect.extent.height = framebuffer->GetHeight();
-		info.renderArea = rect;
+
 		
+		VkRenderingAttachmentInfo colorAttachment{};
+		colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		colorAttachment.imageView = framebuffer->GetColorImage().ImageView;
+		colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.clearValue.color.float32[0] = 0.f;
+		colorAttachment.clearValue.color.float32[1] = 0.f;
+		colorAttachment.clearValue.color.float32[2] = 0.f;
+		colorAttachment.clearValue.color.float32[3] = 1.f;
+		colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+		
+
+		VkRenderingAttachmentInfo depthAttachment{};		
+		depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		depthAttachment.imageView = framebuffer->GetDepthImage().ImageView;
+		depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachment.clearValue.depthStencil.depth = 1.f;
+		depthAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+
+
+		VkRenderingInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		info.renderArea = rect;
+		info.layerCount = 1;
+		info.colorAttachmentCount = 1;
+		info.pColorAttachments = &colorAttachment;
+		info.pDepthAttachment = &depthAttachment;
+		info.pStencilAttachment = nullptr;
 		info.pNext = nullptr;
-		vkCmdBeginRenderPass(mCommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+		info.viewMask = 0;
+		info.flags = 0;
+
+		vkCmdBeginRenderingKHR(mCommandBuffer, &info);
 
 		VkViewport viewport{};
 		viewport.x = 0;
-		viewport.y = 0;
+		viewport.y = framebuffer->GetHeight();
 		viewport.width = framebuffer->GetWidth();
 		viewport.height = framebuffer->GetHeight();
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
-		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
 
+		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 	}
 
-	void CommandBuffer::BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<RenderPass> renderPass, bool clearFramebuffer)
+	void CommandBuffer::BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<GraphicsShader> shader, bool clearFramebuffer)
 	{
-		if (clearFramebuffer)
-		{
-			VkClearDepthStencilValue depthClearValue{};
-			depthClearValue.depth = 1.0;
-
-			VkImageSubresourceRange range{};
-			range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-			range.baseArrayLayer = 0;
-			range.layerCount = 1;
-			range.baseMipLevel = 0;
-			range.levelCount = 1;
-
-			TranistionImageLayout(framebuffer->GetDepthAttachment(), ImageLayout::TransferDst);
-
-			vkCmdClearDepthStencilImage(mCommandBuffer,
-				framebuffer->GetDepthAttachment()->GetImage(),
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				&depthClearValue,
-				1,
-				&range);
-
-			TranistionImageLayout(framebuffer->GetDepthAttachment(), ImageLayout::DepthAttachment);
-		}
-
-		VkRenderPassBeginInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		info.renderPass = renderPass->GetHandle();
-		info.framebuffer = framebuffer->GetHandle();
-		info.clearValueCount = 0;
-
 		VkRect2D rect{};
 		rect.offset.x = 0;
 		rect.offset.y = 0;
 		rect.extent.width = framebuffer->GetWidth();
 		rect.extent.height = framebuffer->GetHeight();
-		info.renderArea = rect;
 
+		std::vector<VkRenderingAttachmentInfo> colorAttachments;
+
+
+		auto usedLocations = shader->AttachmentLocations();
+
+		for (uint32_t i = 0; i < framebuffer->GetColorAttachmentCount(); i++)
+		{
+			auto attachment = framebuffer->GetColorAttachment(i);
+
+			VkImageView view = attachment->GetImageView();
+
+			if (std::find(usedLocations.begin(), usedLocations.end(), i) == usedLocations.end())
+			{
+				view = VK_NULL_HANDLE;
+			}
+
+			VkRenderingAttachmentInfo colorAttachment{};
+			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			colorAttachment.imageView = view;
+			colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.loadOp = clearFramebuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.clearValue = framebuffer->GetClearValues()[i];
+			colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+			colorAttachments.push_back(colorAttachment);
+		}
+
+		bool hasDepth = false;
+		VkRenderingAttachmentInfo depthAttachment{};
+		if (framebuffer->GetDepthAttachment())
+		{
+			depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			depthAttachment.imageView = framebuffer->GetDepthAttachment()->GetImageView();
+			depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			depthAttachment.loadOp = clearFramebuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachment.clearValue.depthStencil.depth = 1.f;
+			depthAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+
+			hasDepth = true;
+		}
+
+		VkRenderingInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		info.renderArea = rect;
+		info.layerCount = 1;
+		info.colorAttachmentCount = colorAttachments.size();
+		info.pColorAttachments = colorAttachments.data();
+		info.pDepthAttachment = hasDepth ? &depthAttachment : nullptr;
+		info.pStencilAttachment = nullptr;
 		info.pNext = nullptr;
-		vkCmdBeginRenderPass(mCommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+		info.viewMask = 0;
+		info.flags = 0;
+
+		vkCmdBeginRenderingKHR(mCommandBuffer, &info);
 
 		VkViewport viewport{};
 		viewport.x = 0;
@@ -459,36 +507,11 @@ namespace Mule
 		viewport.height = -framebuffer->GetHeight();
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
-		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
 
+		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 
-		if (clearFramebuffer)
-		{
-			uint32_t attachmentCount = framebuffer->GetColorAttachmentCount();
-
-			std::vector<VkClearAttachment> attachments;
-			for (uint32_t i = 0; i < attachmentCount; i++)
-			{
-				VkClearAttachment attachment{};
-
-				attachment.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				attachment.clearValue = framebuffer->GetClearValues()[i];
-				attachment.colorAttachment = i;
-
-				attachments.push_back(attachment);
-			}
-
-			VkClearRect rect{};
-			rect.rect.offset.x = 0;
-			rect.rect.offset.y = 0;
-			rect.rect.extent.width = framebuffer->GetWidth();
-			rect.rect.extent.height = framebuffer->GetHeight();
-			rect.baseArrayLayer = 0;
-			rect.layerCount = 1;
-
-			vkCmdClearAttachments(mCommandBuffer, attachmentCount, attachments.data(), 1, &rect);
-		}
+		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipeline());
 	}
 	
 	void CommandBuffer::NextPass()
@@ -498,7 +521,7 @@ namespace Mule
 
 	void CommandBuffer::EndRenderPass()
 	{
-		vkCmdEndRenderPass(mCommandBuffer);
+		vkCmdEndRenderingKHR(mCommandBuffer);
 	}
 
 	void CommandBuffer::TranistionImageLayout(WeakRef<ITexture> texture, ImageLayout newLayout)
@@ -730,11 +753,6 @@ namespace Mule
 		// Copy the image to the staging buffer
 		vkCmdCopyImageToBuffer(mCommandBuffer, texture->GetVulkanImage().Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			buffer->GetBuffer(), 1, &region);
-	}
-
-	void CommandBuffer::BindGraphicsPipeline(WeakRef<GraphicsShader> shader)
-	{
-		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipeline());
 	}
 
 	void CommandBuffer::BindComputePipeline(WeakRef<ComputeShader> shader)

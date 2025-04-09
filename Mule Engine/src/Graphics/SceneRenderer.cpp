@@ -13,6 +13,7 @@
 
 #include "Engine Context/EngineAssets.h"
 
+
 namespace Mule
 {
 	SceneRenderer::SceneRenderer(Ref<GraphicsContext> context, Ref<AssetManager> assetManager)
@@ -20,63 +21,11 @@ namespace Mule
 		mGraphicsContext(context),
 		mAssetManager(assetManager)
 	{
-		mGraph = RenderGraph::RenderGraph(context);
+		mGraph = RenderGraph::RenderGraph(context, assetManager);
 		mResourceUpdates.resize(mGraph.GetFrameCount());
 		mTiming.resize(mGraph.GetFrameCount());
 
 #pragma region Create Resources
-
-		VertexLayout staticVertexLayout = VertexLayout()
-			.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec2)
-			.AddAttribute(AttributeType::Vec4);
-
-		// Render passes
-		{
-			RenderPassDescription geometryPassDescription{};
-			geometryPassDescription.Attachments = {
-				{ TextureFormat::RGBA32F, true },
-				{ TextureFormat::RG32UI, false },
-				{ TextureFormat::R32F, false }
-			};
-			geometryPassDescription.DepthAttachment = { TextureFormat::D32F };
-			geometryPassDescription.Subpasses = {
-				{ { 0 }, true }
-			};
-			auto geometryRenderPass = mGraphicsContext->CreateRenderPass(geometryPassDescription);
-
-			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
-			{
-				mGraph.AddResource(i, GEOMETRY_RENDER_PASS_ID, geometryRenderPass);
-			}
-		}
-
-		// Framebuffers
-		{
-			FramebufferDescription framebufferDesc;
-			framebufferDesc.Attachments = {
-				{ TextureFormat::RGBA32F, TextureFlags::StorageImage },
-				{ TextureFormat::RG32UI, TextureFlags::None },
-				{ TextureFormat::R32F, TextureFlags::None }
-			};
-			framebufferDesc.DepthAttachment = { TextureFormat::D32F, TextureFlags::None };
-			framebufferDesc.Height = 600;
-			framebufferDesc.Width = 800;
-			framebufferDesc.LayerCount = 1;
-			framebufferDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-
-			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
-			{
-				auto framebuffer = mGraphicsContext->CreateFrameBuffer(framebufferDesc);
-				framebuffer->SetColorClearValue(0, glm::vec4(0, 0, 0, 1));
-				framebuffer->SetColorClearValue(1, glm::ivec4(0));
-				framebuffer->SetColorClearValue(2, glm::vec4(0));
-
-				mGraph.AddResource(i, FRAMEBUFFER_ID, framebuffer);
-			}
-		}
 
 		// Uniform Buffers
 		{
@@ -200,145 +149,64 @@ namespace Mule
 			}
 		}
 
-		// Shaders
-		{
-			GraphicsShaderDescription opaqueGeometryDesc;
-			opaqueGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
-			opaqueGeometryDesc.Subpass = 0;
-			opaqueGeometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			opaqueGeometryDesc.VertexLayout = staticVertexLayout;
-			opaqueGeometryDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, GEOMETRY_SHADER_DSL_ID), mGraph.GetResource<DescriptorSetLayout>(0, BINDLESS_TEXTURE_DSL_ID) };
-			opaqueGeometryDesc.PushConstants = {
-				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
-				PushConstant(ShaderStage::Fragment, 4 * sizeof(uint32_t)),
-			};
-			opaqueGeometryDesc.CulleMode = CullMode::Back;
-			auto opaqueGeometryShader = mGraphicsContext->CreateGraphicsShader(opaqueGeometryDesc);
-			mAssetManager->InsertAsset(opaqueGeometryShader);
-
-			GraphicsShaderDescription transparentGeometryDesc;
-			transparentGeometryDesc.SourcePath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
-			transparentGeometryDesc.Subpass = 0;
-			transparentGeometryDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			transparentGeometryDesc.VertexLayout = staticVertexLayout;
-			transparentGeometryDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, GEOMETRY_SHADER_DSL_ID), mGraph.GetResource<DescriptorSetLayout>(0, BINDLESS_TEXTURE_DSL_ID) };
-			transparentGeometryDesc.PushConstants = {
-				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
-				PushConstant(ShaderStage::Fragment, 4 * sizeof(uint32_t)),
-			};
-			transparentGeometryDesc.CulleMode = CullMode::None;
-			transparentGeometryDesc.Macros = { { "TRANSPARENCY", "" }};
-			transparentGeometryDesc.EnableDepthTesting = true;
-			transparentGeometryDesc.BlendEnable = true;
-			transparentGeometryDesc.WriteDepth = false;
-			auto transparentGeometryShader = mGraphicsContext->CreateGraphicsShader(transparentGeometryDesc);
-			mAssetManager->InsertAsset(transparentGeometryShader);
-
-			GraphicsShaderDescription environemntShaderDesc{};
-			environemntShaderDesc.SourcePath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
-			environemntShaderDesc.Subpass = 0;
-			environemntShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			environemntShaderDesc.VertexLayout = staticVertexLayout;
-			environemntShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENVIRONMENT_SHADER_DSL_ID)};
-			environemntShaderDesc.PushConstants = { };
-			environemntShaderDesc.CulleMode = CullMode::Front;
-			environemntShaderDesc.WriteDepth = false;
-			environemntShaderDesc.EnableDepthTesting = false;
-			auto environmentShader = mGraphicsContext->CreateGraphicsShader(environemntShaderDesc);
-
-			GraphicsShaderDescription entityHighlightShaderDesc{};
-			entityHighlightShaderDesc.SourcePath = "../Assets/Shaders/Graphics/HighlightEntityShader.glsl";
-			entityHighlightShaderDesc.Subpass = 0;
-			entityHighlightShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			entityHighlightShaderDesc.VertexLayout = staticVertexLayout;
-			entityHighlightShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_HIGHLIGHT_DSL_ID) };
-			entityHighlightShaderDesc.PushConstants = {
-				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4))
-			};
-			entityHighlightShaderDesc.CulleMode = CullMode::Front;
-			entityHighlightShaderDesc.WriteDepth = false;
-			entityHighlightShaderDesc.EnableDepthTesting = false;
-			auto entityHighlightShader = mGraphicsContext->CreateGraphicsShader(entityHighlightShaderDesc);
-			mAssetManager->InsertAsset(entityHighlightShader);
-
-			ComputeShaderDescription entityOutlineShaderDesc{};
-			entityOutlineShaderDesc.Filepath = "../Assets/Shaders/Compute/HighlightShader.glsl";
-			entityOutlineShaderDesc.Layouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_OUTLINE_DSL_ID) };
-			auto entityOutlineShader = mGraphicsContext->CreateComputeShader(entityOutlineShaderDesc);
-
-			GraphicsShaderDescription wireFrameShaderDesc{};
-			wireFrameShaderDesc.SourcePath = "../Assets/Shaders/Graphics/WireFrameShader.glsl";
-			wireFrameShaderDesc.Subpass = 0;
-			wireFrameShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			wireFrameShaderDesc.VertexLayout = staticVertexLayout;
-			wireFrameShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_HIGHLIGHT_DSL_ID) };
-			wireFrameShaderDesc.PushConstants = {
-				PushConstant(ShaderStage::Vertex, sizeof(glm::mat4)),
-				PushConstant(ShaderStage::Fragment, sizeof(glm::vec3))
-			};
-			wireFrameShaderDesc.CulleMode = CullMode::None;
-			wireFrameShaderDesc.EnableDepthTesting = false;
-			wireFrameShaderDesc.WriteDepth = false;
-			wireFrameShaderDesc.FillMode = FillMode::Wireframe;
-			auto wireFrameShader = mGraphicsContext->CreateGraphicsShader(wireFrameShaderDesc);
-
-			GraphicsShaderDescription billboardShaderDesc{};
-			billboardShaderDesc.SourcePath = "../Assets/Shaders/Graphics/BillBoardShader.glsl";
-			billboardShaderDesc.WriteDepth = false;
-			billboardShaderDesc.EnableDepthTesting = false;
-			billboardShaderDesc.BlendEnable = true;
-			billboardShaderDesc.CulleMode = CullMode::None;
-			billboardShaderDesc.RenderPass = mGraph.GetResource<RenderPass>(0, GEOMETRY_RENDER_PASS_ID);
-			billboardShaderDesc.Subpass = 0;
-			billboardShaderDesc.VertexLayout = staticVertexLayout;
-			billboardShaderDesc.PushConstants = {
-				PushConstant(ShaderStage::Vertex, 2 * sizeof(glm::vec4)),
-				PushConstant(ShaderStage::Fragment, sizeof(uint32_t))
-			};
-			billboardShaderDesc.DescriptorLayouts = { mGraph.GetResource<DescriptorSetLayout>(0, ENTITY_HIGHLIGHT_DSL_ID), mGraph.GetResource<DescriptorSetLayout>(0, BINDLESS_TEXTURE_DSL_ID)};
-			auto billboardShader = mGraphicsContext->CreateGraphicsShader(billboardShaderDesc);
-			mAssetManager->InsertAsset(billboardShader);
-
-			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
-			{
-				mGraph.AddResource(i, OPAQUE_GEOMETRY_SHADER_ID, opaqueGeometryShader);
-				mGraph.AddResource(i, TRANPARENT_GEOMETRY_SHADER_ID, transparentGeometryShader);
-				mGraph.AddResource(i, ENVIRONMENT_SHADER_ID, environmentShader);
-				mGraph.AddResource(i, ENTITY_HIGHLIGHT_SHADER_ID, entityHighlightShader);
-				mGraph.AddResource(i, ENTITY_OUTLINE_SHADER_ID, entityOutlineShader);
-				mGraph.AddResource(i, WIRE_FRAME_SHADER_ID, wireFrameShader);
-				mGraph.AddResource(i, BILLBOARD_SHADER_ID, billboardShader);
-			}
-		}
-
 #pragma endregion
 
 #pragma region Render Graph Init
 
+		// Framebuffers
+		FramebufferDescription framebufferDesc;
+		framebufferDesc.Attachments = {
+			{ TextureFormat::RGBA32F, TextureFlags::StorageImage },
+			{ TextureFormat::RG32UI, TextureFlags::None },
+			{ TextureFormat::R32F, TextureFlags::None }
+		};
+		framebufferDesc.DepthAttachment = { TextureFormat::D32F, TextureFlags::None };
+		framebufferDesc.Height = 600;
+		framebufferDesc.Width = 800;
+		framebufferDesc.LayerCount = 1;
+		
+		mGraph.CreateFramebuffer(framebufferDesc);
+
+		mGraph.SetFinalLayouts({ { 0, ImageLayout::ShaderReadOnly } });
+				
 		mGraph.AddPass(
 			ENVIRONMENT_PASS_NAME,
 			{ },
-			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1));
+			MULE_ENVIRONMENT_MAP_SHADER_HANDLE,
+			{ { 0, ImageLayout::ColorAttachment } },
+			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
 		mGraph.AddPass(
 			GEOMETRY_PASS_NAME,
 			{ ENVIRONMENT_PASS_NAME },
-			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1));
+			MULE_GEOMETRY_SHADER_HANDLE,
+			{ 
+				{ 0, ImageLayout::ColorAttachment },
+				{ 1, ImageLayout::ColorAttachment }
+			},
+			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
 		mGraph.AddPass(
 			TRANPARENT_GEOMETRY_PASS_NAME,
 			{ GEOMETRY_PASS_NAME },
-			std::bind(&SceneRenderer::RenderTransparentGeometryCallback, this, std::placeholders::_1));
+			MULE_GEOMETRY_SHADER_HANDLE,
+			{
+				{ 0, ImageLayout::ColorAttachment },
+				{ 1, ImageLayout::ColorAttachment }
+			},
+			std::bind(&SceneRenderer::RenderTransparentGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
 		mGraph.AddPass(
 			ENTITY_HIGHLIGHT_PASS_NAME,
 			{ TRANPARENT_GEOMETRY_PASS_NAME },
-			std::bind(&SceneRenderer::RenderEntityHighlightCallback, this, std::placeholders::_1));
-
-		mGraph.AddPass(
-			EDITOR_UI_PASS_NAME,
-			{ ENTITY_HIGHLIGHT_PASS_NAME },
-			std::bind(&SceneRenderer::RenderEditorUICallback, this, std::placeholders::_1));
+			MULE_ENTITY_HIGLIGHT_SHADER_HANDLE,
+			{ { 2, ImageLayout::ColorAttachment } },
+			std::bind(&SceneRenderer::RenderEntityHighlightCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		
+		//mGraph.AddPass(
+		//	EDITOR_UI_PASS_NAME,
+		//	{ ENTITY_HIGHLIGHT_PASS_NAME },
+		//	std::bind(&SceneRenderer::RenderEditorUICallback, this, std::placeholders::_1));
 
 		mGraph.Compile();
 
@@ -476,15 +344,14 @@ namespace Mule
 		mGraph.NextFrame();
 		mGraph.Wait();
 		
-		mGraph.SetScene(scene);
 		mGraph.SetCamera(camera);
 
-		PrepareResources();
+		PrepareResources(camera, scene);
 
 		Timer executionTimer;
 		executionTimer.Start();
 		
-		mGraph.Execute(waitSemaphores);
+		mGraph.Execute(scene, waitSemaphores);
 		
 		executionTimer.Stop();
 		timingInfo.CPUExecutionTime = executionTimer.Query();
@@ -515,15 +382,14 @@ namespace Mule
 		mGraph.NextFrame();
 		mGraph.Wait();
 
-		mGraph.SetScene(scene);
 		mGraph.SetCamera(*camera);
 
-		PrepareResources();
+		PrepareResources(*camera, scene);
 
 		Timer executionTimer;
 		executionTimer.Start();
 
-		mGraph.Execute(waitSemaphores);
+		mGraph.Execute(scene, waitSemaphores);
 
 		executionTimer.Stop();
 		timingInfo.CPUExecutionTime = executionTimer.Query();
@@ -536,7 +402,7 @@ namespace Mule
 	{
 		mGraph.Wait();
 		uint32_t index = mGraph.GetFrameIndex();
-		auto framebuffer = mGraph.GetResource<FrameBuffer>(index, FRAMEBUFFER_ID);
+		auto framebuffer = mGraph.GetCurrentFrameBuffer();
 
 		auto queue = mGraphicsContext->GetGraphicsQueue();
 		auto cmdPool = queue->CreateCommandPool();
@@ -574,7 +440,7 @@ namespace Mule
 
 	WeakRef<FrameBuffer> SceneRenderer::GetFrameBuffer() const
 	{
-		return mGraph.QueryResource<FrameBuffer>(FRAMEBUFFER_ID);
+		return mGraph.GetCurrentFrameBuffer();
 	}
 	
 	void SceneRenderer::Resize(uint32_t width, uint32_t height)
@@ -605,11 +471,9 @@ namespace Mule
 		return index;
 	}
 
-	void SceneRenderer::PrepareResources()
+	void SceneRenderer::PrepareResources(const Camera& camera, WeakRef<Scene> scene)
 	{
 		auto& timingInfo = mTiming[mGraph.GetFrameIndex()];
-		WeakRef<Scene> scene = mGraph.GetPassContext().GetScene();
-		const Camera& camera = mGraph.GetPassContext().GetCamera();
 
 		Timer dataPrepTimer;
 		dataPrepTimer.Start();
@@ -619,7 +483,6 @@ namespace Mule
 			WeakRef<UniformBuffer> lightUB = mGraph.QueryResource<UniformBuffer>(LIGHT_BUFFER_ID);
 			WeakRef<UniformBuffer> materialBuffer = mGraph.QueryResource<DescriptorSet>(MATERIAL_BUFFER_ID);
 			WeakRef<DescriptorSet> bindlessTextureDS = mGraph.QueryResource<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
-			WeakRef<FrameBuffer> framebuffer = mGraph.QueryResource<FrameBuffer>(FRAMEBUFFER_ID);
 
 			// Camera
 			{
@@ -689,62 +552,17 @@ namespace Mule
 			if (resourceUpdate.Resize)
 			{
 				resourceUpdate.Resize = false;
-				framebuffer->Resize(resourceUpdate.ResizeWidth, resourceUpdate.ResizeHeight);
-
-				auto queue = mGraphicsContext->GetGraphicsQueue();
-				auto cmdPool = queue->CreateCommandPool();
-				auto cmd = cmdPool->CreateCommandBuffer();
-				auto fence = mGraphicsContext->CreateFence();
-
-				for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
-				{
-					fence->Reset();
-
-					cmd->Reset();
-					cmd->Begin();
-					cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::General);
-					cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly);
-					cmd->End();
-					queue->Submit({ cmd }, {}, {}, fence);
-					fence->Wait();
-
-					auto outlineDS = mGraph.QueryResource<DescriptorSet>(ENTITY_OUTLINE_DS_ID);
-
-					std::vector<DescriptorSetUpdate> outlineDSUs = {
-						DescriptorSetUpdate(0, DescriptorType::StorageImage, 0, { framebuffer->GetColorAttachment(0) }, {}),
-						DescriptorSetUpdate(1, DescriptorType::Texture, 0, { framebuffer->GetColorAttachment(2) }, {}),
-					};
-
-					outlineDS->Update(outlineDSUs);
-
-					fence->Reset();
-
-					cmd->Reset();
-					cmd->Begin();
-					cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
-					cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ColorAttachment);
-					cmd->End();
-					queue->Submit({ cmd }, {}, {}, fence);
-					fence->Wait();
-				}
+				mGraph.Resize(resourceUpdate.ResizeWidth, resourceUpdate.ResizeHeight);
 			}
 		}
 		dataPrepTimer.Stop();
 		timingInfo.CPUPrepareTime = dataPrepTimer.Query();
 	}
 
-	void SceneRenderer::RenderSolidGeometryCallback(const RenderGraph::PassContext& ctx)
+	void SceneRenderer::RenderSolidGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<RenderPass> renderPass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
-		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(OPAQUE_GEOMETRY_SHADER_ID);
 		WeakRef<DescriptorSet> geometryDS = ctx.Get<FrameBuffer>(GEOMETRY_SHADER_DS_ID);
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
-		WeakRef<Scene> scene = ctx.GetScene();
-
-		if (!shader->IsValid())
-			return;
 
 		WeakRef<EnvironmentMap> environmentMap = nullptr;
 		for (auto entity : scene->Iterate<EnvironmentMapComponent>())
@@ -781,10 +599,7 @@ namespace Mule
 			};
 			geometryDS->Update(geometryShaderDSUs);
 		}
-				
-		cmd->BeginRenderPass(framebuffer, renderPass, false);
 
-		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { geometryDS, bindlessTextureDS });
 
 		for (auto entity : scene->Iterate<MeshComponent>())
@@ -821,26 +636,13 @@ namespace Mule
 
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
-
-		cmd->EndRenderPass();
 	}
 
-	void SceneRenderer::RenderTransparentGeometryCallback(const RenderGraph::PassContext& ctx)
+	void SceneRenderer::RenderTransparentGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<RenderPass> renderPass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
-		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(TRANPARENT_GEOMETRY_SHADER_ID);
 		WeakRef<DescriptorSet> geometryDS = ctx.Get<FrameBuffer>(GEOMETRY_SHADER_DS_ID);
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
-		WeakRef<Scene> scene = ctx.GetScene();
 
-		if (!shader->IsValid())
-			return;
-
-		cmd->BeginRenderPass(framebuffer, renderPass, false);
-
-		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { geometryDS, bindlessTextureDS });
 
 		for (auto entity : scene->Iterate<MeshComponent>())
@@ -878,20 +680,13 @@ namespace Mule
 
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
-
-		cmd->EndRenderPass();
 	}
 
-	void SceneRenderer::RenderEnvironmentCallback(const RenderGraph::PassContext& ctx)
+	void SceneRenderer::RenderEnvironmentCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<RenderPass> renderPass = ctx.Get<FrameBuffer>(GEOMETRY_RENDER_PASS_ID);
-		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(ENVIRONMENT_SHADER_ID);
 		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENVIRONMENT_SHADER_DS_ID);
-		WeakRef<Scene> scene = ctx.GetScene();
-
-		if (!shader->IsValid())
+	
+		if (!shader)
 			return;
 
 		WeakRef<TextureCube> cubeMap = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
@@ -922,19 +717,12 @@ namespace Mule
 		};
 		DS->Update(DSUs);
 
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
-
-		cmd->BeginRenderPass(framebuffer, renderPass, true);
-		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
 		auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
 		if (mesh)
 		{
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
-		cmd->EndRenderPass();
 	}
 
 	bool SceneRenderer::RenderEntityChildrenHighlight(Entity e, WeakRef<CommandBuffer> cmd, WeakRef<GraphicsShader> shader)
@@ -963,20 +751,13 @@ namespace Mule
 		return ret;
 	}
 
-	void SceneRenderer::RenderEntityHighlightCallback(const RenderGraph::PassContext& ctx)
+	void SceneRenderer::RenderEntityHighlightCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<Scene> scene = ctx.GetScene();
-		WeakRef<GraphicsShader> shader = ctx.Get<GraphicsShader>(ENTITY_HIGHLIGHT_SHADER_ID);
-		WeakRef<ComputeShader> outlineShader = ctx.Get<ComputeShader>(ENTITY_OUTLINE_SHADER_ID);
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<RenderPass> renderpass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
 		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
 		WeakRef<DescriptorSet> outlineDS = ctx.Get<DescriptorSet>(ENTITY_OUTLINE_DS_ID);
+		//WeakRef<GraphicsShader> shader = mAssetManager->GetAsset<GraphicsShader>(MULE_ENTITY_MASK_SHADER_HANDLE);
+		WeakRef<GraphicsShader> outlineShader = mAssetManager->GetAsset<GraphicsShader>(MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
 
-		cmd->BeginRenderPass(framebuffer, renderpass);
-
-		cmd->BindGraphicsPipeline(shader);
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
 
 		bool hasHighlight = false;
@@ -985,43 +766,35 @@ namespace Mule
 			hasHighlight |= RenderEntityChildrenHighlight(entity, cmd, shader);			
 		}
 
-		cmd->EndRenderPass();
-
-		// Dont run expensive compute shader if no highlight
-		if (!hasHighlight)
-		{
-			return;
-		}
-
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::General);
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly);
-
-		cmd->BindComputePipeline(outlineShader);
-		cmd->BindComputeDescriptorSet(outlineShader, outlineDS);
-
-		uint32_t width = framebuffer->GetWidth();
-		uint32_t height = framebuffer->GetHeight();
-		cmd->Execute(width / 16, height / 16, 1);
-
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ColorAttachment); // TODO: to be handled by scene graph
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::General);
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly);
+		//
+		//cmd->BindComputePipeline(outlineShader);
+		//cmd->BindComputeDescriptorSet(outlineShader, outlineDS);
+		//
+		//uint32_t width = framebuffer->GetWidth();
+		//uint32_t height = framebuffer->GetHeight();
+		//cmd->Execute(width / 16, height / 16, 1);
+		//
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
+		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
 	}
 
-	void SceneRenderer::RenderEditorUICallback(const RenderGraph::PassContext& ctx)
+	void SceneRenderer::RenderEditorUICallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader>, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<CommandBuffer> cmd = ctx.GetCommandBuffer();
-		WeakRef<Scene> scene = ctx.GetScene();
+		/*
 		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<RenderPass> renderpass = ctx.Get<RenderPass>(GEOMETRY_RENDER_PASS_ID);
-		WeakRef<GraphicsShader> wireFrameShader = ctx.Get<GraphicsShader>(WIRE_FRAME_SHADER_ID);
-		WeakRef<GraphicsShader> billboardShader = ctx.Get<GraphicsShader>(BILLBOARD_SHADER_ID);
 		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
 		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
+		WeakRef<GraphicsShader> wireFrameShader = mAssetManager->GetAsset<GraphicsShader>(MULE_WIRE_FRAME_SHADER_HANDLE);
+		WeakRef<GraphicsShader> billboardShader = mAssetManager->GetAsset<GraphicsShader>(MULE_BILLBOARD_SHADER_HANDLE);
 
-		cmd->BeginRenderPass(framebuffer, renderpass);
-		cmd->BindGraphicsPipeline(wireFrameShader);
+		if (!billboardShader || !wireFrameShader)
+			return;
+
+		cmd->BeginRenderPass(framebuffer, wireFrameShader);
 		cmd->BindGraphicsDescriptorSet(wireFrameShader, { DS });
 
 		glm::vec3 colliderColor = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -1095,9 +868,11 @@ namespace Mule
 			}
 		}
 
+		cmd->EndRenderPass();
+		cmd->BeginRenderPass(framebuffer, billboardShader);
+
 		if (mDebugOptions.ShowAllLights)
 		{
-			cmd->BindGraphicsPipeline(billboardShader);
 			cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
 			auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
 
@@ -1139,6 +914,8 @@ namespace Mule
 			}
 		}
 
+		cmd->EndRenderPass();
+		cmd->BeginRenderPass(framebuffer, wireFrameShader);
 		if (mDebugOptions.SelectedEntity)
 		{
 			Entity entity = mDebugOptions.SelectedEntity;
@@ -1146,7 +923,6 @@ namespace Mule
 
 			if (mDebugOptions.ShowSelectedEntityColliders && !mDebugOptions.ShowAllPhysicsObjects)
 			{
-				cmd->BindGraphicsPipeline(wireFrameShader);
 				if (entity.HasComponent<BoxColliderComponent>())
 				{
 					auto& collider = mDebugOptions.SelectedEntity.GetComponent<BoxColliderComponent>();
@@ -1230,7 +1006,7 @@ namespace Mule
 
 			if (mDebugOptions.ShowSelectedEntityLights && !mDebugOptions.ShowAllLights)
 			{
-				cmd->BindGraphicsPipeline(billboardShader);
+				//cmd->BindGraphicsPipeline(billboardShader);
 				cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
 				glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
 				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
@@ -1272,5 +1048,6 @@ namespace Mule
 
 		cmd->EndRenderPass();
 		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
+	*/
 	}
 }

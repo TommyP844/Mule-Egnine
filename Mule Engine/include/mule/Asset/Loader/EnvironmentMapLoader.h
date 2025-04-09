@@ -5,7 +5,7 @@
 #include "AssetLoader.h"
 #include "Graphics/EnvironmentMap.h"
 #include "Graphics/Context/GraphicsContext.h"
-#include "Graphics/ComputeShader.h"
+#include "Graphics/Shader/ComputeShader.h"
 
 namespace Mule
 {
