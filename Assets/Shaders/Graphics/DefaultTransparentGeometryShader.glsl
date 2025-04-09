@@ -1,9 +1,9 @@
 #SETUP
 
-CullMode = Back
+CullMode = None
 DepthTest = True 
 DepthWrite = True
-Attachment = { Location = 0, Format = RGBA32F, BlendEnable = False }
+Attachment = { Location = 0, Format = RGBA32F, BlendEnable = True }
 Attachment = { Location = 1, Format = RG32UI, BlendEnable = False }
 DepthFormat = D32F
 
@@ -224,7 +224,7 @@ void main()
         vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);        
         
         vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(abs(dot(N, L)), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
         vec3 specular = numerator / denominator;
         
          // kS is equal to Fresnel
@@ -261,7 +261,7 @@ void main()
         vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);        
         
         vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(abs(dot(N, L)), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
         vec3 specular = numerator / denominator;
         
          // kS is equal to Fresnel
@@ -314,19 +314,15 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
-	#ifdef TRANSPARENCY
-		float alpha = 1.0;
-		if (material.OpacityIndex != UINT32_MAX)
-		{
-			alpha = texture(textures[material.OpacityIndex], scaledUV).r;
-		}
-		alpha *= material.Transparency;
-		alpha *= material.AlbedoColor.a;
+	float alpha = 1.0;
+	if (material.OpacityIndex != UINT32_MAX)
+	{
+		alpha = texture(textures[material.OpacityIndex], scaledUV).r;
+	}
+	alpha *= material.Transparency;
+	alpha *= material.AlbedoColor.a;
 
-		FragColor = vec4(color, alpha);
-	#else
-		FragColor = vec4(color, 1.0);
-	#endif
+	FragColor = vec4(color, alpha);
 
     EntityId = Id;
 }

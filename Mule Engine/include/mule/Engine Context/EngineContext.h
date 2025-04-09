@@ -32,6 +32,7 @@ namespace Mule
 		~EngineContext();
 
 #pragma region Asset Mananger
+
 		template<typename T>
 		WeakRef<T> LoadAsset(const fs::path& filepath);
 
@@ -71,6 +72,8 @@ namespace Mule
 		Ref<ImGuiContext> mImguiContext;
 		Ref<ScriptContext> mScriptContext;
 		WeakRef<Scene> mScene;
+
+		std::future<void> mAssetLoadFuture;
 	};
 }
 

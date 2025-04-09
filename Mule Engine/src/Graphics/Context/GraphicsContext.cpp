@@ -571,9 +571,9 @@ namespace Mule
 		}
 	}
 
-	Ref<DescriptorSet> GraphicsContext::CreateDescriptorSet(const DescriptorSetDescription& description)
+	Ref<DescriptorSet> GraphicsContext::CreateDescriptorSet(const std::vector<WeakRef<DescriptorSetLayout>>& layouts)
 	{
-		return MakeRef<DescriptorSet>(WeakRef<GraphicsContext>(this), description);
+		return MakeRef<DescriptorSet>(WeakRef<GraphicsContext>(this), layouts);
 	}
 
 	Ref<UniformBuffer> GraphicsContext::CreateUniformBuffer(uint32_t bytes)
@@ -591,9 +591,9 @@ namespace Mule
 		return MakeRef<GraphicsShader>(this, filepath);
 	}
 
-	Ref<ComputeShader> GraphicsContext::CreateComputeShader(const ComputeShaderDescription& description)
+	Ref<ComputeShader> GraphicsContext::CreateComputeShader(const fs::path& filepath)
 	{
-		return MakeRef<ComputeShader>(WeakRef<GraphicsContext>(this), description);
+		return MakeRef<ComputeShader>(this, filepath);
 	}
 
 	Ref<RenderPass> GraphicsContext::CreateRenderPass(const RenderPassDescription& renderPassDescription)
@@ -641,9 +641,9 @@ namespace Mule
 		return MakeRef<FrameBuffer>(WeakRef<GraphicsContext>(this), frameBufferDesc);
 	}
 
-	Ref<DescriptorSetLayout> GraphicsContext::CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description)
+	Ref<DescriptorSetLayout> GraphicsContext::CreateDescriptorSetLayout(const std::vector<LayoutDescription>& layouts)
 	{
-		return MakeRef<DescriptorSetLayout>(WeakRef<GraphicsContext>(this), description);
+		return MakeRef<DescriptorSetLayout>(WeakRef<GraphicsContext>(this), layouts);
 	}
 
 	Ref<StagingBuffer> GraphicsContext::CreateStagingBuffer(uint32_t size)

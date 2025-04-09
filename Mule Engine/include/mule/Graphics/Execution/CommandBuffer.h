@@ -30,8 +30,8 @@ namespace Mule
 
 		// Framebuffers
 		void BeginRenderPass(Ref<SwapchainFrameBuffer> framebuffer);
-		void BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<GraphicsShader> shader, bool clearFramebuffer = false);
-		void NextPass();
+		void BeginRenderPass(WeakRef<FrameBuffer> framebuffer, WeakRef<GraphicsShader> shader);
+		void ClearFrameBuffer(WeakRef<FrameBuffer> framebuffer);
 		void EndRenderPass();
 
 		struct TextureCopyInfo
@@ -56,7 +56,7 @@ namespace Mule
 
 		// Shader
 		void BindComputePipeline(WeakRef<ComputeShader> shader);
-		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, void* data, uint32_t size);
+		void SetPushConstants(WeakRef<GraphicsShader> shader, ShaderStage stage, const void* data, uint32_t size);
 		void SetPushConstants(WeakRef<ComputeShader> shader, void* data, uint32_t size);
 		void BindGraphicsDescriptorSet(WeakRef<GraphicsShader> shader, const std::vector<WeakRef<DescriptorSet>>& descriptorSets);
 		void BindComputeDescriptorSet(WeakRef<ComputeShader> shader, WeakRef<DescriptorSet> descriptorSet);

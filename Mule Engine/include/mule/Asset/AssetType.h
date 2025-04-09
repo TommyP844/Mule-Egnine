@@ -12,6 +12,7 @@ namespace Mule
 		Mesh,
 		Material,
 		Shader,
+		ComputeShader,
 		EnvironmentMap,
 
 		Script,

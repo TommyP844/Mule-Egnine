@@ -41,6 +41,8 @@ void main()
 #FRAGMENT
 #version 460 core
 
+layout(location = 0) out float color; // ignore
+layout(location = 1) out uvec2 id; // ignore
 layout(location = 2) out float Entity;
 
 

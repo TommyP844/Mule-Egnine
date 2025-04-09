@@ -1,5 +1,6 @@
 #SETUP
 
+FillMode = Wireframe
 CullMode = None
 DepthTest = False 
 DepthWrite = False
@@ -40,8 +41,6 @@ void main()
 #version 460 core
 
 layout(location = 0) out vec4 FragColor;
-
-layout(set = 1, binding = 0) uniform sampler2D textures[];
 
 layout(push_constant) uniform PushConstantBlock {
     layout(offset = 64) vec3 color;

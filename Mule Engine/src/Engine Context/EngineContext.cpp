@@ -13,6 +13,7 @@
 #include "Asset/Loader/GraphicsShaderLoader.h"
 #include "Asset/Loader/MaterialLoader.h"
 #include "Asset/Loader/ScriptLoader.h"
+#include "Asset/Loader/ComputeShaderLoader.h"
 
 
 namespace Mule
@@ -29,6 +30,8 @@ namespace Mule
 		mSceneRenderer = MakeRef<SceneRenderer>(mGraphicsContext, mAssetManager);
 		mScriptContext = MakeRef<ScriptContext>(this);
 
+		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
+
 		mAssetManager->RegisterLoader<SceneLoader>(this);
 		mAssetManager->RegisterLoader<ScriptLoader>();
 		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
@@ -36,9 +39,7 @@ namespace Mule
 		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);
 		mAssetManager->RegisterLoader<GraphicsShaderLoader>(this);
 		mAssetManager->RegisterLoader<MaterialLoader>();
-
-		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
-
+		mAssetManager->RegisterLoader<ComputeShaderLoader>(this);
 
 		// Engine Assets		
 		uint8_t blackImageData[] = {
@@ -80,100 +81,107 @@ namespace Mule
 
 		mSceneRenderer->RefreshEngineObjects();
 
-		// Cube
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cube.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_CUBE_MESH_HANDLE);
-		}
+		mAssetLoadFuture = std::async(std::launch::async, [&]() {
 
-		// Sphere
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Sphere.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_SPHERE_MESH_HANDLE);
-		}
+			// Cube
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cube.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_CUBE_MESH_HANDLE);
+			}
 
-		// Cylinder
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cylinder.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_CYLINDER_MESH_HANDLE);
-		}
+			// Sphere
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Sphere.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_SPHERE_MESH_HANDLE);
+			}
 
-		// Cone
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cone.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_CONE_MESH_HANDLE);
-		}
+			// Cylinder
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cylinder.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_CYLINDER_MESH_HANDLE);
+			}
 
-		// Plane
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Plane.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_PLANE_MESH_HANDLE);
-		}
+			// Cone
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Cone.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_CONE_MESH_HANDLE);
+			}
 
-		// Torus
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Torus.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_TORUS_MESH_HANDLE);
-		}
+			// Plane
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Plane.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_PLANE_MESH_HANDLE);
+			}
 
-		// Beveled Block
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Beveled Block.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_BEVELED_BLOCK_MESH_HANDLE);
-		}
+			// Torus
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Torus.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_TORUS_MESH_HANDLE);
+			}
 
-		// Capsule
-		{
-			auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Capsule.obj");
-			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
-			UpdateAssetHandle(mesh->Handle(), MULE_CAPSULE_MESH_HANDLE);
-		}
+			// Beveled Block
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Beveled Block.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_BEVELED_BLOCK_MESH_HANDLE);
+			}
 
-		// TODO: Wrap in macro
+			// Capsule
+			{
+				auto model = LoadAsset<Model>("../Assets/Meshes/Primitives/Capsule.obj");
+				auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
+				UpdateAssetHandle(mesh->Handle(), MULE_CAPSULE_MESH_HANDLE);
+			}
 
-		// Point Light Icon
-		{
-			auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/point-light-icon.png");
-			UpdateAssetHandle(texture->Handle(), MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE);
-			mSceneRenderer->AddTexture(texture);
-		}
+			// TODO: Wrap in macro
 
-		// Spot Light
-		{
-			auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/spot-light-icon.png");
-			UpdateAssetHandle(texture->Handle(), MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
-			mSceneRenderer->AddTexture(texture);
-		}
+			// Point Light Icon
+			{
+				auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/point-light-icon.png");
+				UpdateAssetHandle(texture->Handle(), MULE_POINT_LIGHT_ICON_TEXTURE_HANDLE);
+				mSceneRenderer->AddTexture(texture);
+			}
 
-		// Graphics Shaders
-		{
-			auto shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/DefaultGeometryShader.glsl");
-			UpdateAssetHandle(shader->Handle(), MULE_GEOMETRY_SHADER_HANDLE);
+			// Spot Light
+			{
+				auto texture = mAssetManager->LoadAsset<Texture2D>("../Assets/Textures/spot-light-icon.png");
+				UpdateAssetHandle(texture->Handle(), MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
+				mSceneRenderer->AddTexture(texture);
+			}
 
-			// TODO: Transparent geometry shader
+			// Graphics Shaders
+			{
+				auto shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/DefaultGeometryShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_GEOMETRY_SHADER_HANDLE);
 
-			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/EnvironmentMapShader.glsl");
-			UpdateAssetHandle(shader->Handle(), MULE_ENVIRONMENT_MAP_SHADER_HANDLE);
+				shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/DefaultTransparentGeometryShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_TRANSPARENT_SHADER_HANDLE);
 
-			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/HighlightEntityShader.glsl");
-			UpdateAssetHandle(shader->Handle(), MULE_ENTITY_MASK_SHADER_HANDLE);
+				shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/EnvironmentMapShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_ENVIRONMENT_MAP_SHADER_HANDLE);
 
-			//auto shader = mAssetManager->LoadAsset<ComputeShader>("../Assets/Shaders/Compute/HighlightShader.glsl");
-			//UpdateAssetHandle(shader->Handle(), MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
+				shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/HighlightEntityShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_ENTITY_MASK_SHADER_HANDLE);
 
-			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/WireFrameShader.glsl");
-			UpdateAssetHandle(shader->Handle(), MULE_WIRE_FRAME_SHADER_HANDLE);
+				shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/WireFrameShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_WIRE_FRAME_SHADER_HANDLE);
 
-			shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/BillBoardShader.glsl");
-			UpdateAssetHandle(shader->Handle(), MULE_BILLBOARD_SHADER_HANDLE);
-		}
+				shader = mAssetManager->LoadAsset<GraphicsShader>("../Assets/Shaders/Graphics/BillBoardShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_BILLBOARD_SHADER_HANDLE);
+			}
+
+			// Compute Shaders
+			{
+				auto shader = mAssetManager->LoadAsset<ComputeShader>("../Assets/Shaders/Compute/HighlightShader.glsl");
+				UpdateAssetHandle(shader->Handle(), MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
+			}
+			});
 	}
 
 	EngineContext::~EngineContext()

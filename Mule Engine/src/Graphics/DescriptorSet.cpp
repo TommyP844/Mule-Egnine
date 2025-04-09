@@ -6,18 +6,18 @@
 
 namespace Mule
 {
-	DescriptorSet::DescriptorSet(WeakRef<GraphicsContext> context, const DescriptorSetDescription& description)
+	DescriptorSet::DescriptorSet(WeakRef<GraphicsContext> context, const std::vector<WeakRef<DescriptorSetLayout>>& layouts)
 		:
 		mContext(context),
 		mDevice(context->GetDevice()),
 		mDescriptorSet(VK_NULL_HANDLE),
 		mDescriptorPool(context->GetDescriptorPool()),
-		mDescriptorSetLayouts(description.Layouts)
+		mDescriptorSetLayouts(layouts)
 	{
-		std::vector<VkDescriptorSetLayout> layouts;
-		for (const auto& setLayout : description.Layouts)
+		std::vector<VkDescriptorSetLayout> vkLayouts;
+		for (const auto& setLayout : layouts)
 		{
-			layouts.push_back(setLayout->GetLayout());
+			vkLayouts.push_back(setLayout->GetLayout());
 		}
 
 		VkDescriptorSetAllocateInfo allocInfo{};
@@ -25,8 +25,8 @@ namespace Mule
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.pNext = nullptr;
 		allocInfo.descriptorPool = mDescriptorPool;
-		allocInfo.descriptorSetCount = layouts.size();
-		allocInfo.pSetLayouts = layouts.data();
+		allocInfo.descriptorSetCount = vkLayouts.size();
+		allocInfo.pSetLayouts = vkLayouts.data();
 
 		VkResult result = vkAllocateDescriptorSets(mDevice, &allocInfo, &mDescriptorSet);
 		if (result != VK_SUCCESS)

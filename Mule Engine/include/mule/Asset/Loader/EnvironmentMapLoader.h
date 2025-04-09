@@ -7,6 +7,9 @@
 #include "Graphics/Context/GraphicsContext.h"
 #include "Graphics/Shader/ComputeShader.h"
 
+#include <mutex>
+#include <future>
+
 namespace Mule
 {
 	class EngineContext;
@@ -22,6 +25,8 @@ namespace Mule
 		virtual void SaveBinary(Ref<EnvironmentMap> asset) override;
 
 	private:
+		std::mutex mMutex;
+
 		AssetHandle mBRDFLutMap;
 		WeakRef<GraphicsContext> mContext;
 		WeakRef<EngineContext> mEngineContext;
@@ -35,6 +40,6 @@ namespace Mule
 		Ref<DescriptorSet> mBRDFDescriptorSet;
 		Ref<DescriptorSet> mCubeMapDescriptorSet;
 
-
+		std::future<void> mShaderLoadFuture;
 	};
 }

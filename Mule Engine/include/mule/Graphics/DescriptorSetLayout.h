@@ -13,15 +13,10 @@ namespace Mule
 {
 	class GraphicsContext;
 
-	struct DescriptorSetLayoutDescription
-	{
-		std::vector<LayoutDescription> Layouts;
-	};
-
 	class DescriptorSetLayout
 	{
 	public:
-		DescriptorSetLayout(WeakRef<GraphicsContext> context, const DescriptorSetLayoutDescription& description);
+		DescriptorSetLayout(WeakRef<GraphicsContext> context, const std::vector<LayoutDescription>& layouts);
 		~DescriptorSetLayout();
 
 		VkDescriptorSetLayout GetLayout() const { return mLayout; }
@@ -29,6 +24,5 @@ namespace Mule
 	private:
 		VkDevice mDevice;
 		VkDescriptorSetLayout mLayout;
-
 	};
 }

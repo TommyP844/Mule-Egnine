@@ -99,18 +99,22 @@ namespace Mule
 		void RenderSolidGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
 		void RenderTransparentGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
 		void RenderEnvironmentCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
-		void RenderEntityHighlightCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
-		void RenderEditorUICallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
-		bool RenderEntityChildrenHighlight(Entity e, WeakRef<CommandBuffer> cmd, WeakRef<GraphicsShader> shader);
+		void RenderEntityMaskCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderEntityOutlineCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderEditorBillboardCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
+		void RenderPhysicsUIPass(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx);
 
 		// Render Graph Passes
 		const std::string GEOMETRY_PASS_NAME = "OpaqueGeometryPass";
 		const std::string ENVIRONMENT_PASS_NAME = "EnvironmentPass";
 		const std::string TRANPARENT_GEOMETRY_PASS_NAME = "TransparentGeometryPass";
 		const std::string ENTITY_HIGHLIGHT_PASS_NAME = "EntityHighlightPass";
-		const std::string EDITOR_UI_PASS_NAME = "EditorUIPass";
+		const std::string ENTTIY_OUTLINE_PASS_NAME = "EntityOutlinePass";
+		const std::string EDITOR_BILLBOARD_PASS_NAME = "EditorUIPass";
+		const std::string PHYSICS_UI_PASS_NAME = "PhysicsUIPass";
 
 		// Descriptor Sets
+
 		const std::string GEOMETRY_SHADER_DSL_ID = "GeometryShaderDSL";
 		const std::string GEOMETRY_SHADER_DS_ID = "GeometryShaderDS";
 
@@ -120,11 +124,17 @@ namespace Mule
 		const std::string ENVIRONMENT_SHADER_DSL_ID = "EnvironmentShaderDSL";
 		const std::string ENVIRONMENT_SHADER_DS_ID = "EnvironmentShaderDS";
 
-		const std::string ENTITY_HIGHLIGHT_DSL_ID = "EntityHighlightDSL";
-		const std::string ENTITY_HIGHLIGHT_DS_ID = "EntityHighlightDS";
-
 		const std::string ENTITY_OUTLINE_DSL_ID = "EntityOutlineDSL";
 		const std::string ENTITY_OUTLINE_DS_ID = "EntityOutlineDS";
+
+		const std::string ENTITY_MASK_DSL_ID = "EntityMaskDSL";
+		const std::string ENTITY_MASK_DS_ID = "EntityMaskDS";
+
+		const std::string BILLBOARD_DSL_ID = "BillboardDSL";
+		const std::string BILLBOARD_DS_ID = "BillboardDS";
+
+		const std::string WIREFRAME_DSL_ID = "WireframeDSL";
+		const std::string WIREFRAME_DS_ID = "WireframeDS";
 
 		// Buffers
 		const std::string CAMERA_BUFFER_ID = "CameraUB";

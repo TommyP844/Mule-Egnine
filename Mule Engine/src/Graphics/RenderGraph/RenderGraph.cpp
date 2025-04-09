@@ -172,7 +172,7 @@ namespace Mule::RenderGraph
 		PassContext& ctx = perFrameData.Ctx;
 
 		WeakRef<Semaphore> previousPassSemaphore = nullptr;
-		bool clearFramebuffer = true;
+		bool firstPass = true;
 		for (auto& pass : mPassesToExecute)
 		{
 			Timer passTimer;
@@ -192,10 +192,15 @@ namespace Mule::RenderGraph
 				}
 			}
 
-
 			fence->Reset();
 			cmd->Reset();
 			cmd->Begin();
+
+			if (firstPass)
+			{
+				firstPass = false;
+				cmd->ClearFrameBuffer(perFrameData.Framebuffer);
+			}
 
 			for (auto [index, layout] : pass.RequiredLayouts)
 			{
@@ -204,8 +209,7 @@ namespace Mule::RenderGraph
 
 			if (pass.ShaderHandle != NullAssetHandle)
 			{
-				cmd->BeginRenderPass(perFrameData.Framebuffer, shader, clearFramebuffer);
-				clearFramebuffer = false;
+				cmd->BeginRenderPass(perFrameData.Framebuffer, shader);
 			}
 
 			pass.Callback(cmd, scene, shader, ctx);

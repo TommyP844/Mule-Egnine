@@ -1,10 +1,10 @@
 
 #SETUP
 
-CullMode = Back
-DepthTest = True 
-DepthWrite = True
-Attachment = { Location = 0, Format = RGBA32F, BlendEnable = False }
+CullMode = None
+DepthTest = False 
+DepthWrite = False
+Attachment = { Location = 0, Format = RGBA32F, BlendEnable = True }
 DepthFormat = D32F
 
 #VERTEX
@@ -57,7 +57,7 @@ void main()
 layout(location = 0) out vec4 color;
 layout(location = 0) in vec2 uv;
 
-layout(set = 1, binding = 0) uniform sampler2D[] textures;
+layout(set = 1, binding = 0) uniform sampler2D[4096] textures;
 
 layout(push_constant) uniform PC2 {
     layout(offset = 32) uint index;  

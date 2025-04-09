@@ -43,51 +43,51 @@ namespace Mule
 		}
 
 		// Descriptor Set Layouts
-		{
-			DescriptorSetLayoutDescription geometryShaderDSLD{};
-			geometryShaderDSLD.Layouts = {
+		{			
+			auto geometryShaderDSL = mGraphicsContext->CreateDescriptorSetLayout({
 				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex | ShaderStage::Fragment), // Camera Buffer
 				LayoutDescription(1, DescriptorType::UniformBuffer, ShaderStage::Fragment), // Material Buffer
 				LayoutDescription(2, DescriptorType::UniformBuffer, ShaderStage::Fragment), // Light Buffer
+				LayoutDescription(3, DescriptorType::Texture, ShaderStage::Fragment), // Light Buffer
 				LayoutDescription(4, DescriptorType::Texture, ShaderStage::Fragment), // Light Buffer
 				LayoutDescription(5, DescriptorType::Texture, ShaderStage::Fragment), // Light Buffer
-				LayoutDescription(6, DescriptorType::Texture, ShaderStage::Fragment), // Light Buffer
-			};
-			auto geometryShaderDSL = mGraphicsContext->CreateDescriptorSetLayout(geometryShaderDSLD);
+				});
 
-			DescriptorSetLayoutDescription bindlessTextureDSLD{};
-			bindlessTextureDSLD.Layouts = {
+			auto bindlessTextureDSL = mGraphicsContext->CreateDescriptorSetLayout({
 				LayoutDescription(0, DescriptorType::Texture, ShaderStage::Fragment, 4096)
-			};
-			auto bindlessTextureDSL = mGraphicsContext->CreateDescriptorSetLayout(bindlessTextureDSLD);
+				});
 
-			DescriptorSetLayoutDescription environmentShaderDSLD{};
-			environmentShaderDSLD.Layouts = {
-				LayoutDescription(0, DescriptorType::Texture, ShaderStage::Fragment),
-				LayoutDescription(1, DescriptorType::UniformBuffer, ShaderStage::Vertex),
-			};
-			auto environmentShaderDSL = mGraphicsContext->CreateDescriptorSetLayout(environmentShaderDSLD);
+			auto environmentShaderDSL = mGraphicsContext->CreateDescriptorSetLayout({
+				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex),
+				LayoutDescription(1, DescriptorType::Texture, ShaderStage::Fragment)
+				});
 
-			DescriptorSetLayoutDescription entityHighlightDSLD{};
-			entityHighlightDSLD.Layouts = {
-				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex)
-			};
-			auto entityHighlightDSL = mGraphicsContext->CreateDescriptorSetLayout(entityHighlightDSLD);
-
-			DescriptorSetLayoutDescription entityOutlineDSLD{};
-			entityOutlineDSLD.Layouts = {
+			auto entityOutlineDSL = mGraphicsContext->CreateDescriptorSetLayout({
 				LayoutDescription(0, DescriptorType::StorageImage, ShaderStage::Compute),
 				LayoutDescription(1, DescriptorType::Texture, ShaderStage::Compute),
-			};
-			auto entityOutlineDSL = mGraphicsContext->CreateDescriptorSetLayout(entityOutlineDSLD);
+				});
+
+			auto entityMaskDSL = mGraphicsContext->CreateDescriptorSetLayout({
+				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex), // Camera Buffer
+				});
+
+			auto billboardDSL = mGraphicsContext->CreateDescriptorSetLayout({
+				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex), // Camera Buffer
+				});
+
+			auto wireframeDSL = mGraphicsContext->CreateDescriptorSetLayout({
+				LayoutDescription(0, DescriptorType::UniformBuffer, ShaderStage::Vertex), // Camera Buffer
+				});
 
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
 				mGraph.AddResource(i, GEOMETRY_SHADER_DSL_ID, geometryShaderDSL);
 				mGraph.AddResource(i, BINDLESS_TEXTURE_DSL_ID, bindlessTextureDSL);
 				mGraph.AddResource(i, ENVIRONMENT_SHADER_DSL_ID, environmentShaderDSL);
-				mGraph.AddResource(i, ENTITY_HIGHLIGHT_DSL_ID, entityHighlightDSL);
 				mGraph.AddResource(i, ENTITY_OUTLINE_DSL_ID, entityOutlineDSL);
+				mGraph.AddResource(i, ENTITY_MASK_DSL_ID, entityMaskDSL);
+				mGraph.AddResource(i, BILLBOARD_DSL_ID, billboardDSL);
+				mGraph.AddResource(i, WIREFRAME_DSL_ID, wireframeDSL);
 			}
 		}
 
@@ -95,57 +95,71 @@ namespace Mule
 		{
 			for (uint32_t i = 0; i < mGraph.GetFrameCount(); i++)
 			{
-				DescriptorSetDescription geometryShaderDSD{};
-				geometryShaderDSD.Layouts = {
+				// Geometry
+				auto geometryShaderDS = mGraphicsContext->CreateDescriptorSet({
 					mGraph.GetResource<DescriptorSetLayout>(i, GEOMETRY_SHADER_DSL_ID)
-				};				
-				auto geometryShaderDS = mGraphicsContext->CreateDescriptorSet(geometryShaderDSD);
-				std::vector<DescriptorSetUpdate> geometryShaderDSUs = {
+					});
+
+				geometryShaderDS->Update({
 					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) }),
 					DescriptorSetUpdate(1, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, MATERIAL_BUFFER_ID) }),
 					DescriptorSetUpdate(2, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, LIGHT_BUFFER_ID) })
-				};
-				geometryShaderDS->Update(geometryShaderDSUs);
+					});
+
 				mGraph.AddResource(i, GEOMETRY_SHADER_DS_ID, geometryShaderDS);
 
 
-				DescriptorSetDescription bindlessTextureDSD{};
-				bindlessTextureDSD.Layouts = {
+				// Bindless textures
+				auto bindlessTextureDS = mGraphicsContext->CreateDescriptorSet({
 					mGraph.GetResource<DescriptorSetLayout>(i, BINDLESS_TEXTURE_DSL_ID)
-				};
-				auto bindlessTextureDS = mGraphicsContext->CreateDescriptorSet(bindlessTextureDSD);
+					});
 				mGraph.AddResource(i, BINDLESS_TEXTURE_DS_ID, bindlessTextureDS);
 
 
-				DescriptorSetDescription environmentShaderDSD{};
-				environmentShaderDSD.Layouts = {
-					mGraph.GetResource<DescriptorSetLayout>(i, ENVIRONMENT_SHADER_DSL_ID)
-				};
-				auto environmentShaderDS = mGraphicsContext->CreateDescriptorSet(environmentShaderDSD);
-				std::vector<DescriptorSetUpdate> environmentShaderDSUs = {
-					DescriptorSetUpdate(1, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
-				};
-				environmentShaderDS->Update(environmentShaderDSUs);
+				// Environment map
+				auto environmentShaderDS = mGraphicsContext->CreateDescriptorSet({
+					mGraph.GetResource<DescriptorSetLayout>(i, ENVIRONMENT_SHADER_DSL_ID),
+					});
+				environmentShaderDS->Update({
+					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
+					});
 				mGraph.AddResource(i, ENVIRONMENT_SHADER_DS_ID, environmentShaderDS);
 
-				DescriptorSetDescription entityHighlightDSD{};
-				entityHighlightDSD.Layouts = {
-					mGraph.GetResource<DescriptorSetLayout>(i, ENTITY_HIGHLIGHT_DSL_ID)
-				};
-				auto entityHighlightDS = mGraphicsContext->CreateDescriptorSet(entityHighlightDSD);
-				std::vector<DescriptorSetUpdate> entityHighlightDSUs = {
-					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
-				};
-				entityHighlightDS->Update(entityHighlightDSUs);
-				mGraph.AddResource(i, ENTITY_HIGHLIGHT_DS_ID, entityHighlightDS);
 
-
-				DescriptorSetDescription entityOutlineDSD{};
-				entityOutlineDSD.Layouts = {
+				// outline 
+				auto entityOutlineDS = mGraphicsContext->CreateDescriptorSet({
 					mGraph.GetResource<DescriptorSetLayout>(i, ENTITY_OUTLINE_DSL_ID)
-				};
-				auto entityOutlineDS = mGraphicsContext->CreateDescriptorSet(entityOutlineDSD);
+					});
 				mGraph.AddResource(i, ENTITY_OUTLINE_DS_ID, entityOutlineDS);
+
+
+				// mask
+				auto entityMaskDS = mGraphicsContext->CreateDescriptorSet({
+					mGraph.GetResource<DescriptorSet>(i, ENTITY_MASK_DSL_ID)
+					});
+				entityMaskDS->Update({
+					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
+					});
+				mGraph.AddResource(i, ENTITY_MASK_DS_ID, entityMaskDS);
+
+
+				// billboard
+				auto billboardDS = mGraphicsContext->CreateDescriptorSet({
+					mGraph.GetResource<DescriptorSet>(i, BILLBOARD_DSL_ID)
+					});
+				billboardDS->Update({
+					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
+					});
+				mGraph.AddResource(i, BILLBOARD_DS_ID, billboardDS);
+
+				// billboard
+				auto wireframeDS = mGraphicsContext->CreateDescriptorSet({
+					mGraph.GetResource<DescriptorSet>(i, WIREFRAME_DSL_ID)
+					});
+				wireframeDS->Update({
+					DescriptorSetUpdate(0, DescriptorType::UniformBuffer, 0, {}, { mGraph.GetResource<UniformBuffer>(i, CAMERA_BUFFER_ID) })
+					});
+				mGraph.AddResource(i, WIREFRAME_DS_ID, wireframeDS);
 			}
 		}
 
@@ -174,7 +188,8 @@ namespace Mule
 			{ },
 			MULE_ENVIRONMENT_MAP_SHADER_HANDLE,
 			{ { 0, ImageLayout::ColorAttachment } },
-			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			std::bind(&SceneRenderer::RenderEnvironmentCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
 
 		mGraph.AddPass(
 			GEOMETRY_PASS_NAME,
@@ -184,29 +199,54 @@ namespace Mule
 				{ 0, ImageLayout::ColorAttachment },
 				{ 1, ImageLayout::ColorAttachment }
 			},
-			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			std::bind(&SceneRenderer::RenderSolidGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
 
 		mGraph.AddPass(
 			TRANPARENT_GEOMETRY_PASS_NAME,
 			{ GEOMETRY_PASS_NAME },
-			MULE_GEOMETRY_SHADER_HANDLE,
+			MULE_TRANSPARENT_SHADER_HANDLE,
 			{
 				{ 0, ImageLayout::ColorAttachment },
 				{ 1, ImageLayout::ColorAttachment }
 			},
-			std::bind(&SceneRenderer::RenderTransparentGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			std::bind(&SceneRenderer::RenderTransparentGeometryCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
 
 		mGraph.AddPass(
 			ENTITY_HIGHLIGHT_PASS_NAME,
 			{ TRANPARENT_GEOMETRY_PASS_NAME },
-			MULE_ENTITY_HIGLIGHT_SHADER_HANDLE,
+			MULE_ENTITY_MASK_SHADER_HANDLE,
 			{ { 2, ImageLayout::ColorAttachment } },
-			std::bind(&SceneRenderer::RenderEntityHighlightCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			std::bind(&SceneRenderer::RenderEntityMaskCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
+
+		mGraph.AddPass(
+			ENTTIY_OUTLINE_PASS_NAME,
+			{ ENTITY_HIGHLIGHT_PASS_NAME },
+			NullAssetHandle,
+			{
+				{ 0, ImageLayout::General},
+				{ 2, ImageLayout::ShaderReadOnly }
+			},
+			std::bind(&SceneRenderer::RenderEntityOutlineCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
+
+		mGraph.AddPass(
+			EDITOR_BILLBOARD_PASS_NAME,
+			{ ENTTIY_OUTLINE_PASS_NAME },
+			MULE_BILLBOARD_SHADER_HANDLE,
+			{ { 0, ImageLayout::ColorAttachment } },
+			std::bind(&SceneRenderer::RenderEditorBillboardCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);		
 		
-		//mGraph.AddPass(
-		//	EDITOR_UI_PASS_NAME,
-		//	{ ENTITY_HIGHLIGHT_PASS_NAME },
-		//	std::bind(&SceneRenderer::RenderEditorUICallback, this, std::placeholders::_1));
+		mGraph.AddPass(
+			PHYSICS_UI_PASS_NAME,
+			{ EDITOR_BILLBOARD_PASS_NAME },
+			MULE_WIRE_FRAME_SHADER_HANDLE,
+			{ { 0, ImageLayout::ColorAttachment } },
+			std::bind(&SceneRenderer::RenderPhysicsUIPass, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)
+		);
 
 		mGraph.Compile();
 
@@ -561,8 +601,8 @@ namespace Mule
 
 	void SceneRenderer::RenderSolidGeometryCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		WeakRef<DescriptorSet> geometryDS = ctx.Get<FrameBuffer>(GEOMETRY_SHADER_DS_ID);
-		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<FrameBuffer>(BINDLESS_TEXTURE_DS_ID);
+		WeakRef<DescriptorSet> geometryDS = ctx.Get<DescriptorSet>(GEOMETRY_SHADER_DS_ID);
+		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
 
 		WeakRef<EnvironmentMap> environmentMap = nullptr;
 		for (auto entity : scene->Iterate<EnvironmentMapComponent>())
@@ -582,9 +622,9 @@ namespace Mule
 			auto prefilterMap = mAssetManager->GetAsset<TextureCube>(environmentMap->GetPreFilterMap());
 			auto brdfLutMap = mAssetManager->GetAsset<Texture2D>(environmentMap->GetBRDFLutMap());
 			std::vector<DescriptorSetUpdate> geometryShaderDSUs = {
-				DescriptorSetUpdate(4, DescriptorType::Texture, 0, { irradianceMap }, {}),
-				DescriptorSetUpdate(5, DescriptorType::Texture, 0, { prefilterMap }, {}),
-				DescriptorSetUpdate(6, DescriptorType::Texture, 0, { brdfLutMap }, {}),
+				DescriptorSetUpdate(3, DescriptorType::Texture, 0, { irradianceMap }, {}),
+				DescriptorSetUpdate(4, DescriptorType::Texture, 0, { prefilterMap }, {}),
+				DescriptorSetUpdate(5, DescriptorType::Texture, 0, { brdfLutMap }, {}),
 			};
 			geometryDS->Update(geometryShaderDSUs);
 		}
@@ -593,9 +633,9 @@ namespace Mule
 			auto blackCubeMap = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 			auto blackTexture = mAssetManager->GetAsset<TextureCube>(MULE_BLACK_TEXTURE_HANDLE);
 			std::vector<DescriptorSetUpdate> geometryShaderDSUs = {
+				DescriptorSetUpdate(3, DescriptorType::Texture, 0, { blackCubeMap }, {}),
 				DescriptorSetUpdate(4, DescriptorType::Texture, 0, { blackCubeMap }, {}),
-				DescriptorSetUpdate(5, DescriptorType::Texture, 0, { blackCubeMap }, {}),
-				DescriptorSetUpdate(6, DescriptorType::Texture, 0, { blackTexture }, {}),
+				DescriptorSetUpdate(5, DescriptorType::Texture, 0, { blackTexture }, {}),
 			};
 			geometryDS->Update(geometryShaderDSUs);
 		}
@@ -712,10 +752,9 @@ namespace Mule
 			break;
 		}
 
-		std::vector<DescriptorSetUpdate> DSUs = {
-			DescriptorSetUpdate(0, DescriptorType::Texture, 0, { cubeMap }, {})
-		};
-		DS->Update(DSUs);
+		DS->Update({
+			DescriptorSetUpdate(1, DescriptorType::Texture, 0, { cubeMap }, {})
+			});
 
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
 		auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
@@ -725,155 +764,71 @@ namespace Mule
 		}
 	}
 
-	bool SceneRenderer::RenderEntityChildrenHighlight(Entity e, WeakRef<CommandBuffer> cmd, WeakRef<GraphicsShader> shader)
+	void SceneRenderer::RenderEntityMaskCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
 	{
-		bool ret = false;
-		if (e.HasComponent<MeshComponent>())
-		{
-			glm::mat4 transform = e.GetTransform();
-			auto& meshComponent = e.GetComponent<MeshComponent>();
-
-			auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
-
-			if (mesh)
-			{
-				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				cmd->BindAndDrawMesh(mesh, 1);
-				ret = true;
-			}
-		}
-
-		for (auto child : e.Children())
-		{
-			ret |= RenderEntityChildrenHighlight(child, cmd, shader);
-		}
-
-		return ret;
-	}
-
-	void SceneRenderer::RenderEntityHighlightCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
-	{
-		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
-		WeakRef<DescriptorSet> outlineDS = ctx.Get<DescriptorSet>(ENTITY_OUTLINE_DS_ID);
-		//WeakRef<GraphicsShader> shader = mAssetManager->GetAsset<GraphicsShader>(MULE_ENTITY_MASK_SHADER_HANDLE);
-		WeakRef<GraphicsShader> outlineShader = mAssetManager->GetAsset<GraphicsShader>(MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
-
+		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_MASK_DS_ID);
 		cmd->BindGraphicsDescriptorSet(shader, { DS });
+
+		std::function<void(Entity)> recurse = [&](Entity e) {
+			if (e.HasComponent<MeshComponent>())
+			{
+				glm::mat4 transform = e.GetTransform();
+				auto& meshComponent = e.GetComponent<MeshComponent>();
+
+				auto mesh = mAssetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+
+				if (mesh)
+				{
+					cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			for (auto child : e.Children())
+			{
+				recurse(child);
+			}
+		};
 
 		bool hasHighlight = false;
 		for (auto entity : scene->Iterate<HighlightComponent>())
 		{
-			hasHighlight |= RenderEntityChildrenHighlight(entity, cmd, shader);			
+			recurse(entity);
 		}
-
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::General);
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly);
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly);
-		//
-		//cmd->BindComputePipeline(outlineShader);
-		//cmd->BindComputeDescriptorSet(outlineShader, outlineDS);
-		//
-		//uint32_t width = framebuffer->GetWidth();
-		//uint32_t height = framebuffer->GetHeight();
-		//cmd->Execute(width / 16, height / 16, 1);
-		//
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(1), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
-		//cmd->TranistionImageLayout(framebuffer->GetColorAttachment(2), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
 	}
 
-	void SceneRenderer::RenderEditorUICallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader>, const RenderGraph::PassContext& ctx)
-	{
-		/*
-		WeakRef<FrameBuffer> framebuffer = ctx.Get<FrameBuffer>(FRAMEBUFFER_ID);
-		WeakRef<DescriptorSet> bindlessTextureDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
-		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(ENTITY_HIGHLIGHT_DS_ID);
-		WeakRef<GraphicsShader> wireFrameShader = mAssetManager->GetAsset<GraphicsShader>(MULE_WIRE_FRAME_SHADER_HANDLE);
-		WeakRef<GraphicsShader> billboardShader = mAssetManager->GetAsset<GraphicsShader>(MULE_BILLBOARD_SHADER_HANDLE);
+	void SceneRenderer::RenderEntityOutlineCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
+	{	
+		WeakRef<FrameBuffer> framebuffer = mGraph.GetCurrentFrameBuffer();
+		WeakRef<ComputeShader> outlineShader = mAssetManager->GetAsset<ComputeShader>(MULE_ENTITY_HIGLIGHT_SHADER_HANDLE);
+		WeakRef<DescriptorSet> outlineDS = ctx.Get<DescriptorSet>(ENTITY_OUTLINE_DS_ID);
 
-		if (!billboardShader || !wireFrameShader)
+		outlineDS->Update({
+			DescriptorSetUpdate(0, DescriptorType::StorageImage, 0, { framebuffer->GetColorAttachment(0) }, {}),
+			DescriptorSetUpdate(1, DescriptorType::Texture, 0, { framebuffer->GetColorAttachment(2) }, {})
+			});
+
+		if (!outlineShader)
 			return;
 
-		cmd->BeginRenderPass(framebuffer, wireFrameShader);
-		cmd->BindGraphicsDescriptorSet(wireFrameShader, { DS });
+		auto width = framebuffer->GetWidth();
+		auto height = framebuffer->GetHeight();
 
-		glm::vec3 colliderColor = glm::vec3(1.0f, 0.0f, 0.0f);
-		glm::vec3 triggerColor = glm::vec3(0.f, 0.f, 1.f);
+		cmd->BindComputePipeline(outlineShader);
+		cmd->BindComputeDescriptorSet(outlineShader, outlineDS);
+		
+		cmd->Execute(width / 16, height / 16, 1);
+	}
 
-		if (mDebugOptions.ShowAllPhysicsObjects)
-		{
-			for (auto entity : scene->Iterate<BoxColliderComponent>())
-			{
-				glm::mat4 transform = entity.GetTransformTR();
-				auto& collider = entity.GetComponent<BoxColliderComponent>();
-
-				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-				offsetMat = glm::scale(offsetMat, collider.Extent);
-				transform = transform * offsetMat;
-
-				// Draw box
-				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				if (collider.Trigger)
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-				else
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
-				if (mesh)
-				{
-					cmd->BindAndDrawMesh(mesh, 1);
-				}
-			}
-
-			for (auto entity : scene->Iterate<SphereColliderComponent>())
-			{
-				glm::mat4 transform = entity.GetTransformTR();
-				auto& collider = entity.GetComponent<SphereColliderComponent>();
-
-				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-				offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
-				transform = transform * offsetMat;
-
-				// Draw Sphere
-				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				if (collider.Trigger)
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-				else
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
-				if (mesh)
-				{
-					cmd->BindAndDrawMesh(mesh, 1);
-				}
-			}
-
-			for (auto entity : scene->Iterate<CapsuleColliderComponent>())
-			{
-				glm::mat4 transform = entity.GetTransformTR();
-				auto& collider = entity.GetComponent<CapsuleColliderComponent>();
-				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-				float radius = collider.Radius;
-				float halfHeight = collider.HalfHeight;
-				offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
-				transform = transform * offsetMat;
-				cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-				if (collider.Trigger)
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-				else
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
-				if (mesh)
-				{
-					cmd->BindAndDrawMesh(mesh, 1);
-				}			
-			}
-		}
-
-		cmd->EndRenderPass();
-		cmd->BeginRenderPass(framebuffer, billboardShader);
+	void SceneRenderer::RenderEditorBillboardCallback(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
+	{
+		WeakRef<DescriptorSet> billboardDS = ctx.Get<DescriptorSet>(BILLBOARD_DS_ID);
+		WeakRef<DescriptorSet> bindlessDS = ctx.Get<DescriptorSet>(BINDLESS_TEXTURE_DS_ID);
+		
+		cmd->BindGraphicsDescriptorSet(shader, { billboardDS, bindlessDS });
 
 		if (mDebugOptions.ShowAllLights)
 		{
-			cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
 			auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
 
 			for (auto entity : scene->Iterate<SpotLightComponent>())
@@ -888,8 +843,8 @@ namespace Mule
 						glm::vec4(2, 2, 0, 0)
 					};
 
-					cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
-					cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+					cmd->SetPushConstants(shader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
 					cmd->BindAndDrawMesh(mesh, 1);
 				}
 			}
@@ -907,107 +862,20 @@ namespace Mule
 						glm::vec4(2, 2, 0, 0)
 					};
 
-					cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
-					cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+					cmd->SetPushConstants(shader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
 					cmd->BindAndDrawMesh(mesh, 1);
 				}
 			}
 		}
 
-		cmd->EndRenderPass();
-		cmd->BeginRenderPass(framebuffer, wireFrameShader);
 		if (mDebugOptions.SelectedEntity)
 		{
 			Entity entity = mDebugOptions.SelectedEntity;
 			glm::mat4 entityTransform = entity.GetTransformTR();
 
-			if (mDebugOptions.ShowSelectedEntityColliders && !mDebugOptions.ShowAllPhysicsObjects)
-			{
-				if (entity.HasComponent<BoxColliderComponent>())
-				{
-					auto& collider = mDebugOptions.SelectedEntity.GetComponent<BoxColliderComponent>();
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-					offsetMat = glm::scale(offsetMat, collider.Extent);
-					glm::mat4 transform = entityTransform * offsetMat;
-
-					// Draw box
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					if(collider.Trigger)
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-					else
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
-					if (mesh)
-					{
-						cmd->BindAndDrawMesh(mesh, 1);
-					}
-				}
-				if (entity.HasComponent<SphereColliderComponent>())
-				{
-					auto& collider = entity.GetComponent<SphereColliderComponent>();
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-					offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
-					glm::mat4 transform = entityTransform * offsetMat;
-
-					// Draw box
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					if (collider.Trigger)
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-					else
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
-					if (mesh)
-					{
-						cmd->BindAndDrawMesh(mesh, 1);
-					}
-				}
-				if (entity.HasComponent<CapsuleColliderComponent>())
-				{
-					auto& collider = entity.GetComponent<CapsuleColliderComponent>();
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
-					float radius = collider.Radius;
-					float halfHeight = collider.HalfHeight;
-					offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
-					glm::mat4 transform = entityTransform * offsetMat;
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					if (collider.Trigger)
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-					else
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
-					if (mesh)
-					{
-						cmd->BindAndDrawMesh(mesh, 1);
-					}
-				}
-				if (entity.HasComponent<PlaneColliderComponent>())
-				{
-					auto& collider = entity.GetComponent<PlaneColliderComponent>();
-					
-					glm::mat3 rotMatrix = entityTransform;
-					glm::vec3 normal = glm::vec3(0.f, 1.f, 0.f);
-					glm::vec3 dir = glm::normalize(rotMatrix * normal);
-
-					glm::mat4 offsetMat = glm::translate(glm::mat4(1.f), dir * collider.Offset);
-					glm::mat4 transform = offsetMat * entityTransform;
-
-					cmd->SetPushConstants(wireFrameShader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
-					if (collider.Trigger)
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
-					else
-						cmd->SetPushConstants(wireFrameShader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
-					auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
-					if (mesh)
-					{
-						cmd->BindAndDrawMesh(mesh, 1);
-					}
-				}
-			}
-
 			if (mDebugOptions.ShowSelectedEntityLights && !mDebugOptions.ShowAllLights)
 			{
-				//cmd->BindGraphicsPipeline(billboardShader);
-				cmd->BindGraphicsDescriptorSet(billboardShader, { DS, bindlessTextureDS });
 				glm::mat4 transform = mDebugOptions.SelectedEntity.GetTransformTR();
 				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_PLANE_MESH_HANDLE);
 
@@ -1022,8 +890,8 @@ namespace Mule
 							glm::vec4(2, 2, 0, 0)
 						};
 
-						cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
-						cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+						cmd->SetPushConstants(shader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+						cmd->SetPushConstants(shader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
 						cmd->BindAndDrawMesh(mesh, 1);
 					}
 				}
@@ -1038,16 +906,166 @@ namespace Mule
 							glm::vec4(2, 2, 0, 0)
 						};
 
-						cmd->SetPushConstants(billboardShader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
-						cmd->SetPushConstants(billboardShader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
+						cmd->SetPushConstants(shader, ShaderStage::Vertex, &data[0][0], 2 * sizeof(glm::vec4));
+						cmd->SetPushConstants(shader, ShaderStage::Fragment, &textureIndex, sizeof(uint32_t));
 						cmd->BindAndDrawMesh(mesh, 1);
 					}
 				}
 			}
 		}
+	}
+	
+	void SceneRenderer::RenderPhysicsUIPass(WeakRef<CommandBuffer> cmd, WeakRef<Scene> scene, WeakRef<GraphicsShader> shader, const RenderGraph::PassContext& ctx)
+	{
+		WeakRef<DescriptorSet> DS = ctx.Get<DescriptorSet>(WIREFRAME_DS_ID);
 
-		cmd->EndRenderPass();
-		cmd->TranistionImageLayout(framebuffer->GetColorAttachment(0), ImageLayout::ShaderReadOnly); // TODO: to be handled by scene graph
-	*/
+		cmd->BindGraphicsDescriptorSet(shader, { DS });
+
+		const glm::vec3 triggerColor = { 0, 0.f, 1.f };
+		const glm::vec3 colliderColor = { 1.f, 0.f, 0.f };
+
+		if (mDebugOptions.ShowAllPhysicsObjects)
+		{
+			for (auto entity : scene->Iterate<BoxColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<BoxColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, collider.Extent);
+				transform = transform * offsetMat;
+
+				// Draw box
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			for (auto entity : scene->Iterate<SphereColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<SphereColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
+				transform = transform * offsetMat;
+
+				// Draw Sphere
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			for (auto entity : scene->Iterate<CapsuleColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<CapsuleColliderComponent>();
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				float radius = collider.Radius;
+				float halfHeight = collider.HalfHeight;
+				offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
+				transform = transform * offsetMat;
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+		}
+
+		if (mDebugOptions.SelectedEntity && !mDebugOptions.ShowAllPhysicsObjects)
+		{
+			auto entity = mDebugOptions.SelectedEntity;
+			glm::mat4 transform = entity.GetTransformTR();
+
+			if (entity.HasComponent<SphereColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<SphereColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, glm::vec3(collider.Radius));
+				transform = transform * offsetMat;
+
+				// Draw Sphere
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_SPHERE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			if (entity.HasComponent<BoxColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<BoxColliderComponent>();
+
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				offsetMat = glm::scale(offsetMat, collider.Extent);
+				transform = transform * offsetMat;
+
+				// Draw box
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CUBE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			if (entity.HasComponent<CapsuleColliderComponent>())
+			{
+				glm::mat4 transform = entity.GetTransformTR();
+				auto& collider = entity.GetComponent<CapsuleColliderComponent>();
+				glm::mat4 offsetMat = glm::translate(glm::mat4(1.0f), collider.Offset);
+				float radius = collider.Radius;
+				float halfHeight = collider.HalfHeight;
+				offsetMat = glm::scale(offsetMat, glm::vec3(radius, halfHeight, radius));
+				transform = transform * offsetMat;
+				cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(glm::mat4));
+				if (collider.Trigger)
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &triggerColor[0], sizeof(glm::vec3));
+				else
+					cmd->SetPushConstants(shader, ShaderStage::Fragment, &colliderColor[0], sizeof(glm::vec3));
+				auto mesh = mAssetManager->GetAsset<Mesh>(MULE_CAPSULE_MESH_HANDLE);
+				if (mesh)
+				{
+					cmd->BindAndDrawMesh(mesh, 1);
+				}
+			}
+
+			if (entity.HasComponent<PlaneColliderComponent>())
+			{
+
+			}
+		}
 	}
 }

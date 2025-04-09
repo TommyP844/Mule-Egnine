@@ -59,16 +59,16 @@ namespace Mule
 		void EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores = {});
 		void ResizeSwapchain(uint32_t width, uint32_t height);
 
-		Ref<DescriptorSet> CreateDescriptorSet(const DescriptorSetDescription& description);
+		Ref<DescriptorSet> CreateDescriptorSet(const std::vector<WeakRef<DescriptorSetLayout>>& layouts);
 		Ref<UniformBuffer> CreateUniformBuffer(uint32_t bytes);
 		Ref<Mesh> CreateMesh(const MeshDescription& description);
 		Ref<GraphicsShader> CreateGraphicsShader(const fs::path& filepath);
-		Ref<ComputeShader> CreateComputeShader(const ComputeShaderDescription& description);
+		Ref<ComputeShader> CreateComputeShader(const fs::path& filepath);
 		Ref<RenderPass> CreateRenderPass(const RenderPassDescription& renderPassDescription);
 		Ref<Fence> CreateFence();
 		Ref<Semaphore> CreateSemaphore();
 		Ref<FrameBuffer> CreateFrameBuffer(const FramebufferDescription& frameBufferDesc);
-		Ref<DescriptorSetLayout> CreateDescriptorSetLayout(const DescriptorSetLayoutDescription& description);
+		Ref<DescriptorSetLayout> CreateDescriptorSetLayout(const std::vector<LayoutDescription>& layouts);
 		Ref<StagingBuffer> CreateStagingBuffer(uint32_t size);
 
 

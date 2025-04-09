@@ -1,3 +1,4 @@
+#COMPUTE
 #version 450
 
 // Input equirectangular texture

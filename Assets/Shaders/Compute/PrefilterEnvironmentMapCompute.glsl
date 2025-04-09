@@ -1,3 +1,4 @@
+#COMPUTE
 #version 450 core
 
 layout(push_constant) uniform Constant {

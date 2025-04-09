@@ -12,11 +12,6 @@ namespace Mule
 {
 	class GraphicsContext;
 
-	struct DescriptorSetDescription
-	{
-		std::vector<WeakRef<DescriptorSetLayout>> Layouts;
-	};
-
 	class DescriptorSetUpdate
 	{
 	public:
@@ -69,7 +64,7 @@ namespace Mule
 	class DescriptorSet
 	{
 	public:
-		DescriptorSet(WeakRef<GraphicsContext> context, const DescriptorSetDescription& description);
+		DescriptorSet(WeakRef<GraphicsContext> context, const std::vector<WeakRef<DescriptorSetLayout>>& layouts);
 		~DescriptorSet();
 
 		void Update(const std::vector<DescriptorSetUpdate>& updates);

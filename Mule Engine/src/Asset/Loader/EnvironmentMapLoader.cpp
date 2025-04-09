@@ -20,86 +20,26 @@ namespace Mule
     {
         // Cube map descriptor
         {
-            DescriptorSetLayoutDescription layoutDesc{};
+            mCubeMapDescriptorSetLayout = mContext->CreateDescriptorSetLayout({
+                LayoutDescription(0, DescriptorType::Texture, ShaderStage::Compute, 1),
+                LayoutDescription(1, DescriptorType::StorageImage, ShaderStage::Compute, 1)
+                });
 
-            LayoutDescription layout{};
-
-            layout.ArrayCount = 1;
-            layout.Binding = 0;
-            layout.Stage = ShaderStage::Compute;
-            layout.Type = DescriptorType::Texture;
-            layoutDesc.Layouts.push_back(layout);
-
-            layout.ArrayCount = 1;
-            layout.Binding = 1;
-            layout.Stage = ShaderStage::Compute;
-            layout.Type = DescriptorType::StorageImage;
-            layoutDesc.Layouts.push_back(layout);
-
-            mCubeMapDescriptorSetLayout = MakeRef<DescriptorSetLayout>(mContext, layoutDesc);
-
-            DescriptorSetDescription descriptorDesc{};
-
-            descriptorDesc.Layouts = { mCubeMapDescriptorSetLayout };
-
-            mCubeMapDescriptorSet = MakeRef<DescriptorSet>(mContext, descriptorDesc);
+            mCubeMapDescriptorSet = mContext->CreateDescriptorSet({ mCubeMapDescriptorSetLayout });
         }
 
         // Cube map compute
         {
-            ComputeShaderDescription computeDesc{};
-
-            computeDesc.Filepath = "../Assets/Shaders/Compute/CubeMapCompute.glsl";
-            computeDesc.Layouts = { mCubeMapDescriptorSetLayout };
-
-            mCubeMapCompute = MakeRef<ComputeShader>(mContext, computeDesc);
-
-            ComputeShaderDescription diffuseIBLDesc{};
-
-            diffuseIBLDesc.Filepath = "../Assets/Shaders/Compute/DiffuseIBLCompute.glsl";
-            diffuseIBLDesc.Layouts = { mCubeMapDescriptorSetLayout };
-
-            mDiffuseIBLCompute = MakeRef<ComputeShader>(mContext, diffuseIBLDesc);
-
-            ComputeShaderDescription preFilterDesc{};
-
-            preFilterDesc.Filepath = "../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl";
-            preFilterDesc.Layouts = { mCubeMapDescriptorSetLayout };
-            preFilterDesc.PushConstantSize = sizeof(float);
-
-            mPreFilterCompute = MakeRef<ComputeShader>(mContext, preFilterDesc);
+            mShaderLoadFuture = std::async(std::launch::async, [&]() {
+                mCubeMapCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
+                mDiffuseIBLCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
+                mPreFilterCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
+                });
         }
 
-        // BRDF Descriptor set
-        {
-            DescriptorSetLayoutDescription layoutDesc{};
-
-            LayoutDescription layout{};
-
-            layout.ArrayCount = 1;
-            layout.Binding = 0;
-            layout.Stage = ShaderStage::Compute;
-            layout.Type = DescriptorType::StorageImage;
-            layoutDesc.Layouts.push_back(layout);
-
-            mBRDFDescriptorSetLayout = MakeRef<DescriptorSetLayout>(mContext, layoutDesc);
-
-            DescriptorSetDescription descriptorDesc{};
-
-            descriptorDesc.Layouts = { mBRDFDescriptorSetLayout };
-
-            mBRDFDescriptorSet = MakeRef<DescriptorSet>(mContext, descriptorDesc);
-        }
-
+        
         // BRDF Compute
         {
-            ComputeShaderDescription computeDesc{};
-
-            computeDesc.Filepath = "../Assets/Shaders/Compute/BRDFCompute.glsl";
-            computeDesc.Layouts = { mBRDFDescriptorSetLayout };
-
-            mBRDFCompute = MakeRef<ComputeShader>(mContext, computeDesc);
-
             int width, height, channels;
             void* data = stbi_load("../Assets/Textures/brdf_lut.png", &width, &height, &channels, STBI_rgb_alpha);
             if (data == nullptr)
@@ -108,29 +48,6 @@ namespace Mule
             }
             Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), data, width, height, TextureFormat::RGBA8U);
 
-            //Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), nullptr, 512, 512, TextureFormat::RGBA16F, TextureFlags::StorageImage);
-            //
-            //auto queue = mContext->GetGraphicsQueue();
-            //auto fence = mContext->CreateFence();
-            //auto commandPool = queue->CreateCommandPool();
-            //auto commandBuffer = commandPool->CreateCommandBuffer();
-            //commandBuffer->Begin();
-            //commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::General);
-            //
-            //DescriptorSetUpdate descUpdate(0, DescriptorType::StorageImage, 0, { brdfImage }, {});
-            //
-            //mBRDFDescriptorSet->Update({ descUpdate });
-            //
-            //commandBuffer->BindComputeDescriptorSet(mBRDFCompute, mBRDFDescriptorSet);
-            //commandBuffer->BindComputePipeline(mBRDFCompute);
-            //commandBuffer->Execute((512) / 32, (512) / 32, 1);
-            //commandBuffer->TranistionImageLayout(brdfImage, ImageLayout::ShaderReadOnly);
-            //
-            //commandBuffer->End();
-            //fence->Wait();
-            //fence->Reset();
-            //queue->Submit(commandBuffer, {}, {}, fence);
-            //fence->Wait();
 
             mEngineContext->InsertAsset(brdfImage);
             mBRDFLutMap = brdfImage->Handle();
@@ -161,6 +78,9 @@ namespace Mule
 
         DescriptorSetUpdate update1{};
         DescriptorSetUpdate update2{};
+
+        mShaderLoadFuture.wait();
+        std::lock_guard<std::mutex> lock(mMutex);
 
         // Cube Map
         Ref<TextureCube> cubeMap = nullptr;
