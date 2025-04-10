@@ -20,7 +20,7 @@ namespace Mule
 {
 	GraphicsShader::GraphicsShader(WeakRef<GraphicsContext> context, const fs::path& filepath)
 		:
-		Asset(GenerateUUID(), filepath),
+		Asset(AssetHandle(), filepath),
 		IVulkanShader(context->GetDevice()),
 		mIsValid(false),
 		mContext(context)

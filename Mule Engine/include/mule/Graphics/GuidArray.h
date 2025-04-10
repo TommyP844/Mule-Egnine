@@ -51,7 +51,7 @@ namespace Mule
 
 		uint32_t QueryIndex(AssetHandle handle)
 		{
-			if (handle == NullAssetHandle)
+			if (!handle)
 				return UINT32_MAX;
 			auto iter = mIndices.find(handle);
 			if (iter == mIndices.end())

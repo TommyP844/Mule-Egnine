@@ -183,7 +183,7 @@ namespace Mule::RenderGraph
 			auto semaphore = pass.Semaphores[mFrameIndex];
 			WeakRef<GraphicsShader> shader = nullptr;
 
-			if (pass.ShaderHandle != NullAssetHandle)
+			if (pass.ShaderHandle)
 			{
 				shader = mAssetManager->GetAsset<GraphicsShader>(pass.ShaderHandle);
 				if (shader == nullptr)
@@ -207,14 +207,14 @@ namespace Mule::RenderGraph
 				cmd->TranistionImageLayout(perFrameData.Framebuffer->GetColorAttachment(index), layout);
 			}
 
-			if (pass.ShaderHandle != NullAssetHandle)
+			if (pass.ShaderHandle)
 			{
 				cmd->BeginRenderPass(perFrameData.Framebuffer, shader);
 			}
 
 			pass.Callback(cmd, scene, shader, ctx);
 
-			if(pass.ShaderHandle != NullAssetHandle)
+			if(pass.ShaderHandle)
 				cmd->EndRenderPass();
 
 			cmd->End();

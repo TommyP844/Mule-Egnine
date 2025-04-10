@@ -25,7 +25,7 @@ void TextureViewerPanel::OnUIRender(float dt)
 			ImTextureID id = 0;
 			std::string name = mTexture->Name();
 			std::string filepath = mTexture->FilePath().string();
-			std::string guid = std::to_string(mTexture->Handle());
+			std::string guid = mTexture->Handle().ToString();
 			std::string format = Mule::GetTextureFormatName(mTexture->GetFormat());
 
 			ImGui::BeginDisabled();

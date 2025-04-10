@@ -26,7 +26,7 @@ namespace Mule
 	{
 	public:
 		ITexture(WeakRef<GraphicsContext> context);
-		ITexture(WeakRef<GraphicsContext> context, const fs::path& filepath, AssetHandle handle = GenerateUUID());
+		ITexture(WeakRef<GraphicsContext> context, const fs::path& filepath, AssetHandle handle = AssetHandle());
 		ITexture(WeakRef<GraphicsContext> context, const std::string& name);
 		virtual ~ITexture();
 

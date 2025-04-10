@@ -56,7 +56,7 @@ namespace ImGuiExtension
 	{
 		char FilePath[260] = { 0 };
 		bool IsDirectory = false;
-		Mule::AssetHandle AssetHandle = Mule::NullAssetHandle;
+		Mule::AssetHandle AssetHandle = Mule::AssetHandle::Null();
 		Mule::AssetType AssetType = Mule::AssetType::None;
 	};
 

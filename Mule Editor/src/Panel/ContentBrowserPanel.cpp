@@ -346,12 +346,12 @@ void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& f
 	fs::path newPath = newDir / name;
 	fs::rename(file.FilePath, newPath);
 
-	if (file.AssetHandle != Mule::NullAssetHandle)
+	if (file.AssetHandle)
 	{
 		auto asset = mEngineContext->GetAsset<Mule::IAsset>(file.AssetHandle);
 		asset->SetFilePath(newPath);
 		asset = mEngineContext->GetAsset<Mule::IAsset>(file.AssetHandle);
-		SPDLOG_INFO("Path rename: {}, {}", asset->Handle(), asset->FilePath().string());
+		SPDLOG_INFO("Path rename: {}, {}", asset->Handle().ToString(), asset->FilePath().string());
 	}
 }
 

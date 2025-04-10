@@ -82,7 +82,7 @@ namespace Mule
 		auto iter = mAssets.find(handle);
 		if (iter == mAssets.end())
 		{
-			SPDLOG_WARN("Trying to remove invalid asset: {}", handle);
+			SPDLOG_WARN("Trying to remove invalid asset: {}", handle.ToString());
 			return;
 		}
 		mAssets.erase(handle);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AssetHandle.h"
 #include "AssetType.h"
 
 #include <random>
@@ -10,25 +11,11 @@ namespace fs = std::filesystem;
 
 namespace Mule
 {
-	typedef uint64_t AssetHandle;
-	constexpr uint64_t NullAssetHandle = 0;
-
-	static AssetHandle GenerateUUID() {
-		std::random_device rd;
-		std::mt19937_64 rng(rd());
-
-		uint64_t min = UINT16_MAX;
-		uint64_t max = UINT64_MAX;
-
-		std::uniform_int_distribution<uint64_t> dist(min, max);
-		
-		return dist(rng);
-	}
 
 	class IAsset
 	{
 	protected:
-		IAsset(AssetType type, const std::string& name, const fs::path& filepath, AssetHandle handle = GenerateUUID());
+		IAsset(AssetType type, const std::string& name, const fs::path& filepath, AssetHandle handle = AssetHandle());
 		const AssetType mAssetType;
 		fs::path mFilepath;
 		std::string mName;

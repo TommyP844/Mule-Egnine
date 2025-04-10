@@ -32,7 +32,7 @@ private:
 		fs::path FilePath;
 		std::string DisplayName;
 		Mule::AssetType AssetType;
-		Mule::AssetHandle Handle = Mule::NullAssetHandle;
+		Mule::AssetHandle Handle = Mule::AssetHandle::Null();
 	};
 
 	std::vector<DisplayFile> mVisibleFiles;

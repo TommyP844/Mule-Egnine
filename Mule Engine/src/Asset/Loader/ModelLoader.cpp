@@ -168,7 +168,7 @@ namespace Mule
 		meshDesc.VertexSize = sizeof(StaticVertex);
 		meshDesc.IndexBufferType = indexType;
 		meshDesc.Indices = indices;
-		meshDesc.DefaultMaterialHandle = material ? material->Handle() : NullAssetHandle;
+		meshDesc.DefaultMaterialHandle = material ? material->Handle() : AssetHandle::Null();
 
 		Ref<Mesh> muleMesh = mGraphicsContext->CreateMesh(meshDesc);
 
@@ -276,12 +276,12 @@ namespace Mule
 			}
 		}
 
-		mat->AlbedoMap = albedoMap ? albedoMap->Handle() : NullAssetHandle;
-		mat->NormalMap = normalMap ? normalMap->Handle() : NullAssetHandle;
-		mat->RoughnessMap = roughnessMap ? roughnessMap->Handle() : NullAssetHandle;
-		mat->MetalnessMap = metallicMap ? metallicMap->Handle() : NullAssetHandle;
-		mat->AOMap = AOMap ? AOMap->Handle() : NullAssetHandle;
-		mat->EmissiveMap = emissiveMap ? emissiveMap->Handle() : NullAssetHandle;
+		mat->AlbedoMap = albedoMap ? albedoMap->Handle() : AssetHandle::Null();
+		mat->NormalMap = normalMap ? normalMap->Handle() : AssetHandle::Null();
+		mat->RoughnessMap = roughnessMap ? roughnessMap->Handle() : AssetHandle::Null();
+		mat->MetalnessMap = metallicMap ? metallicMap->Handle() : AssetHandle::Null();
+		mat->AOMap = AOMap ? AOMap->Handle() : AssetHandle::Null();
+		mat->EmissiveMap = emissiveMap ? emissiveMap->Handle() : AssetHandle::Null();
 
 		mEngineContext->InsertAsset(mat);
 

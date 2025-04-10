@@ -10,6 +10,25 @@
 
 namespace YAML {
 
+    template<>
+    struct convert<Mule::AssetHandle>
+    {
+        static Node encode(const Mule::AssetHandle& handle)
+        {
+            Node node;
+            node = handle.Handle;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::AssetHandle& handle)
+        {
+            handle.Handle = node.as<uint64_t>();
+
+            return true;
+        }
+    };
+
     // Serializer for glm::vec2
     template<>
     struct convert<glm::vec2> {

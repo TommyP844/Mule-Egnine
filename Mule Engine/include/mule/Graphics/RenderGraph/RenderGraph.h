@@ -76,7 +76,7 @@ namespace Mule::RenderGraph
 
 		struct RenderPassInfo
 		{
-			AssetHandle ShaderHandle = NullAssetHandle;
+			AssetHandle ShaderHandle = AssetHandle::Null();
 			std::vector<std::string> Dependecies = {};
 			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> CallBack = nullptr;
 			std::vector<std::pair<uint32_t, ImageLayout>> RequiredLayouts = {};

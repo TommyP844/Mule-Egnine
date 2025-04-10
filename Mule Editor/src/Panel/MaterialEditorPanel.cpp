@@ -23,7 +23,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			bool modified = false;
 
 			std::string name = mMaterial->Name();
-			std::string guid = std::to_string(mMaterial->Handle());
+			std::string guid = mMaterial->Handle().ToString();
 			float windowWidth = ImGui::GetContentRegionAvail().x;
 			const float headerOffset = 75.f;
 			const float paramOffset = 170.f;
@@ -136,7 +136,7 @@ bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 		{
 			if (ImGui::MenuItem(ICON_FA_TRASH" Remove"))
 			{
-				textureHandle = Mule::NullAssetHandle;
+				textureHandle = Mule::AssetHandle::Null();
 				modified = true;
 			}
 			ImGui::EndPopup();
@@ -160,7 +160,7 @@ bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& te
 
 			if (texture)
 			{
-				std::string guid = std::to_string(texture->Handle());
+				std::string guid = texture->Handle().ToString();
 
 				ImGui::BeginDisabled();
 

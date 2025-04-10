@@ -22,12 +22,12 @@ namespace Mule
 		float RoughnessFactor = 1.f;
 		float AOFactor = 1.f;
 
-		AssetHandle AlbedoMap = NullAssetHandle;
-		AssetHandle NormalMap = NullAssetHandle;
-		AssetHandle MetalnessMap = NullAssetHandle;
-		AssetHandle RoughnessMap = NullAssetHandle;
-		AssetHandle AOMap = NullAssetHandle;
-		AssetHandle EmissiveMap = NullAssetHandle;
-		AssetHandle OpacityMap = NullAssetHandle;
+		AssetHandle AlbedoMap = AssetHandle::Null();
+		AssetHandle NormalMap = AssetHandle::Null();
+		AssetHandle MetalnessMap = AssetHandle::Null();
+		AssetHandle RoughnessMap = AssetHandle::Null();
+		AssetHandle AOMap = AssetHandle::Null();
+		AssetHandle EmissiveMap = AssetHandle::Null();
+		AssetHandle OpacityMap = AssetHandle::Null();
 	};
 }

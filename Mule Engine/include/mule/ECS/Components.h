@@ -91,7 +91,7 @@ namespace Mule
 		EnvironmentMapComponent(const EnvironmentMapComponent&) = default;
 		bool Active = true;
 		float Radiance = 1.f;
-		AssetHandle EnvironmentMap = NullAssetHandle;
+		AssetHandle EnvironmentMap = AssetHandle::Null();
 		bool DisplayIrradianceMap = false;
 	};
 

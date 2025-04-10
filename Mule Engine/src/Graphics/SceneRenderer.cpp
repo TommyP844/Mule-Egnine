@@ -224,7 +224,7 @@ namespace Mule
 		mGraph.AddPass(
 			ENTTIY_OUTLINE_PASS_NAME,
 			{ ENTITY_HIGHLIGHT_PASS_NAME },
-			NullAssetHandle,
+			AssetHandle::Null(),
 			{
 				{ 0, ImageLayout::General},
 				{ 2, ImageLayout::ShaderReadOnly }
@@ -309,7 +309,7 @@ namespace Mule
 		uint32_t albedoIndex = mTextureArray.QueryIndex(material->AlbedoMap);
 		if (albedoIndex == UINT32_MAX)
 		{
-			if (material->AlbedoMap != NullAssetHandle)
+			if (material->AlbedoMap)
 			{
 				gpuMaterial.AlbedoIndex = mTextureArray.Insert(material->AlbedoMap, nullptr);
 			}
@@ -498,7 +498,7 @@ namespace Mule
 		uint32_t index = mTextureArray.QueryIndex(handle);
 		if (index == UINT32_MAX)
 		{
-			if (handle != NullAssetHandle)
+			if (handle)
 			{
 				index = mTextureArray.Insert(handle, nullptr);
 			}
