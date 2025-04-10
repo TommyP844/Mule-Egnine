@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetLoader.h"
+#include "IAssetSerializer.h"
 #include "Graphics/Model.h"
 #include "Graphics/Context/GraphicsContext.h"
 #include "Asset/AssetManager.h"
@@ -20,17 +20,15 @@ namespace Mule
 {
 	class EngineContext;
 
-	class ModelLoader : public IAssetLoader<Model, AssetType::Model>
+	class ModelSerializer : public IAssetSerializer<Model, AssetType::Model>
 	{
 	public:
-		ModelLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
-		virtual ~ModelLoader() {}
+		ModelSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
+		virtual ~ModelSerializer() {}
 
-		Ref<Model> LoadText(const fs::path& filepath) override;
-		void SaveText(Ref<Model> asset) override;
+		Ref<Model> Load(const fs::path& filepath) override;
+		void Save(Ref<Model> asset) override;
 
-		Ref<Model> LoadBinary(const Buffer& filepath) override;
-		void SaveBinary(Ref<Model> asset) override;
 
 	private:
 		WeakRef<EngineContext> mEngineContext;

@@ -7,7 +7,7 @@
 #include "Graphics/Execution/CommandBuffer.h"
 #include "Graphics/Execution/CommandPool.h"
 
-#include "Asset/Loader/GraphicsShaderLoader.h"
+#include "Asset/Serializer/GraphicsShaderLoader.h"
 #include "ECS/Components.h"
 #include "Timer.h"
 

@@ -21,7 +21,7 @@ namespace Mule
 	inline WeakRef<T> AssetManager::GetLoader()
 	{
 		constexpr AssetType type = T::sType;
-		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
 		return loader;
 	}
 
@@ -29,13 +29,13 @@ namespace Mule
 	inline Ref<T> AssetManager::LoadAsset(const fs::path& filepath)
 	{
 		constexpr AssetType type = T::sType;
-		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
 		if (!loader)
 		{
 			SPDLOG_WARN("No loader registered to load file: {}", filepath.string());
 			return nullptr;
 		}
-		Ref<T> asset = loader->LoadText(filepath);
+		Ref<T> asset = loader->Load(filepath);
 		if (!asset)
 			return nullptr;
 
@@ -81,8 +81,8 @@ namespace Mule
 		constexpr AssetType type = T::sType;
 		Ref<T> asset = mAssets[handle];
 		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
-		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
-		loader->SaveText(asset);
+		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
+		loader->Save(asset);
 	}
 
 	template<typename T>
@@ -92,7 +92,7 @@ namespace Mule
 
 		constexpr AssetType type = T::sType;
 		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
-		Ref<IAssetLoader<T, type>> loader = mLoaders[type];
+		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
 		loader->SaveText(asset);
 	}
 

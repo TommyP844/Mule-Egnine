@@ -1,7 +1,7 @@
-#include "Asset/Loader/MaterialLoader.h"
+#include "Asset/Serializer/MaterialSerializer.h"
 
 // Mule
-#include "Asset/Loader/YamlFormatter.h"
+#include "Asset/Serializer/Convert/YamlConvert.h"
 
 // Submodules
 #include "yaml-cpp/yaml.h"
@@ -11,7 +11,7 @@
 
 namespace Mule
 {
-	Ref<Material> MaterialLoader::LoadText(const fs::path& filepath)
+	Ref<Material> MaterialSerializer::Load(const fs::path& filepath)
 	{
 		Ref<Material> material = MakeRef<Material>();
 		material->SetFilePath(filepath);
@@ -41,7 +41,7 @@ namespace Mule
 		return material;
 	}
 	
-	void MaterialLoader::SaveText(Ref<Material> asset)
+	void MaterialSerializer::Save(Ref<Material> asset)
 	{
 		YAML::Node root;
 
@@ -72,14 +72,5 @@ namespace Mule
 		}
 		file << emitter.c_str();
 		file.close();
-	}
-	
-	Ref<Material> MaterialLoader::LoadBinary(const Buffer& buffer)
-	{
-		return Ref<Material>();
-	}
-	
-	void MaterialLoader::SaveBinary(Ref<Material> asset)
-	{
 	}
 }

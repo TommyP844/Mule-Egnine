@@ -4,7 +4,7 @@
 #include "Asset.h"
 #include "Ref.h"
 #include "WeakRef.h"
-#include "Loader/AssetLoader.h"
+#include "Serializer/IAssetSerializer.h"
 
 // Submodules
 
@@ -74,7 +74,7 @@ namespace Mule
 
 		std::unordered_map<fs::path, AssetHandle> mLoadedHandles;
 
-		std::map<AssetType, Ref<IBaseLoader>> mLoaders;
+		std::map<AssetType, Ref<IBaseSerializer>> mLoaders;
 	};
 }
 

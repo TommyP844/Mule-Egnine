@@ -1,4 +1,4 @@
-#include "Asset/Loader/EnvironmentMapLoader.h"
+#include "Asset/Serializer/EnvironmentMapSerializer.h"
 
 #include "Graphics/Execution/CommandBuffer.h"
 #include "Graphics/Execution/CommandPool.h"
@@ -13,7 +13,7 @@
 
 namespace Mule
 {
-    EnvironmentMapLoader::EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
+    EnvironmentMapSerializer::EnvironmentMapSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
         :
         mContext(context),
         mEngineContext(engineContext)
@@ -54,7 +54,7 @@ namespace Mule
         }
     }
 
-    Ref<EnvironmentMap> EnvironmentMapLoader::LoadText(const fs::path& filepath)
+    Ref<EnvironmentMap> EnvironmentMapSerializer::Load(const fs::path& filepath)
     {
         if (!fs::exists(filepath))
             return nullptr;
@@ -187,16 +187,7 @@ namespace Mule
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
     }
 
-    void EnvironmentMapLoader::SaveText(Ref<EnvironmentMap> asset)
-    {
-    }
-
-    Ref<EnvironmentMap> EnvironmentMapLoader::LoadBinary(const Buffer& buffer)
-    {
-        return nullptr;
-    }
-
-    void EnvironmentMapLoader::SaveBinary(Ref<EnvironmentMap> asset)
+    void EnvironmentMapSerializer::Save(Ref<EnvironmentMap> asset)
     {
     }
 }

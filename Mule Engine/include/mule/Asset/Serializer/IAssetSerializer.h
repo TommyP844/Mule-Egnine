@@ -16,22 +16,19 @@ namespace Mule
 {
 	class EngineContext;
 
-	class IBaseLoader
+	class IBaseSerializer
 	{
 	public:
-		virtual ~IBaseLoader() {}
+		virtual ~IBaseSerializer() {}
 	};
 
 	template<typename T, AssetType Type>
-	class IAssetLoader : public IBaseLoader
+	class IAssetSerializer : public IBaseSerializer
 	{
 	public:
 
-		virtual Ref<T> LoadText(const fs::path& filepath) = 0;
-		virtual void SaveText(Ref<T> asset) = 0;
-
-		virtual Ref<T> LoadBinary(const Buffer& buffer) = 0;
-		virtual void SaveBinary(Ref<T> asset) = 0;
+		virtual Ref<T> Load(const fs::path& filepath) = 0;
+		virtual void Save(Ref<T> asset) = 0;
 
 		static constexpr AssetType sType = Type;
 	};

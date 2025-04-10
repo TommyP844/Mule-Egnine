@@ -1,4 +1,4 @@
-#include "Asset/Loader/TextureLoader.h"
+#include "Asset/Serializer/TextureSerializer.h"
 
 #include <spdlog/spdlog.h>
 
@@ -9,13 +9,13 @@
 
 namespace Mule
 {
-	TextureLoader::TextureLoader(WeakRef<GraphicsContext> context)
+	TextureSerializer::TextureSerializer(WeakRef<GraphicsContext> context)
 		:
 		mContext(context)
 	{
 	}
 
-	Ref<Texture2D> TextureLoader::LoadText(const fs::path& filepath)
+	Ref<Texture2D> TextureSerializer::Load(const fs::path& filepath)
 	{
 		TextureFormat format;
 		int width, height, components;
@@ -42,16 +42,7 @@ namespace Mule
 		return texture;
 	}
 	
-	void TextureLoader::SaveText(Ref<Texture2D> asset)
-	{
-	}
-	
-	Ref<Texture2D> TextureLoader::LoadBinary(const Buffer& buffer)
-	{
-		return Ref<Texture2D>();
-	}
-	
-	void TextureLoader::SaveBinary(Ref<Texture2D> asset)
+	void TextureSerializer::Save(Ref<Texture2D> asset)
 	{
 	}
 }

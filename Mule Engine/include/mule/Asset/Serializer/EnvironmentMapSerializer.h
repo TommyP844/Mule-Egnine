@@ -2,7 +2,7 @@
 
 #include "Ref.h"
 #include "Asset/AssetManager.h"
-#include "AssetLoader.h"
+#include "IAssetSerializer.h"
 #include "Graphics/EnvironmentMap.h"
 #include "Graphics/Context/GraphicsContext.h"
 #include "Graphics/Shader/ComputeShader.h"
@@ -14,15 +14,13 @@ namespace Mule
 {
 	class EngineContext;
 
-	class EnvironmentMapLoader : public IAssetLoader<EnvironmentMap, AssetType::EnvironmentMap>
+	class EnvironmentMapSerializer : public IAssetSerializer<EnvironmentMap, AssetType::EnvironmentMap>
 	{
 	public:
-		EnvironmentMapLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
+		EnvironmentMapSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
 
-		virtual Ref<EnvironmentMap> LoadText(const fs::path& filepath) override;
-		virtual void SaveText(Ref<EnvironmentMap> asset) override;
-		virtual Ref<EnvironmentMap> LoadBinary(const Buffer& buffer) override;
-		virtual void SaveBinary(Ref<EnvironmentMap> asset) override;
+		virtual Ref<EnvironmentMap> Load(const fs::path& filepath) override;
+		virtual void Save(Ref<EnvironmentMap> asset) override;
 
 	private:
 		std::mutex mMutex;

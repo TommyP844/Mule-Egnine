@@ -1,16 +1,19 @@
 
-#include "Asset/Loader/ModelLoader.h"
-#include "Asset/Loader/AssimpConvert.h"
+#include "Asset/Serializer/ModelSerializer.h"
+#include "Asset/Serializer/Convert/AssimpConvert.h"
+#include "Asset/Serializer/Convert/YamlConvert.h"
 
 #include "Graphics/Vertex.h"
 #include "ScopedBuffer.h"
-#include "Asset/Loader/YamlFormatter.h"
 #include "Engine Context/EngineContext.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
+
 #include <spdlog/spdlog.h>
+
 #include <stb/stb_image.h>
+
 #include <yaml-cpp/yaml.h>
 
 // STD
@@ -19,14 +22,14 @@
 
 namespace Mule
 {
-	ModelLoader::ModelLoader(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
+	ModelSerializer::ModelSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
 		:
 		mGraphicsContext(context),
 		mEngineContext(engineContext)
 	{
 	}
 
-	Ref<Model> ModelLoader::LoadText(const fs::path& filepath)
+	Ref<Model> ModelSerializer::Load(const fs::path& filepath)
 	{
 		Assimp::Importer importer = Assimp::Importer();
 
@@ -67,20 +70,11 @@ namespace Mule
 		return model;
 	}
 
-	void ModelLoader::SaveText(Ref<Model> asset)
+	void ModelSerializer::Save(Ref<Model> asset)
 	{
 	}
 
-	Ref<Model> ModelLoader::LoadBinary(const Buffer& filepath)
-	{
-		return Ref<Model>();
-	}
-
-	void ModelLoader::SaveBinary(Ref<Model> asset)
-	{
-	}
-
-	void ModelLoader::RecurseNodes(const aiNode* ainode, ModelNode& node, LoadInfo& info)
+	void ModelSerializer::RecurseNodes(const aiNode* ainode, ModelNode& node, LoadInfo& info)
 	{
 		glm::mat4 nodeTransfrom = toGlm(ainode->mTransformation);
 		node.SetLocalTransform(nodeTransfrom);
@@ -104,7 +98,7 @@ namespace Mule
 		}
 	}
 
-	Ref<Mesh> ModelLoader::LoadMesh(const aiMesh* mesh, LoadInfo& info)
+	Ref<Mesh> ModelSerializer::LoadMesh(const aiMesh* mesh, LoadInfo& info)
 	{
 		ScopedBuffer vertices(sizeof(StaticVertex) * mesh->mNumVertices);		
 		StaticVertex* verticePtr = vertices.As<StaticVertex>();
@@ -186,7 +180,7 @@ namespace Mule
 		return muleMesh;
 	}
 	
-	Ref<Material> ModelLoader::LoadMaterial(const aiMaterial* material, LoadInfo& info)
+	Ref<Material> ModelSerializer::LoadMaterial(const aiMaterial* material, LoadInfo& info)
 	{
 		Ref<Material> mat = MakeRef<Material>();
 		std::string materialName = CreateAssetName(material->GetName().C_Str(), info, AssetType::Material);
@@ -288,7 +282,7 @@ namespace Mule
 		return mat;
 	}
 
-	WeakRef<Texture2D> ModelLoader::LoadTexture(const aiMaterial* material, const std::vector<aiTextureType>& textureTypes, LoadInfo& info)
+	WeakRef<Texture2D> ModelSerializer::LoadTexture(const aiMaterial* material, const std::vector<aiTextureType>& textureTypes, LoadInfo& info)
 	{
 		WeakRef<Texture2D> tex2d = nullptr;
 		aiString path;
@@ -329,7 +323,7 @@ namespace Mule
 		return tex2d;
 	}
 	
-	WeakRef<Texture2D> ModelLoader::LoadTexture(const aiTexture* texture)
+	WeakRef<Texture2D> ModelSerializer::LoadTexture(const aiTexture* texture)
 	{
 		Ref<Texture2D> tex;
 
@@ -352,7 +346,7 @@ namespace Mule
 		return tex;
 	}
 
-	std::string ModelLoader::CreateAssetName(std::string name, LoadInfo& info, AssetType assetType)
+	std::string ModelSerializer::CreateAssetName(std::string name, LoadInfo& info, AssetType assetType)
 	{
 		if (name.empty())
 		{
@@ -377,7 +371,7 @@ namespace Mule
 		return name;
 	}
 	
-	void ModelLoader::LoadSerializationInfo(const fs::path& metaPath, LoadInfo& info)
+	void ModelSerializer::LoadSerializationInfo(const fs::path& metaPath, LoadInfo& info)
 	{
 		if (!fs::exists(metaPath))
 			return;
@@ -406,7 +400,7 @@ namespace Mule
 		}
 	}
 
-	void ModelLoader::BuildSerializationInfo(const fs::path& metaPath, Ref<Model> model)
+	void ModelSerializer::BuildSerializationInfo(const fs::path& metaPath, Ref<Model> model)
 	{
 		if (fs::exists(metaPath))
 			return;
@@ -435,7 +429,7 @@ namespace Mule
 
 	}
 
-	void ModelLoader::RecurseModelInfo(const ModelNode& node, YAML::Node& meshes, YAML::Node& materials, YAML::Node& textures)
+	void ModelSerializer::RecurseModelInfo(const ModelNode& node, YAML::Node& meshes, YAML::Node& materials, YAML::Node& textures)
 	{
 		for (const auto& mesh : node.GetMeshes())
 		{

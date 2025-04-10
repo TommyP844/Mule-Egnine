@@ -6,14 +6,14 @@
 #include "Graphics/Vertex.h"
 
 // Asset Loaders
-#include "Asset/Loader/ModelLoader.h"
-#include "Asset/Loader/SceneLoader.h"
-#include "Asset/Loader/TextureLoader.h"
-#include "Asset/Loader/EnvironmentMapLoader.h"
-#include "Asset/Loader/GraphicsShaderLoader.h"
-#include "Asset/Loader/MaterialLoader.h"
-#include "Asset/Loader/ScriptLoader.h"
-#include "Asset/Loader/ComputeShaderLoader.h"
+#include "Asset/Serializer/ModelSerializer.h"
+#include "Asset/Serializer/SceneSerializer.h"
+#include "Asset/Serializer/TextureSerializer.h"
+#include "Asset/Serializer/EnvironmentMapSerializer.h"
+#include "Asset/Serializer/GraphicsShaderSerializer.h"
+#include "Asset/Serializer/MaterialSerializer.h"
+#include "Asset/Serializer/ScriptSerializer.h"
+#include "Asset/Serializer/ComputeShaderSerializer.h"
 
 
 namespace Mule
@@ -32,14 +32,14 @@ namespace Mule
 
 		mAssetManager->LoadRegistry(mFilePath / "Registry.mrz");
 
-		mAssetManager->RegisterLoader<SceneLoader>(this);
-		mAssetManager->RegisterLoader<ScriptLoader>();
-		mAssetManager->RegisterLoader<EnvironmentMapLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
-		mAssetManager->RegisterLoader<ModelLoader>(mGraphicsContext, WeakRef<EngineContext>(this));
-		mAssetManager->RegisterLoader<TextureLoader>(mGraphicsContext);
-		mAssetManager->RegisterLoader<GraphicsShaderLoader>(this);
-		mAssetManager->RegisterLoader<MaterialLoader>();
-		mAssetManager->RegisterLoader<ComputeShaderLoader>(this);
+		mAssetManager->RegisterLoader<SceneSerializer>(this);
+		mAssetManager->RegisterLoader<ScriptSerializer>();
+		mAssetManager->RegisterLoader<EnvironmentMapSerializer>(mGraphicsContext, WeakRef<EngineContext>(this));
+		mAssetManager->RegisterLoader<ModelSerializer>(mGraphicsContext, WeakRef<EngineContext>(this));
+		mAssetManager->RegisterLoader<TextureSerializer>(mGraphicsContext);
+		mAssetManager->RegisterLoader<GraphicsShaderSerializer>(this);
+		mAssetManager->RegisterLoader<MaterialSerializer>();
+		mAssetManager->RegisterLoader<ComputeShaderSerializer>(this);
 
 		// Engine Assets		
 		uint8_t blackImageData[] = {

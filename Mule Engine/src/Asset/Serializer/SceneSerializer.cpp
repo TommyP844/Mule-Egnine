@@ -1,8 +1,8 @@
-#include "Asset/Loader/SceneLoader.h"
+#include "Asset/Serializer/SceneSerializer.h"
 
 #include "Scripting/ScriptContext.h"
 #include "ECS/Entity.h"
-#include "Asset/Loader/YamlFormatter.h"
+#include "Asset/Serializer/Convert/YamlConvert.h"
 #include "Engine Context/EngineContext.h"
 
 // Submodules
@@ -24,13 +24,13 @@
 namespace Mule
 {
 
-	SceneLoader::SceneLoader(WeakRef<EngineContext> engineContext)
+	SceneSerializer::SceneSerializer(WeakRef<EngineContext> engineContext)
 		:
 		mEngineContext(engineContext)
 	{
 	}
 
-	Ref<Scene> SceneLoader::LoadText(const fs::path& filepath)
+	Ref<Scene> SceneSerializer::Load(const fs::path& filepath)
 	{
 		YAML::Node root = YAML::LoadFile(filepath.string());
 		
@@ -47,7 +47,7 @@ namespace Mule
 		return scene;
 	}
 
-	void SceneLoader::SaveText(Ref<Scene> asset)
+	void SceneSerializer::Save(Ref<Scene> asset)
 	{
 		fs::path filepath = asset->FilePath();
 
@@ -74,16 +74,7 @@ namespace Mule
 		file.close();
 	}
 
-	Ref<Scene> SceneLoader::LoadBinary(const Buffer& filepath)
-	{
-		return Ref<Scene>();
-	}
-
-	void SceneLoader::SaveBinary(Ref<Scene> asset)
-	{
-	}
-
-	YAML::Node SceneLoader::SerializeEntityYAML(Entity e)
+	YAML::Node SceneSerializer::SerializeEntityYAML(Entity e)
 	{
 		YAML::Node node;
 
@@ -116,7 +107,7 @@ namespace Mule
 		return node;
 	}
 
-	Entity SceneLoader::DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene)
+	Entity SceneSerializer::DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene)
 	{
 		Entity e = scene->CreateEntity(node["Name"].as<std::string>(), Mule::Guid(node["Guid"].as<uint64_t>()));
 		auto& transformComponent = e.GetComponent<Mule::TransformComponent>();
