@@ -6,12 +6,14 @@
 
 void MaterialEditorPanel::OnAttach()
 {
-	mBlackTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	auto assetManager = mEngineContext->GetAssetManager();
+	mBlackTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
 }
 
 void MaterialEditorPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
+	auto assetManager = mEngineContext->GetAssetManager();
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
 		if (mMaterial == nullptr)
@@ -32,7 +34,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			{
 				if (ImGui::Button("Save"))
 				{
-					mEngineContext->SaveAssetText<Mule::Material>(mMaterial->Handle());
+					assetManager->SaveAssetText<Mule::Material>(mMaterial->Handle());
 				}
 			}
 
@@ -111,13 +113,15 @@ void MaterialEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 
 void MaterialEditorPanel::SetMaterial(Mule::AssetHandle materialHandle)
 {
-	mMaterial = mEngineContext->GetAsset<Mule::Material>(materialHandle);
+	auto assetManager = mEngineContext->GetAssetManager();
+	mMaterial = assetManager->GetAsset<Mule::Material>(materialHandle);
 }
 
 bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& textureHandle)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
 	bool modified = false;
-	WeakRef<Mule::Texture2D> texture = mEngineContext->GetAsset<Mule::Texture2D>(textureHandle);
+	WeakRef<Mule::Texture2D> texture = assetManager->GetAsset<Mule::Texture2D>(textureHandle);
 
 	ImGui::PushID(name);
 

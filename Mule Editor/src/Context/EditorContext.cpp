@@ -14,6 +14,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 	mScriptEditorContext = MakeRef<ScriptEditorContext>(mProjectPath);
 
 	mAssetLoaderThread = std::async(std::launch::async, [&]() {
+		auto assetManager = mEngineContext->GetAssetManager();
 		std::vector<std::future<void>> futures;
 
 		for (auto dir : fs::recursive_directory_iterator(GetAssetsPath()))
@@ -29,40 +30,40 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 			if (modelExtensions.contains(extension))
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
-					mEngineContext->LoadAsset<Mule::Model>(filePath);
+					assetManager->LoadAsset<Mule::Model>(filePath);
 					}));
 			}
 			else if (extension == ".cs")
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
-					mEngineContext->LoadAsset<Mule::ScriptClass>(filePath);
+					assetManager->LoadAsset<Mule::ScriptClass>(filePath);
 					}));
 			}
 			else if (imageExtensions.contains(extension))
 			{
-				auto asset = mEngineContext->GetAssetByFilepath(dir.path());
+				auto asset = assetManager->GetAssetByFilepath(dir.path());
 				if (!asset)
 				{
 					futures.push_back(std::async(std::launch::async, [=]() {
-						mEngineContext->LoadAsset<Mule::Texture2D>(filePath);
+						assetManager->LoadAsset<Mule::Texture2D>(filePath);
 						}));
 				}
 			}
 			else if (extension == ".hdr")
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
-					mEngineContext->LoadAsset<Mule::EnvironmentMap>(filePath);
+					assetManager->LoadAsset<Mule::EnvironmentMap>(filePath);
 					}));
 			}
 			else if (extension == ".mat")
 			{
 				futures.push_back(std::async(std::launch::async, [=]() {
-					mEngineContext->LoadAsset<Mule::Material>(filePath);
+					assetManager->LoadAsset<Mule::Material>(filePath);
 					}));
 			}
 			else if (extension == ".scene")
 				futures.push_back(std::async(std::launch::async, [=]() {
-				mEngineContext->LoadAsset<Mule::Scene>(filePath);
+				assetManager->LoadAsset<Mule::Scene>(filePath);
 					}));
 		}
 
@@ -96,6 +97,7 @@ void EditorContext::SetSelectedEntity(Mule::Entity e)
 
 void EditorContext::SetSimulationState(SimulationState state)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
 	mSimulationState = state;
 	switch (mSimulationState)
 	{
@@ -111,7 +113,7 @@ void EditorContext::SetSimulationState(SimulationState state)
 	case SimulationState::Editing:
 		mSimulationScene->OnPlayStop();
 		SetSelectedEntity(Mule::Entity());
-		auto scene = mEngineContext->GetAsset<Mule::Scene>(mSimulationScene->Handle());
+		auto scene = assetManager->GetAsset<Mule::Scene>(mSimulationScene->Handle());
 		mEngineContext->SetScene(scene);
 		mSimulationScene = nullptr;
 		break;

@@ -2,6 +2,7 @@
 
 // Mule
 #include "Asset/Serializer/Convert/YamlConvert.h"
+#include "Graphics/SceneRenderer.h"
 
 // Submodules
 #include "yaml-cpp/yaml.h"
@@ -11,6 +12,12 @@
 
 namespace Mule
 {
+	MaterialSerializer::MaterialSerializer(WeakRef<ServiceManager> serviceManager)
+		:
+		IAssetSerializer(serviceManager)
+	{
+	}
+
 	Ref<Material> MaterialSerializer::Load(const fs::path& filepath)
 	{
 		Ref<Material> material = MakeRef<Material>();
@@ -37,6 +44,9 @@ namespace Mule
 		material->MetalnessFactor = root["MetalnessFactor"].as<float>();
 		material->RoughnessFactor = root["RoughnessFactor"].as<float>();
 		material->AOFactor = root["AOFactor"].as<float>();
+
+		auto sceneRenderer = mServiceManager->Get<SceneRenderer>();
+		sceneRenderer->AddMaterial(material);
 
 		return material;
 	}

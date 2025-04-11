@@ -19,8 +19,9 @@ ContentBrowserPanel::ContentBrowserPanel()
 
 void ContentBrowserPanel::OnAttach()
 {
-	mFolderTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
-	mFileTexture = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
+	auto assetManager = mEngineContext->GetAssetManager();
+	mFolderTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
+	mFileTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
 	SetContentBrowserPath(mEditorContext->GetAssetsPath());
 	mThumbnailManager = MakeRef<ThumbnailManager>(mEngineContext, mEditorContext);
 	mExcludeExtensions = {
@@ -55,6 +56,8 @@ void ContentBrowserPanel::ClearSearchBuffer()
 
 void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std::string& filter)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	mContentBrowserPath = path;
 	mVisibleFiles.clear();
 	for (const auto& dir : fs::directory_iterator(mContentBrowserPath))
@@ -68,7 +71,7 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 		file.TexId = dir.is_directory() ? mFolderTexture->GetImGuiID() : mFileTexture->GetImGuiID();
 		if (!dir.is_directory())
 		{
-			auto asset = mEngineContext->GetAssetByFilepath(dir.path());
+			auto asset = assetManager->GetAssetByFilepath(dir.path());
 			if (asset)
 			{
 				file.Handle = asset->Handle();
@@ -341,6 +344,8 @@ bool ContentBrowserPanel::FilePopContent(const DisplayFile& file)
 
 void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& file, const fs::path& newDir)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	fs::path oldPath = file.FilePath;
 	fs::path name = oldPath.filename();
 	fs::path newPath = newDir / name;
@@ -348,9 +353,9 @@ void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& f
 
 	if (file.AssetHandle)
 	{
-		auto asset = mEngineContext->GetAsset<Mule::IAsset>(file.AssetHandle);
+		auto asset = assetManager->GetAsset<Mule::IAsset>(file.AssetHandle);
 		asset->SetFilePath(newPath);
-		asset = mEngineContext->GetAsset<Mule::IAsset>(file.AssetHandle);
+		asset = assetManager->GetAsset<Mule::IAsset>(file.AssetHandle);
 		SPDLOG_INFO("Path rename: {}, {}", asset->Handle().ToString(), asset->FilePath().string());
 	}
 }

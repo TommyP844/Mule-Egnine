@@ -8,7 +8,7 @@ namespace Mule
 	class ScriptSerializer : public IAssetSerializer<ScriptClass, AssetType::Script>
 	{
 	public:
-		ScriptSerializer() {}
+		ScriptSerializer(WeakRef<ServiceManager> serviceManager);
 		virtual ~ScriptSerializer() {}
 
 		Ref<ScriptClass> Load(const fs::path& filepath) override;

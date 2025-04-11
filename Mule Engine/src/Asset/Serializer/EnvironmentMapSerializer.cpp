@@ -13,27 +13,30 @@
 
 namespace Mule
 {
-    EnvironmentMapSerializer::EnvironmentMapSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext)
+    EnvironmentMapSerializer::EnvironmentMapSerializer(WeakRef<ServiceManager> serviceManager)
         :
-        mContext(context),
-        mEngineContext(engineContext)
+        IAssetSerializer(serviceManager)
     {
+        auto graphicsContext = mServiceManager->Get<GraphicsContext>();
+        auto assetManager = mServiceManager->Get<AssetManager>();
+
         // Cube map descriptor
         {
-            mCubeMapDescriptorSetLayout = mContext->CreateDescriptorSetLayout({
+            mCubeMapDescriptorSetLayout = graphicsContext->CreateDescriptorSetLayout({
                 LayoutDescription(0, DescriptorType::Texture, ShaderStage::Compute, 1),
                 LayoutDescription(1, DescriptorType::StorageImage, ShaderStage::Compute, 1)
                 });
 
-            mCubeMapDescriptorSet = mContext->CreateDescriptorSet({ mCubeMapDescriptorSetLayout });
+            mCubeMapDescriptorSet = graphicsContext->CreateDescriptorSet({ mCubeMapDescriptorSetLayout });
         }
 
         // Cube map compute
         {
             mShaderLoadFuture = std::async(std::launch::async, [&]() {
-                mCubeMapCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
-                mDiffuseIBLCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
-                mPreFilterCompute = mContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
+                auto gContext = mServiceManager->Get<GraphicsContext>();
+                mCubeMapCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
+                mDiffuseIBLCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
+                mPreFilterCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
                 });
         }
 
@@ -46,10 +49,10 @@ namespace Mule
             {
                 SPDLOG_ERROR("Failed to load brdf image");
             }
-            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(mContext, std::string("BRDF"), data, width, height, TextureFormat::RGBA8U);
+            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(graphicsContext, std::string("BRDF"), data, width, height, TextureFormat::RGBA8U);
 
 
-            mEngineContext->InsertAsset(brdfImage);
+            assetManager->InsertAsset(brdfImage);
             mBRDFLutMap = brdfImage->Handle();
         }
     }
@@ -61,18 +64,21 @@ namespace Mule
         if (filepath.extension().string() != ".hdr")
             return nullptr;
 
+        auto graphicsContext = mServiceManager->Get<GraphicsContext>();
+        auto assetManager = mServiceManager->Get<AssetManager>();
+
         int width, height, channels;
         float* data = stbi_loadf(filepath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
         if (data == nullptr)
             return nullptr;
 
-        Ref<Texture2D> texture = MakeRef<Texture2D>(mContext, data, width, height, TextureFormat::RGBA32F);
+        Ref<Texture2D> texture = MakeRef<Texture2D>(graphicsContext, data, width, height, TextureFormat::RGBA32F);
         stbi_image_free(data);
 
         std::string filename = filepath.filename().replace_extension().string();
 
-        auto fence = mContext->CreateFence();
-        auto queue = mContext->GetBackgroundGraphicsQueue();
+        auto fence = graphicsContext->CreateFence();
+        auto queue = graphicsContext->GetBackgroundGraphicsQueue();
         auto commandPool = queue->CreateCommandPool();
         auto commandBuffer = commandPool->CreateCommandBuffer();
 
@@ -85,7 +91,7 @@ namespace Mule
         // Cube Map
         Ref<TextureCube> cubeMap = nullptr;
         {
-            cubeMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA32F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
+            cubeMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA32F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
 
             commandBuffer->Begin();
 
@@ -110,14 +116,14 @@ namespace Mule
 
             cubeMap->GenerateMips();
             cubeMap->SetName(filename);
-            mEngineContext->InsertAsset(cubeMap);
+            assetManager->InsertAsset(cubeMap);
         }
     
 
         Ref<TextureCube> irradianceMap;
         // Irradiance Map
         {
-            irradianceMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            irradianceMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
 
             commandPool->Reset();
             commandBuffer->Begin();
@@ -142,13 +148,13 @@ namespace Mule
             fence->Wait();
 
             irradianceMap->SetName(filename + "-IrradianceMap");
-            mEngineContext->InsertAsset(irradianceMap);
+            assetManager->InsertAsset(irradianceMap);
         }
 
         Ref<TextureCube> prefilterMap = nullptr;
         // Pre-Filter Map
         {
-            prefilterMap = MakeRef<TextureCube>(mContext, nullptr, 1024, 1, TextureFormat::RGBA16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
+            prefilterMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
 
             uint32_t preFilterMipLevelCount = prefilterMap->GetMipCount();
             for (uint32_t i = 0; i < preFilterMipLevelCount; i++)
@@ -181,7 +187,7 @@ namespace Mule
 
             filename = filepath.filename().replace_extension().string();
             prefilterMap->SetName(filename + "-PreFilterMap");
-            mEngineContext->InsertAsset(prefilterMap);
+            assetManager->InsertAsset(prefilterMap);
         }
 
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());

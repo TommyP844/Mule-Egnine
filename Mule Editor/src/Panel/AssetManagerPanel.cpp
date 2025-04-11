@@ -27,6 +27,8 @@ void AssetManagerPanel::OnUIRender(float dt)
 {
 	if (!mIsOpen) return;
 
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
 		static WeakRef<Mule::IAsset> searchedAsset = nullptr;
@@ -37,7 +39,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 		if (ImGui::InputText("##SearchAsset", searchBuffer, 256, ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			Mule::AssetHandle handle = std::stoull(searchBuffer);
-			searchedAsset = mEngineContext->GetAsset<Mule::IAsset>(handle);
+			searchedAsset = assetManager->GetAsset<Mule::IAsset>(handle);
 		}
 
 		static char nameBuffer[256] = { 0 };
@@ -95,7 +97,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 			{
 				if (assetType == Mule::AssetType::None)
 				{
-					for (const auto& [handle, asset] : mEngineContext->GetAllAssets())
+					for (const auto& [handle, asset] : assetManager->GetAllAssets())
 					{
 						if (strlen(nameBuffer) > 0)
 						{
@@ -110,7 +112,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 				}
 				else
 				{
-					for (const auto& asset : mEngineContext->GetAssetsOfType(assetType))
+					for (const auto& asset : assetManager->GetAssetsOfType(assetType))
 					{
 						if (strlen(nameBuffer) > 0)
 						{

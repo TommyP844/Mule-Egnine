@@ -15,7 +15,7 @@ namespace Mule
 	class ImGuiContext
 	{
 	public:
-		ImGuiContext(Ref<GraphicsContext> graphicsContext);
+		ImGuiContext(WeakRef<GraphicsContext> graphicsContext);
 		~ImGuiContext();
 
 		void NewFrame();

@@ -18,6 +18,8 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Buffer/StagingBuffer.h"
 
+#include "Services/IService.h"
+
 #include <Volk/volk.h>
 
 // STD

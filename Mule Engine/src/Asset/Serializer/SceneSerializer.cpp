@@ -24,9 +24,9 @@
 namespace Mule
 {
 
-	SceneSerializer::SceneSerializer(WeakRef<EngineContext> engineContext)
+	SceneSerializer::SceneSerializer(WeakRef<ServiceManager> serviceManager)
 		:
-		mEngineContext(engineContext)
+		IAssetSerializer(serviceManager)
 	{
 	}
 
@@ -34,7 +34,7 @@ namespace Mule
 	{
 		YAML::Node root = YAML::LoadFile(filepath.string());
 		
-		Ref<Scene> scene = MakeRef<Scene>(mEngineContext);
+		Ref<Scene> scene = MakeRef<Scene>();
 		scene->SetFilePath(filepath);
 
 		for (auto node : root["entities"])

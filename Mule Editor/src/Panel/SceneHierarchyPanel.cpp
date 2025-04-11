@@ -61,6 +61,8 @@ void SceneHierarchyPanel::OnUIRender(float dt)
 
 void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	Mule::Entity selectedEntity = mEditorContext->GetSelectedEntity();
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -94,7 +96,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 		if (file.AssetType == Mule::AssetType::Model)
 		{
 			fs::path filepath = file.FilePath;
-			auto model = mEngineContext->GetAssetByFilepath(filepath);
+			auto model = assetManager->GetAssetByFilepath(filepath);
 			e.AddModel(model);
 		}
 	}

@@ -17,7 +17,7 @@ namespace Mule
 	class EnvironmentMapSerializer : public IAssetSerializer<EnvironmentMap, AssetType::EnvironmentMap>
 	{
 	public:
-		EnvironmentMapSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
+		EnvironmentMapSerializer(WeakRef<ServiceManager> serviceManager);
 
 		virtual Ref<EnvironmentMap> Load(const fs::path& filepath) override;
 		virtual void Save(Ref<EnvironmentMap> asset) override;
@@ -26,8 +26,6 @@ namespace Mule
 		std::mutex mMutex;
 
 		AssetHandle mBRDFLutMap;
-		WeakRef<GraphicsContext> mContext;
-		WeakRef<EngineContext> mEngineContext;
 
 		Ref<ComputeShader> mCubeMapCompute;
 		Ref<ComputeShader> mDiffuseIBLCompute;

@@ -10,13 +10,11 @@ namespace Mule
 	class ComputeShaderSerializer : public IAssetSerializer<ComputeShader, AssetType::ComputeShader>
 	{
 	public:
-		ComputeShaderSerializer(WeakRef<EngineContext> context);
+		ComputeShaderSerializer(WeakRef<ServiceManager> serviceManager);
 		virtual ~ComputeShaderSerializer();
 
 		Ref<ComputeShader> Load(const fs::path& filepath) override;
 		void Save(Ref<ComputeShader> asset) override;
 
-	private:
-		WeakRef<EngineContext> mContext;
 	};
 }

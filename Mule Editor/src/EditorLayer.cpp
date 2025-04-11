@@ -140,6 +140,8 @@ void EditorLayer::OnUpdate(float dt)
 
 void EditorLayer::OnUIRender(float dt)
 {
+	auto assetManager = mEngineContext->GetAssetManager();
+
 	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 	ImGui::DockSpaceOverViewport();//ImGui::GetMainViewport(), dockspace_flags);
 
@@ -154,7 +156,7 @@ void EditorLayer::OnUIRender(float dt)
 				auto scene = mEngineContext->GetScene();
 				if (scene)
 				{
-					mEngineContext->SaveAssetText<Mule::Scene>(scene->Handle());
+					assetManager->SaveAssetText<Mule::Scene>(scene->Handle());
 					scene->ClearModified();
 				}
 			}
@@ -239,16 +241,16 @@ void EditorLayer::OnUIRender(float dt)
 	mPerformancePanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
-		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>(mEngineContext);
+		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
 		scene->SetFilePath(filepath);
-		mEngineContext->InsertAsset(scene);
+		assetManager->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
 		});
 
 	NewItemPopup(mNewMaterialPopup, "Material", ".mat", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		Ref<Mule::Material> material = MakeRef<Mule::Material>();
 		material->SetFilePath(filepath);
-		mEngineContext->InsertAsset(material);
+		assetManager->InsertAsset(material);
 		mMaterialEditorPanel.Open();
 		mMaterialEditorPanel.SetMaterial(material->Handle());
 		});

@@ -24,9 +24,10 @@ SceneViewPanel::SceneViewPanel()
 
 void SceneViewPanel::OnAttach()
 {
+	auto assetManager = mEngineContext->GetAssetManager();
 	mWidth = 0;
 	mHeight = 0;
-	mBlackImage = mEngineContext->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	mBlackImage = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
 	mEditorContext->GetEditorCamera().SetNearPlane(1.f);
 }
 
@@ -139,7 +140,7 @@ void SceneViewPanel::OnUIRender(float dt)
 		ImTextureID texId = mBlackImage->GetImGuiID();
 		if (scene)
 		{
-			Ref<Mule::SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
+			WeakRef<Mule::SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 			
 			if (region.x != mWidth || region.y != mHeight)
 			{
@@ -348,6 +349,7 @@ void SceneViewPanel::UpdateGizmos(ImVec2 cursorPos)
 
 void SceneViewPanel::HandleDragDrop()
 {
+	auto assetManager = mEngineContext->GetAssetManager();
 	ImGuiExtension::DragDropFile ddf;
 	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
 	{
@@ -355,7 +357,7 @@ void SceneViewPanel::HandleDragDrop()
 		{
 		case Mule::AssetType::Scene:
 		{
-			auto scene = mEngineContext->GetAsset<Mule::Scene>(ddf.AssetHandle);
+			auto scene = assetManager->GetAsset<Mule::Scene>(ddf.AssetHandle);
 			mEngineContext->SetScene(scene);
 			mEditorContext->SetSelectedEntity(Mule::Entity());
 		}

@@ -23,7 +23,7 @@ namespace Mule
 	class ModelSerializer : public IAssetSerializer<Model, AssetType::Model>
 	{
 	public:
-		ModelSerializer(WeakRef<GraphicsContext> context, WeakRef<EngineContext> engineContext);
+		ModelSerializer(WeakRef<ServiceManager> serviceManager);
 		virtual ~ModelSerializer() {}
 
 		Ref<Model> Load(const fs::path& filepath) override;
@@ -31,8 +31,6 @@ namespace Mule
 
 
 	private:
-		WeakRef<EngineContext> mEngineContext;
-		WeakRef<GraphicsContext> mGraphicsContext;
 
 		struct LoadInfo
 		{

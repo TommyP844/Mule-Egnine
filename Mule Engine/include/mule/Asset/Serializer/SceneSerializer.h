@@ -16,7 +16,7 @@ namespace Mule
 	class SceneSerializer : public IAssetSerializer<Scene, AssetType::Scene>
 	{
 	public:
-		SceneSerializer(WeakRef<EngineContext> engineContext);
+		SceneSerializer(WeakRef<ServiceManager> serviceManager);
 		virtual ~SceneSerializer() {}
 
 
@@ -25,8 +25,6 @@ namespace Mule
 
 
 	private:
-		WeakRef<EngineContext> mEngineContext;
-
 		YAML::Node SerializeEntityYAML(Entity e);
 		Entity DeSerializeEntityYAML(const YAML::Node& node, WeakRef<Scene> scene);
 	};

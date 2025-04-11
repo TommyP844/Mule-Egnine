@@ -12,13 +12,10 @@ namespace Mule
 	class GraphicsShaderSerializer : public IAssetSerializer<GraphicsShader, AssetType::Shader>
 	{
 	public:
-		GraphicsShaderSerializer(WeakRef<EngineContext> context);
+		GraphicsShaderSerializer(WeakRef<ServiceManager> serviceManager);
 		virtual ~GraphicsShaderSerializer(){}
 
 		virtual Ref<GraphicsShader> Load(const fs::path& filepath) override;
 		virtual void Save(Ref<GraphicsShader> asset) override;
-
-	private:
-		WeakRef<EngineContext> mContext;
 	};
 }

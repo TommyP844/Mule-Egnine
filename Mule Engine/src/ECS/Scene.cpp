@@ -17,9 +17,9 @@
 
 namespace Mule
 {
-	Scene::Scene(WeakRef<EngineContext> context)
+	Scene::Scene()
 		: 
-		Asset(), mEngineContext(context)
+		Asset()
 	{
 		mRegistry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentConstruct>(this);
 
@@ -88,7 +88,7 @@ namespace Mule
 
 	Ref<Scene> Scene::Copy()
 	{
-		auto scene = MakeRef<Scene>(mEngineContext);
+		auto scene = MakeRef<Scene>();
 		scene->SetHandle(Handle());
 
 		for (auto e : Iterate<RootComponent>())

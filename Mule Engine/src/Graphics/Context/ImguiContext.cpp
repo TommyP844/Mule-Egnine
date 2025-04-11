@@ -18,7 +18,7 @@ namespace Mule
 			abort();
 	}
 
-	ImGuiContext::ImGuiContext(Ref<GraphicsContext> graphicsContext)
+	ImGuiContext::ImGuiContext(WeakRef<GraphicsContext> graphicsContext)
 		:
 		mContext(graphicsContext),
 		mFrameIndex(0)

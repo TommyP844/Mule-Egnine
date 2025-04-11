@@ -7,7 +7,7 @@
 #include "Graphics/Execution/CommandBuffer.h"
 #include "Graphics/Execution/CommandPool.h"
 
-#include "Asset/Serializer/GraphicsShaderLoader.h"
+#include "Asset/Serializer/GraphicsShaderSerializer.h"
 #include "ECS/Components.h"
 #include "Timer.h"
 
@@ -16,7 +16,7 @@
 
 namespace Mule
 {
-	SceneRenderer::SceneRenderer(Ref<GraphicsContext> context, Ref<AssetManager> assetManager)
+	SceneRenderer::SceneRenderer(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager)
 		:
 		mGraphicsContext(context),
 		mAssetManager(assetManager)

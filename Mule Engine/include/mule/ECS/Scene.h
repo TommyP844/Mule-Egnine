@@ -20,7 +20,7 @@ namespace Mule
 	class Scene : public Asset<AssetType::Scene>
 	{
 	public:
-		Scene(WeakRef<EngineContext> context);
+		Scene();
 		~Scene() {}
 
 		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid());

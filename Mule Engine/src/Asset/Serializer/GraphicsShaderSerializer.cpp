@@ -4,15 +4,17 @@
 
 namespace Mule
 {
-	GraphicsShaderSerializer::GraphicsShaderSerializer(WeakRef<EngineContext> context)
+	GraphicsShaderSerializer::GraphicsShaderSerializer(WeakRef<ServiceManager> serviceManager)
 		:
-		mContext(context)
+		IAssetSerializer(serviceManager)
 	{
 	}
 
 	Ref<GraphicsShader> GraphicsShaderSerializer::Load(const fs::path& filepath)
 	{
-		return mContext->GetGraphicsContext()->CreateGraphicsShader(filepath);
+		auto graphicsContext = mServiceManager->Get<GraphicsContext>();
+
+		return graphicsContext->CreateGraphicsShader(filepath);
 	}
 
 	void GraphicsShaderSerializer::Save(Ref<GraphicsShader> asset)

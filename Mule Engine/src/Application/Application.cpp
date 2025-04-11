@@ -54,10 +54,10 @@ namespace Mule
 
 	void Application::Run()
 	{
-		Ref<Window> window = mEngineContext->GetWindow();
-		Ref<ImGuiContext> imguiContext = mEngineContext->GetImGuiContext();
-		Ref<GraphicsContext> graphicsContext = mEngineContext->GetGraphicsContext();
-		Ref<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
+		WeakRef<Window> window = mEngineContext->GetWindow();
+		WeakRef<ImGuiContext> imguiContext = mEngineContext->GetImGuiContext();
+		WeakRef<GraphicsContext> graphicsContext = mEngineContext->GetGraphicsContext();
+		WeakRef<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 
 		float dt = 1.f;
 

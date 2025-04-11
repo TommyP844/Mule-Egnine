@@ -1,11 +1,9 @@
 #pragma once
 
 #include "Asset/AssetType.h"
-#include "WeakRef.h"
 #include "Ref.h"
-#include "Buffer.h"
+#include "Services/ServiceManager.h"
 
-#include <future>
 #include <filesystem>
 
 #include <spdlog/spdlog.h>
@@ -26,10 +24,17 @@ namespace Mule
 	class IAssetSerializer : public IBaseSerializer
 	{
 	public:
+		IAssetSerializer(WeakRef<ServiceManager> serviceManager)
+			:
+			mServiceManager(serviceManager)
+		{ }
 
 		virtual Ref<T> Load(const fs::path& filepath) = 0;
 		virtual void Save(Ref<T> asset) = 0;
 
 		static constexpr AssetType sType = Type;
+
+	protected:
+		WeakRef<ServiceManager> mServiceManager;
 	};
 }

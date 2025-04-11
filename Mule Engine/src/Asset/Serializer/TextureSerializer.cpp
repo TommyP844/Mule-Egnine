@@ -1,5 +1,7 @@
 #include "Asset/Serializer/TextureSerializer.h"
 
+#include "Graphics/SceneRenderer.h"
+
 #include <spdlog/spdlog.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -9,9 +11,9 @@
 
 namespace Mule
 {
-	TextureSerializer::TextureSerializer(WeakRef<GraphicsContext> context)
+	TextureSerializer::TextureSerializer(WeakRef<ServiceManager> serviceManager)
 		:
-		mContext(context)
+		IAssetSerializer(serviceManager)
 	{
 	}
 
@@ -37,8 +39,14 @@ namespace Mule
 			return nullptr;
 		}
 
-		auto texture = MakeRef<Texture2D>(mContext, filepath, data, width, height, format, TextureFlags::GenerateMips);
+		auto graphicsContext = mServiceManager->Get<GraphicsContext>();
+
+		auto texture = MakeRef<Texture2D>(graphicsContext, filepath, data, width, height, format, TextureFlags::GenerateMips);
 		stbi_image_free(data);
+
+		auto sceneRenderer = mServiceManager->Get<SceneRenderer>();
+		sceneRenderer->AddTexture(texture);
+
 		return texture;
 	}
 	

@@ -4,9 +4,9 @@
 
 namespace Mule
 {
-	ComputeShaderSerializer::ComputeShaderSerializer(WeakRef<EngineContext> context)
+	ComputeShaderSerializer::ComputeShaderSerializer(WeakRef<ServiceManager> serviceManager)
 		:
-		mContext(context)
+		IAssetSerializer(serviceManager)
 	{
 	}
 
@@ -16,7 +16,9 @@ namespace Mule
 
 	Ref<ComputeShader> ComputeShaderSerializer::Load(const fs::path& filepath)
 	{
-		return mContext->GetGraphicsContext()->CreateComputeShader(filepath);
+		auto graphicsContext = mServiceManager->Get<GraphicsContext>();
+
+		return graphicsContext->CreateComputeShader(filepath);
 	}
 
 	void ComputeShaderSerializer::Save(Ref<ComputeShader> asset)

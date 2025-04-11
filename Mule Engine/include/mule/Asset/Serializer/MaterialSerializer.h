@@ -9,7 +9,7 @@ namespace Mule
 	class MaterialSerializer : public IAssetSerializer<Material, AssetType::Material>
 	{
 	public:
-		MaterialSerializer(){}
+		MaterialSerializer(WeakRef<ServiceManager> serviceManager);
 		~MaterialSerializer(){}
 
 		// Inherited via IAssetLoader

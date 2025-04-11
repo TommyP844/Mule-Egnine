@@ -5,6 +5,7 @@
 #include "Ref.h"
 #include "WeakRef.h"
 #include "Serializer/IAssetSerializer.h"
+#include "Services/IService.h"
 
 // Submodules
 

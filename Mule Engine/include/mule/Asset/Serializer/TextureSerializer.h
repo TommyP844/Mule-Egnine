@@ -9,13 +9,10 @@ namespace Mule
 	class TextureSerializer : public IAssetSerializer<Texture2D, AssetType::Texture>
 	{
 	public:
-		TextureSerializer(WeakRef<GraphicsContext> context);
+		TextureSerializer(WeakRef<ServiceManager> serviceManager);
 
 		virtual Ref<Texture2D> Load(const fs::path& filepath) override;
 		virtual void Save(Ref<Texture2D> asset) override;
 
-		
-	private:
-		WeakRef<GraphicsContext> mContext;
 	};
 }

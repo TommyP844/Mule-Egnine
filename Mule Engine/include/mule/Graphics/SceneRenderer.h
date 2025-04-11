@@ -45,7 +45,7 @@ namespace Mule
 	class SceneRenderer
 	{
 	public:
-		SceneRenderer(Ref<GraphicsContext> context, Ref<AssetManager> assetManager);
+		SceneRenderer(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
 		~SceneRenderer();
 
 		void RefreshEngineObjects();
@@ -73,8 +73,8 @@ namespace Mule
 	private:
 		std::mutex mMutex;
 
-		Ref<GraphicsContext> mGraphicsContext;
-		Ref<AssetManager> mAssetManager;
+		WeakRef<GraphicsContext> mGraphicsContext;
+		WeakRef<AssetManager> mAssetManager;
 
 		uint32_t mWhiteImageIndex;
 		uint32_t mBlackImageIndex;
