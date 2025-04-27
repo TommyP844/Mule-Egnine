@@ -1,12 +1,3 @@
-#SETUP
-
-CullMode = Back
-DepthTest = True 
-DepthWrite = True
-Attachment = { Location = 0, Format = RGBA32F, BlendEnable = False }
-Attachment = { Location = 1, Format = RG32UI, BlendEnable = False }
-DepthFormat = D32F
-
 #VERTEX
 #version 460 core
 
@@ -128,11 +119,11 @@ layout(binding = 3) uniform samplerCube irradianceMap;
 layout(binding = 4) uniform samplerCube prefilterMap;
 layout(binding = 5) uniform sampler2D brdfLUT;
 
-layout(set = 1, binding = 0) uniform sampler2D textures[4096];
+layout(set = 1, binding = 0) uniform sampler2D textures[];
 
 layout(push_constant) uniform PushConstantBlock {
     layout(offset = 64) uint MaterialIndex;
-    layout(offset = 72) uvec2 Id;
+    uvec2 Id;
 };
 
 

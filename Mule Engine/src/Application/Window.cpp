@@ -40,6 +40,8 @@ namespace Mule
 		glfwSetWindowUserPointer(mWindow, this);
 		SetupEventCallbacks();
 		glfwMakeContextCurrent(mWindow);
+
+		glfwGetWindowSize(mWindow, &mWidth, &mHeight);
 	}
 
 	Window::~Window()
@@ -83,6 +85,8 @@ namespace Mule
 	{
 		glfwSetWindowSizeCallback(mWindow, [](GLFWwindow* window, int width, int height) {
 			Window* currWindow = (Window*)glfwGetWindowUserPointer(window);
+			currWindow->mWidth = width;
+			currWindow->mHeight = height;
 			Ref<WindowResizeEvent> event = MakeRef<WindowResizeEvent>(width, height);
 			currWindow->mEvents.push_back(event);
 			});

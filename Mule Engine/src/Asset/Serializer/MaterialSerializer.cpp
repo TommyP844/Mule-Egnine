@@ -12,7 +12,7 @@
 
 namespace Mule
 {
-	MaterialSerializer::MaterialSerializer(WeakRef<ServiceManager> serviceManager)
+	MaterialSerializer::MaterialSerializer(Ref<ServiceManager> serviceManager)
 		:
 		IAssetSerializer(serviceManager)
 	{
@@ -44,9 +44,6 @@ namespace Mule
 		material->MetalnessFactor = root["MetalnessFactor"].as<float>();
 		material->RoughnessFactor = root["RoughnessFactor"].as<float>();
 		material->AOFactor = root["AOFactor"].as<float>();
-
-		auto sceneRenderer = mServiceManager->Get<SceneRenderer>();
-		sceneRenderer->AddMaterial(material);
 
 		return material;
 	}

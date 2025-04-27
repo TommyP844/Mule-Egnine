@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine Context/EngineContext.h"
+#include "Graphics/Camera.h"
 
 namespace Mule
 {

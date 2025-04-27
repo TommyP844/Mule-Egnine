@@ -1,10 +1,11 @@
 #pragma once
 
 // Engine
+#include "WeakRef.h"
 #include "Buffer.h"
 #include "Asset/Asset.h"
-#include "Buffer/VertexBuffer.h"
-#include "Buffer/IndexBuffer.h"
+#include "API/VertexBuffer.h"
+#include "API/IndexBuffer.h"
 
 // Submodules
 #include <glm/glm.hpp>
@@ -14,20 +15,10 @@
 
 namespace Mule
 {
-	struct MeshDescription
-	{
-		std::string Name;
-		Buffer Vertices;
-		uint32_t VertexSize;
-		Buffer Indices;
-		IndexBufferType IndexBufferType;
-		AssetHandle DefaultMaterialHandle;
-	};
-
 	class Mesh : public Asset<AssetType::Mesh>
 	{
 	public:
-		Mesh(WeakRef<GraphicsContext> context, const MeshDescription& description);
+		static Ref<Mesh> Create(const std::string& name, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, AssetHandle defaultMaterialHandle);
 		~Mesh();
 
 		Mesh(const Mesh& other) = delete;
@@ -36,17 +27,16 @@ namespace Mule
 		AssetHandle GetDefaultMaterialHandle() const { return mDefaultMaterialHandle; }
 
 		uint32_t GetVertexCount() const { return mVertexBuffer->GetVertexCount(); }
-		uint32_t GetTriangleCount() const { return mIndexBuffer->GetTriangleCount(); }
+		uint32_t GetTriangleCount() const { return mIndexBuffer->GetTraingleCount(); }
 
 		const WeakRef<IndexBuffer>& GetIndexBuffer() const { return mIndexBuffer; }
 		const WeakRef<VertexBuffer>& GetVertexBuffer() const { return mVertexBuffer; }
 
 	private:
+		Mesh(const std::string& name, Ref<VertexBuffer> vertexBuffer, Ref<IndexBuffer> indexBuffer, AssetHandle defaultMaterialHandle);
 		Ref<VertexBuffer> mVertexBuffer;
 		Ref<IndexBuffer> mIndexBuffer;
 
 		AssetHandle mDefaultMaterialHandle;
-
-
 	};
 }

@@ -2,7 +2,7 @@
 
 namespace Mule
 {
-    ScriptSerializer::ScriptSerializer(WeakRef<ServiceManager> serviceManager)
+    ScriptSerializer::ScriptSerializer(Ref<ServiceManager> serviceManager)
         :
         IAssetSerializer(serviceManager)
     {

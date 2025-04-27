@@ -1,279 +1,157 @@
 #include "Graphics/RenderGraph/RenderGraph.h"
+#include "Graphics/RenderGraph/IRenderPass.h"
 
-#include "Graphics/RenderGraph/Resource.h"
+#include "ECS/Scene.h"
+
 #include "Timer.h"
 
 #include <spdlog/spdlog.h>
 
 namespace Mule::RenderGraph
 {
-	RenderGraph::RenderGraph(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager)
+	RenderGraph::RenderGraph(Ref<ServiceManager> serviceManager)
 		:
-		mIsValid(false),
-		mGraphicsContext(context),
+		mFramesInFlight(2),
 		mFrameIndex(0),
-		mFrameCount(2), // TODO: We should be getting this from graphics context
-		mAssetManager(assetManager)
+		mServiceManager(serviceManager)
 	{
-		mPerFrameData.resize(mFrameCount);
-		mResources.resize(mFrameCount);
+		mQueue = GraphicsQueue::Create();
+		mCommandAllocator = CommandAllocator::Create();
 
-		mCommandQueue = mGraphicsContext->GetGraphicsQueue();
-		mCommandPool = mCommandQueue->CreateCommandPool();
-
-		for (uint32_t i = 0; i < mFrameCount; i++)
+		for (uint32_t i = 0; i < mFramesInFlight; i++)
 		{
-			mPerFrameData[i].LayoutTransitionCommandBuffer = mCommandPool->CreateCommandBuffer();
-			mPerFrameData[i].LayoutTransitionFence = mGraphicsContext->CreateFence();
-			mPerFrameData[i].RenderingFinishedSemaphore = mGraphicsContext->CreateSemaphore();
+			mResizeEvents.push_back(ResizeEvent{});
 		}
+
 	}
-	
+
 	RenderGraph::~RenderGraph()
 	{
-	}
-	
-	const PassContext& RenderGraph::GetPassContext() const
-	{
-		return mPerFrameData[mFrameIndex].Ctx;
-	}
 
-	WeakRef<FrameBuffer> RenderGraph::GetCurrentFrameBuffer() const
-	{
-		return mPerFrameData[mFrameIndex].Framebuffer;
-	}
-
-	void RenderGraph::SetCamera(const Camera& camera)
-	{
-		for (uint32_t i = 0; i < mFrameCount; i++)
-		{
-			mPerFrameData[i].Ctx.SetCamera(camera);
-		}
 	}
 
 	void RenderGraph::Resize(uint32_t width, uint32_t height)
 	{
-		mPerFrameData[mFrameIndex].Framebuffer->Resize(width, height);
-	}
-
-	void RenderGraph::CreateFramebuffer(const FramebufferDescription& desc)
-	{
-		for (uint32_t i = 0; i < mFrameCount; i++)
+		for (auto& event : mResizeEvents)
 		{
-			auto framebuffer = mGraphicsContext->CreateFrameBuffer(desc);
-			mPerFrameData[i].Framebuffer = framebuffer;
+			event.Resize = true;
+			event.Width = width;
+			event.Height = height;
 		}
 	}
 
-	void RenderGraph::SetFinalLayouts(std::vector<std::pair<uint32_t, ImageLayout>> layouts)
+	void RenderGraph::Bake()
 	{
-		for (uint32_t i = 0; i < mFrameCount; i++)
-		{
-			mPerFrameData[i].FinalLayouts = layouts;
-		}
-	}
+		std::set<std::string> compiledPasses;
 
-	void RenderGraph::AddPass(
-		const std::string& name, 
-		const std::vector<std::string>& dependecies, 
-		AssetHandle shaderHandle, 
-		std::vector<std::pair<uint32_t, ImageLayout>> requiredLayouts,
-		std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> callback)
-	{
-		auto iter = mPassesToCompile.find(name);
-		if (iter != mPassesToCompile.end())
-		{
-			SPDLOG_WARN("RenderGraph Pass already exists: {}", name);
-			return;
-		}
-		
-		RenderPassInfo& renderPass = mPassesToCompile[name];
-		renderPass.Dependecies = dependecies;
-		renderPass.CallBack = callback;
-		renderPass.ShaderHandle = shaderHandle;
-		renderPass.RequiredLayouts = requiredLayouts;
-	}
-	
-	void RenderGraph::Compile()
-	{
-		for (int i = 0; i < mFrameCount; i++)
-		{
-			mPerFrameData[i].Ctx = PassContext(mResources[i]);
-		}
+		std::unordered_map<std::string, uint32_t> passIndices;
 
-		auto passIter = mPassesToCompile.begin();
-		while (true)
+		bool foundPass = true;
+		while (!mPassesToCompile.empty())
 		{
-			if (passIter == mPassesToCompile.end())
+			assert(foundPass && "RenderGraph Cycle detected");
+			foundPass = false;
+
+			for (auto iter = mPassesToCompile.begin(); iter != mPassesToCompile.end(); iter++)
 			{
-				if (mPassesToCompile.empty())
-					break;
-				passIter = mPassesToCompile.begin();
-			}
+				auto pass = *iter;
+				std::vector<std::string> dependecies = pass->GetDependecies();
 
-			std::string name = passIter->first;
-			RenderPassInfo& pass = passIter->second;
-			if (!pass.Dependecies.empty())
-			{
-				passIter++;
-				continue;
-			}
+				dependecies.erase(
+					std::remove_if(dependecies.begin(), dependecies.end(), 
+						[&compiledPasses](const std::string& s) {
+							return compiledPasses.contains(s);
+						}),
+					dependecies.end()
+				);
 
-			PerPassData ppd{};
-
-			ppd.Callback = pass.CallBack;
-
-			ppd.CommandBuffers.resize(mFrameCount);
-			ppd.Semaphores.resize(mFrameCount);
-			ppd.Fences.resize(mFrameCount);
-			ppd.Stats.Name = name;
-			ppd.ShaderHandle = pass.ShaderHandle;
-			ppd.RequiredLayouts = pass.RequiredLayouts;
-
-			for (uint32_t i = 0; i < mFrameCount; i++)
-			{
-				ppd.CommandBuffers[i] = mCommandPool->CreateCommandBuffer();
-				ppd.Fences[i] = mGraphicsContext->CreateFence();
-				ppd.Semaphores[i] = mGraphicsContext->CreateSemaphore();
-			}
-
-			mPassesToExecute.push_back(ppd);
-
-			passIter = mPassesToCompile.erase(passIter);
-
-			// Remove pass dependecies
-			for (auto& [depName, depPass] : mPassesToCompile)
-			{
-				if (name == depName)
-					continue;
-
-				auto iter = std::find(depPass.Dependecies.begin(), depPass.Dependecies.end(), name);
-				if (iter == depPass.Dependecies.end())
-					continue;
-
-				depPass.Dependecies.erase(iter);
-			}
-			
-		}
-
-		mIsValid = true;
-	}
-	
-	// TODO: handle wait semaphores properly from dependecies
-	void RenderGraph::Execute(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores)
-	{
-		if (!mIsValid)
-		{
-			SPDLOG_WARN("Invalid Render Graph trying to execute");
-			return;
-		}
-
-		PerFrameData& perFrameData = mPerFrameData[mFrameIndex];
-		PassContext& ctx = perFrameData.Ctx;
-
-		WeakRef<Semaphore> previousPassSemaphore = nullptr;
-		bool firstPass = true;
-		for (auto& pass : mPassesToExecute)
-		{
-			Timer passTimer;
-			passTimer.Start();
-
-			auto cmd = pass.CommandBuffers[mFrameIndex];
-			auto fence = pass.Fences[mFrameIndex];
-			auto semaphore = pass.Semaphores[mFrameIndex];
-			WeakRef<GraphicsShader> shader = nullptr;
-
-			if (pass.ShaderHandle)
-			{
-				shader = mAssetManager->GetAsset<GraphicsShader>(pass.ShaderHandle);
-				if (shader == nullptr)
+				if (dependecies.empty())
 				{
-					continue;
+					PassInFlight inFlightPass{};
+
+					inFlightPass.Cmd = mCommandAllocator->CreateCommandBuffer();
+					inFlightPass.Fence = Fence::Create();
+					inFlightPass.Pass = pass;
+					//inFlightPass.WaitSemaphore; = Semaphore::Create();
+					//inFlightPass.SignalSemaphore; = Semaphore::Create();
+
+					mPasses.push_back(inFlightPass);
+					passIndices[pass->GetName()] = mPasses.size() - 1;
+
+					compiledPasses.insert(pass->GetName());
+
+					mPassesToCompile.erase(iter);
+					foundPass = true;
+					break;
 				}
 			}
-
-			fence->Reset();
-			cmd->Reset();
-			cmd->Begin();
-
-			if (firstPass)
-			{
-				firstPass = false;
-				cmd->ClearFrameBuffer(perFrameData.Framebuffer);
-			}
-
-			for (auto [index, layout] : pass.RequiredLayouts)
-			{
-				cmd->TranistionImageLayout(perFrameData.Framebuffer->GetColorAttachment(index), layout);
-			}
-
-			if (pass.ShaderHandle)
-			{
-				cmd->BeginRenderPass(perFrameData.Framebuffer, shader);
-			}
-
-			pass.Callback(cmd, scene, shader, ctx);
-
-			if(pass.ShaderHandle)
-				cmd->EndRenderPass();
-
-			cmd->End();
-			if (previousPassSemaphore)
-			{
-				mCommandQueue->Submit(cmd, { previousPassSemaphore }, { semaphore }, fence);
-				previousPassSemaphore = semaphore;
-			}
-			else
-			{
-				mCommandQueue->Submit(cmd, waitSemaphores, { semaphore }, fence);
-				previousPassSemaphore = semaphore;
-			}
-			
-			passTimer.Stop();
-			pass.Stats.CPUExecutionTime = passTimer.Query();
 		}
-		
-		auto cmd = perFrameData.LayoutTransitionCommandBuffer;
-		perFrameData.LayoutTransitionFence->Wait();
-		perFrameData.LayoutTransitionFence->Reset();
-		cmd->Reset();
-		cmd->Begin();
-		for (auto [index, layout] : perFrameData.FinalLayouts)
+
+		for (auto& pass : mPasses)
 		{
-			cmd->TranistionImageLayout(perFrameData.Framebuffer->GetColorAttachment(index), layout);
+			for (const auto& passDependecy : pass.Pass->GetDependecies())
+			{
+				uint32_t dependencyIndex = passIndices[passDependecy];
+				auto& dependencyPass = mPasses[dependencyIndex];
+
+				auto semaphore = Semaphore::Create();
+				dependencyPass.SignalSemaphores.push_back(semaphore);
+				pass.WaitSemaphores.push_back(semaphore);
+			}
 		}
-		cmd->End();
 
-		mCommandQueue->Submit(cmd, { previousPassSemaphore }, { perFrameData.RenderingFinishedSemaphore }, perFrameData.LayoutTransitionFence);
-	}
-	
-	void RenderGraph::NextFrame()
-	{
-		mFrameIndex = (mFrameIndex + 1) % mFrameCount;
-	}
-	
-	WeakRef<Semaphore> RenderGraph::GetSemaphore() const
-	{
-		return mPerFrameData[mFrameIndex].RenderingFinishedSemaphore;
-	}
+		mPasses.back().SignalSemaphores.push_back(Semaphore::Create());
 
-	void RenderGraph::Wait()
-	{
-		for (auto& pass : mPassesToExecute)
+		SPDLOG_INFO("RenderGraph Compiled");
+
+		for (uint32_t i = 0; i < mFramesInFlight; i++)
 		{
-			pass.Fences[mFrameIndex]->Wait();
+			mFrameIndex = i;
+			for (auto& pass : mPasses)
+			{
+				assert(pass.Pass->Validate() && "Failed to validate render pass");
+				pass.Pass->Setup();
+			}
 		}
+		mFrameIndex = 0;
 	}
-	
-	std::vector<RenderPassStats> RenderGraph::GetRenderPassStats() const
-	{
-		std::vector<RenderPassStats> stats;
 
-		for (auto pass : mPassesToExecute)
+	void RenderGraph::SetResizeCallback(std::function<void(uint32_t, uint32_t)> func)
+	{
+		mResizeCallback = func;
+	}
+
+	void RenderGraph::Execute(WeakRef<Scene> scene)
+	{
+		for (auto pass : mPasses)
 		{
-			stats.push_back(pass.Stats);
+			pass.Fence->Wait();
+			pass.Fence->Reset();
+
+			if (mResizeEvents[mFrameIndex].Resize)
+			{
+				ResizeEvent& event = mResizeEvents[mFrameIndex];
+				pass.Pass->Resize(event.Width, event.Height);
+			}
+
+			pass.Cmd->Reset();
+			pass.Cmd->Begin();
+
+			pass.Pass->Render(pass.Cmd, scene);
+
+			pass.Cmd->End();
+
+			mQueue->Submit(pass.Cmd, pass.WaitSemaphores, pass.SignalSemaphores, pass.Fence);
 		}
 
-		return stats;
+		if (mResizeEvents[mFrameIndex].Resize)
+			mResizeEvents[mFrameIndex].Resize = false;
+
+		mFrameIndex ^= 1;
+	}
+
+	Ref<Semaphore> RenderGraph::GetCurrentSemaphore()
+	{
+		return mPasses.back().SignalSemaphores[0];
 	}
 }

@@ -8,7 +8,7 @@
 
 namespace Mule
 {
-	Ref<Texture2D> Texture2D::Create(void* data, uint32_t width, uint32_t height, TextureFormat format, TextureFlags flags)
+	Ref<Texture2D> Texture2D::Create(const std::string& name, const Buffer& data, uint32_t width, uint32_t height, TextureFormat format, TextureFlags flags)
 	{
 		GraphicsAPI API = GraphicsContext::Get().GetAPI();
 		switch (API)
@@ -16,7 +16,13 @@ namespace Mule
 		case GraphicsAPI::None:
 
 			break;
-		case GraphicsAPI::Vulkan: return Ref<Vulkan::VulkanTexture2D>(new Vulkan::VulkanTexture2D(data, width, height, format, flags));
+		case GraphicsAPI::Vulkan: return Ref<Vulkan::VulkanTexture2D>(new Vulkan::VulkanTexture2D(name, data, width, height, format, flags));
 		}
+	}
+
+	Texture2D::Texture2D(const std::string& name, TextureFormat format, TextureFlags flags)
+		:
+		Texture(name, format, flags, TextureType::TextureType_2D)
+	{
 	}
 }

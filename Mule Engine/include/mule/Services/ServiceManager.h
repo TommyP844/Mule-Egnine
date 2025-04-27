@@ -21,6 +21,9 @@ namespace Mule
 		template<class Service>
 		WeakRef<Service> Get() const;
 
+		template<class Service>
+		void Unload();
+
 	private:
 		std::unordered_map<std::type_index, Ref<IService>> mServices;
 	};

@@ -241,7 +241,8 @@ void EditorLayer::OnUIRender(float dt)
 	mPerformancePanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
-		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>();
+		auto serviceManager = mEngineContext->GetServiceManager();
+		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>(serviceManager);
 		scene->SetFilePath(filepath);
 		assetManager->InsertAsset(scene);
 		mEngineContext->SetScene(scene);
@@ -264,16 +265,16 @@ void EditorLayer::OnUIRender(float dt)
 void EditorLayer::OnRender(float dt)
 {
 	auto scene = mEngineContext->GetScene();
-	auto sceneRenderer = mEngineContext->GetSceneRenderer();
+	//auto sceneRenderer = mEngineContext->GetSceneRenderer();
 	if (scene)
 	{
 		switch (mEditorState->GetSimulationState())
 		{
 		case SimulationState::Editing:
-			sceneRenderer->OnEditorRender(scene, mEditorState->GetEditorCamera(), {});
+			//sceneRenderer->OnEditorRender(scene, mEditorState->GetEditorCamera(), {});
 			break;
 		case SimulationState::Simulation:
-			sceneRenderer->OnRender(scene, {});
+			//sceneRenderer->OnRender(scene, {});
 			break;
 		default:
 			break;

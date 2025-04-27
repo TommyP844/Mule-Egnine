@@ -1,25 +1,28 @@
 #include "Graphics/API/Vulkan/VulkanDescriptorSetLayout.h"
 
 #include "Graphics/API/Vulkan/VulkanContext.h"
+#include "Graphics/API/Vulkan/VulkanTypeConversion.h"
 
 #include <spdlog/spdlog.h>
 
-namespace Mule
+namespace Mule::Vulkan
 {
-	VulkanDescriptorSetLayout::DescriptorSetLayout(WeakRef<VulkanContext> context, const std::vector<LayoutDescription>& layouts)
+	VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(const std::vector<ShaderResourceDescription>& resources)
 		:
-		mDevice(context->GetDevice()),
 		mLayout(VK_NULL_HANDLE)
 	{
+		VkDevice device = VulkanContext::Get().GetDevice();
+
 		std::vector<VkDescriptorSetLayoutBinding> vkLayouts;
-		for (const auto& layout : layouts)
+		for (const auto& resource : resources)
 		{
-			VkDescriptorSetLayoutBinding layoutBinding{};
-			layoutBinding.binding = layout.Binding;
-			layoutBinding.descriptorCount = layout.ArrayCount;
-			layoutBinding.descriptorType = (VkDescriptorType)layout.Type;
-			layoutBinding.stageFlags = (VkShaderStageFlags)layout.Stage;
-			layoutBinding.pImmutableSamplers = nullptr;
+			VkDescriptorSetLayoutBinding layoutBinding{
+				.binding = resource.Binding,
+				.descriptorType = GetResourceType(resource.Type),
+				.descriptorCount = resource.ArrayCount,
+				.stageFlags = GetShaderStage(resource.Stages),
+				.pImmutableSamplers = nullptr,
+			};
 			vkLayouts.push_back(layoutBinding);
 		}
 
@@ -31,7 +34,7 @@ namespace Mule
 		createInfo.bindingCount = vkLayouts.size();
 		createInfo.pBindings = vkLayouts.data();
 
-		VkResult result = vkCreateDescriptorSetLayout(mDevice, &createInfo, nullptr, &mLayout);
+		VkResult result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &mLayout);
 		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("Failed to create descriptor set layout");
@@ -39,8 +42,9 @@ namespace Mule
 		}
 	}
 
-	DescriptorSetLayout::~DescriptorSetLayout()
+	VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
 	{
-		vkDestroyDescriptorSetLayout(mDevice, mLayout, nullptr);
+		VkDevice device = VulkanContext::Get().GetDevice();
+		vkDestroyDescriptorSetLayout(device, mLayout, nullptr);
 	}
 }

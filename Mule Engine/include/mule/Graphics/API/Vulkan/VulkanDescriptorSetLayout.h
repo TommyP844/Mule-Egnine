@@ -1,28 +1,20 @@
 #pragma once
 
-#include "WeakRef.h"
-#include "VulkanRenderTypes.h"
+#include "Graphics/API/ShaderResourceBlueprint.h"
 
-// Submodules
 #include <Volk/volk.h>
 
-// STD
-#include <vector>
-
-namespace Mule
+namespace Mule::Vulkan
 {
-	class GraphicsContext;
-
-	class VulkanDescriptorSetLayout
+	class VulkanDescriptorSetLayout : public ShaderResourceBlueprint
 	{
 	public:
-		VulkanDescriptorSetLayout(const std::vector<LayoutDescription>& layouts);
+		VulkanDescriptorSetLayout(const std::vector<ShaderResourceDescription>& resources);
 		~VulkanDescriptorSetLayout();
 
 		VkDescriptorSetLayout GetLayout() const { return mLayout; }
 
 	private:
-		VkDevice mDevice;
 		VkDescriptorSetLayout mLayout;
 	};
 }

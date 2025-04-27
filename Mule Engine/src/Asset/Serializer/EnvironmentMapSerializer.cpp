@@ -1,10 +1,12 @@
 #include "Asset/Serializer/EnvironmentMapSerializer.h"
 
-#include "Graphics/Execution/CommandBuffer.h"
-#include "Graphics/Execution/CommandPool.h"
-#include "Graphics/Execution/GraphicsQueue.h"
-#include "Graphics/Texture/Texture2D.h"
-#include "Engine Context/EngineContext.h"
+#include "Graphics/API/CommandBuffer.h"
+#include "Graphics/API/CommandAllocator.h"
+#include "Graphics/API/GraphicsQueue.h"
+#include "Graphics/API/Texture2D.h"
+#include "Graphics/API/ShaderResourceBlueprint.h"
+#include "Graphics/API/ShaderResourceGroup.h"
+#include "Graphics/API/Image.h"
 
 #include <stb/stb_image.h>
 
@@ -13,44 +15,37 @@
 
 namespace Mule
 {
-    EnvironmentMapSerializer::EnvironmentMapSerializer(WeakRef<ServiceManager> serviceManager)
+    EnvironmentMapSerializer::EnvironmentMapSerializer(Ref<ServiceManager> serviceManager)
         :
         IAssetSerializer(serviceManager)
     {
-        auto graphicsContext = mServiceManager->Get<GraphicsContext>();
         auto assetManager = mServiceManager->Get<AssetManager>();
 
         // Cube map descriptor
         {
-            mCubeMapDescriptorSetLayout = graphicsContext->CreateDescriptorSetLayout({
-                LayoutDescription(0, DescriptorType::Texture, ShaderStage::Compute, 1),
-                LayoutDescription(1, DescriptorType::StorageImage, ShaderStage::Compute, 1)
+            mCubeMapDescriptorSetLayout = ShaderResourceBlueprint::Create({
+                ShaderResourceDescription(0, ShaderResourceType::Sampler, ShaderStage::Compute, 1),
+                ShaderResourceDescription(1, ShaderResourceType::StorageImage, ShaderStage::Compute, 1)
                 });
 
-            mCubeMapDescriptorSet = graphicsContext->CreateDescriptorSet({ mCubeMapDescriptorSetLayout });
+            mCubeMapDescriptorSet = ShaderResourceGroup::Create({ mCubeMapDescriptorSetLayout });
         }
 
         // Cube map compute
         {
             mShaderLoadFuture = std::async(std::launch::async, [&]() {
-                auto gContext = mServiceManager->Get<GraphicsContext>();
-                mCubeMapCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
-                mDiffuseIBLCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
-                mPreFilterCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
+                //mCubeMapCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
+                //mDiffuseIBLCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
+                //mPreFilterCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
                 });
         }
 
         
         // BRDF Compute
         {
-            int width, height, channels;
-            void* data = stbi_load("../Assets/Textures/brdf_lut.png", &width, &height, &channels, STBI_rgb_alpha);
-            if (data == nullptr)
-            {
-                SPDLOG_ERROR("Failed to load brdf image");
-            }
-            Ref<Texture2D> brdfImage = MakeRef<Texture2D>(graphicsContext, std::string("BRDF"), data, width, height, TextureFormat::RGBA8U);
-
+            Image image = Image::Load("../Assets/Textures/brdf_lut.png");
+ 
+            Ref<Texture2D> brdfImage = Texture2D::Create("BRDF", image.Data, image.Width, image.Height, image.Format, TextureFlags::TransferDst);
 
             assetManager->InsertAsset(brdfImage);
             mBRDFLutMap = brdfImage->Handle();
@@ -59,6 +54,8 @@ namespace Mule
 
     Ref<EnvironmentMap> EnvironmentMapSerializer::Load(const fs::path& filepath)
     {
+        return nullptr;
+
         if (!fs::exists(filepath))
             return nullptr;
         if (filepath.extension().string() != ".hdr")
@@ -67,23 +64,19 @@ namespace Mule
         auto graphicsContext = mServiceManager->Get<GraphicsContext>();
         auto assetManager = mServiceManager->Get<AssetManager>();
 
-        int width, height, channels;
-        float* data = stbi_loadf(filepath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
-        if (data == nullptr)
-            return nullptr;
+        Image image = Image::Load(filepath);
 
-        Ref<Texture2D> texture = MakeRef<Texture2D>(graphicsContext, data, width, height, TextureFormat::RGBA32F);
-        stbi_image_free(data);
+        Ref<Texture2D> texture = Texture2D::Create("", image.Data, image.Width, image.Height, TextureFormat::RGBA_32F, TextureFlags::TransferDst);
+        image.Data.Release();
 
         std::string filename = filepath.filename().replace_extension().string();
 
-        auto fence = graphicsContext->CreateFence();
-        auto queue = graphicsContext->GetBackgroundGraphicsQueue();
-        auto commandPool = queue->CreateCommandPool();
+        auto fence = Fence::Create();
+        auto commandPool = CommandAllocator::Create();
         auto commandBuffer = commandPool->CreateCommandBuffer();
 
-        DescriptorSetUpdate update1{};
-        DescriptorSetUpdate update2{};
+        //DescriptorSetUpdate update1{};
+        //DescriptorSetUpdate update2{};
 
         mShaderLoadFuture.wait();
         std::lock_guard<std::mutex> lock(mMutex);
@@ -91,19 +84,19 @@ namespace Mule
         // Cube Map
         Ref<TextureCube> cubeMap = nullptr;
         {
-            cubeMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA32F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
+            cubeMap = TextureCube::Create("", Buffer(), 1024, TextureFormat::RGBA_32F, TextureFlags::StorageImage | TextureFlags::GenerateMips);
 
             commandBuffer->Begin();
 
             commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::General);
             
-            DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { texture }, {});
-            DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { cubeMap }, {});
-
-            mCubeMapDescriptorSet->Update({ update1, update2 });
-
-            commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
-            commandBuffer->BindComputePipeline(mCubeMapCompute);
+            //DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { texture }, {});
+            //DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { cubeMap }, {});
+            //
+            //mCubeMapDescriptorSet->Update({ update1, update2 });
+            //
+            //commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
+            //commandBuffer->BindComputePipeline(mCubeMapCompute);
             commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
 
             commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
@@ -111,11 +104,11 @@ namespace Mule
             commandBuffer->End();
             fence->Wait();
             fence->Reset();
-            queue->Submit(commandBuffer, {}, {}, fence);
+            //queue->Submit(commandBuffer, {}, {}, fence);
             fence->Wait();
 
-            cubeMap->GenerateMips();
-            cubeMap->SetName(filename);
+            //cubeMap->GenerateMips();
+            //cubeMap->SetName(filename);
             assetManager->InsertAsset(cubeMap);
         }
     
@@ -123,20 +116,20 @@ namespace Mule
         Ref<TextureCube> irradianceMap;
         // Irradiance Map
         {
-            irradianceMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA16F, TextureFlags::StorageImage);
+            irradianceMap = TextureCube::Create("", {}, 1024, TextureFormat::RGBA_16F, TextureFlags::StorageImage);
 
             commandPool->Reset();
             commandBuffer->Begin();
 
             commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::General);
 
-            DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { cubeMap }, {});
-            DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { irradianceMap }, {});
+            //DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { cubeMap }, {});
+            //DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { irradianceMap }, {});
 
-            mCubeMapDescriptorSet->Update({ update1, update2 });
+            //mCubeMapDescriptorSet->Update({ update1, update2 });
 
-            commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
-            commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
+            //commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
+            //commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
             commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
 
             commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
@@ -144,53 +137,53 @@ namespace Mule
             commandBuffer->End();
             fence->Wait();
             fence->Reset();
-            queue->Submit(commandBuffer, {}, {}, fence);
+            //queue->Submit(commandBuffer, {}, {}, fence);
             fence->Wait();
 
-            irradianceMap->SetName(filename + "-IrradianceMap");
+            //irradianceMap->SetName(filename + "-IrradianceMap");
             assetManager->InsertAsset(irradianceMap);
         }
 
         Ref<TextureCube> prefilterMap = nullptr;
         // Pre-Filter Map
         {
-            prefilterMap = MakeRef<TextureCube>(graphicsContext, nullptr, 1024, 1, TextureFormat::RGBA16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
+            prefilterMap = TextureCube::Create("", {}, 1024, TextureFormat::RGBA_16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
 
-            uint32_t preFilterMipLevelCount = prefilterMap->GetMipCount();
-            for (uint32_t i = 0; i < preFilterMipLevelCount; i++)
-            {
-                commandPool->Reset();
-                commandBuffer->Begin();
-
-                commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::General);
-                                
-                DescriptorSetUpdate update(1, DescriptorType::StorageImage, 0, prefilterMap->GetMipImageView(i), prefilterMap->GetSampler(), prefilterMap->GetVulkanImage().Layout);
-
-                mCubeMapDescriptorSet->Update({ update });
-
-                commandBuffer->BindComputeDescriptorSet(mPreFilterCompute, mCubeMapDescriptorSet);
-                commandBuffer->BindComputePipeline(mPreFilterCompute);
-
-                float roughness = (static_cast<float>(i)) / (static_cast<float>(preFilterMipLevelCount - 1.f));
-
-                glm::ivec2 dimension = prefilterMap->GetMipLevelSize(i);
-                commandBuffer->SetPushConstants(mPreFilterCompute, &roughness, sizeof(float));
-                commandBuffer->Execute((dimension.x + 32) / 32, (dimension.y + 32) / 32, 6);
-                commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
-
-                commandBuffer->End();
-                fence->Wait();
-                fence->Reset();
-                queue->Submit(commandBuffer, {}, {}, fence);
-                fence->Wait();
-            }
-
-            filename = filepath.filename().replace_extension().string();
-            prefilterMap->SetName(filename + "-PreFilterMap");
-            assetManager->InsertAsset(prefilterMap);
+            //uint32_t preFilterMipLevelCount = prefilterMap->GetMipCount();
+            //for (uint32_t i = 0; i < preFilterMipLevelCount; i++)
+            //{
+            //    commandPool->Reset();
+            //    commandBuffer->Begin();
+            //
+            //    commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::General);
+            //                    
+            //    //DescriptorSetUpdate update(1, DescriptorType::StorageImage, 0, prefilterMap->GetMipImageView(i), prefilterMap->GetSampler(), prefilterMap->GetVulkanImage().Layout);
+            //
+            //    //mCubeMapDescriptorSet->Update({ update });
+            //
+            //    //commandBuffer->BindComputeDescriptorSet(mPreFilterCompute, mCubeMapDescriptorSet);
+            //   //commandBuffer->BindComputePipeline(mPreFilterCompute);
+            //
+            //    float roughness = (static_cast<float>(i)) / (static_cast<float>(preFilterMipLevelCount - 1.f));
+            //
+            //    //glm::ivec2 dimension = prefilterMap->GetMipLevelSize(i);
+            //    //commandBuffer->SetPushConstants(mPreFilterCompute, &roughness, sizeof(float));
+            //    //commandBuffer->Execute((dimension.x + 32) / 32, (dimension.y + 32) / 32, 6);
+            //    //commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
+            //
+            //    commandBuffer->End();
+            //    fence->Wait();
+            //    fence->Reset();
+            //    //queue->Submit(commandBuffer, {}, {}, fence);
+            //    fence->Wait();
+            //}
+            //
+            //filename = filepath.filename().replace_extension().string();
+            ////prefilterMap->SetName(filename + "-PreFilterMap");
+            //assetManager->InsertAsset(prefilterMap);
         }
 
-        return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
+        return nullptr; //MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
     }
 
     void EnvironmentMapSerializer::Save(Ref<EnvironmentMap> asset)

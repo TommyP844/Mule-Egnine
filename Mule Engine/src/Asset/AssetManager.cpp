@@ -90,6 +90,8 @@ namespace Mule
 
 	Ref<IAsset> AssetManager::GetAssetByFilepath(const fs::path& path)
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		for (auto [handle, asset] : mAssets)
 		{
 			if(asset->FilePath().empty())

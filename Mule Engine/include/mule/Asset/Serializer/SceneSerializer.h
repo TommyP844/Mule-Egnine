@@ -16,7 +16,7 @@ namespace Mule
 	class SceneSerializer : public IAssetSerializer<Scene, AssetType::Scene>
 	{
 	public:
-		SceneSerializer(WeakRef<ServiceManager> serviceManager);
+		SceneSerializer(Ref<ServiceManager> serviceManager);
 		virtual ~SceneSerializer() {}
 
 

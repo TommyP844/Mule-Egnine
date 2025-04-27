@@ -13,67 +13,64 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 
 	mScriptEditorContext = MakeRef<ScriptEditorContext>(mProjectPath);
 
-	mAssetLoaderThread = std::async(std::launch::async, [&]() {
-		auto assetManager = mEngineContext->GetAssetManager();
-		std::vector<std::future<void>> futures;
+	auto jobSystem = mEngineContext->GetServiceManager()->Get<Mule::JobSystem>();
+	auto assetManager = mEngineContext->GetAssetManager();
 
-		for (auto dir : fs::recursive_directory_iterator(GetAssetsPath()))
+	for (auto dir : fs::recursive_directory_iterator(GetAssetsPath()))
+	{
+		if (dir.is_directory()) continue;
+
+		std::string extension = dir.path().extension().string();
+		fs::path filePath = dir.path();
+
+		const std::set<std::string> modelExtensions = { ".gltf", ".fbx", ".dae", ".obj" };
+		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
+
+		if (modelExtensions.contains(extension))
 		{
-			if (dir.is_directory()) continue;
-
-			std::string extension = dir.path().extension().string();
-			fs::path filePath = dir.path();
-
-			const std::set<std::string> modelExtensions = { ".gltf", ".fbx", ".dae", ".obj" };
-			const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-
-			if (modelExtensions.contains(extension))
-			{
-				futures.push_back(std::async(std::launch::async, [=]() {
+			jobSystem->PushJob([assetManager, filePath]() {
 					assetManager->LoadAsset<Mule::Model>(filePath);
-					}));
-			}
-			else if (extension == ".cs")
-			{
-				futures.push_back(std::async(std::launch::async, [=]() {
-					assetManager->LoadAsset<Mule::ScriptClass>(filePath);
-					}));
-			}
-			else if (imageExtensions.contains(extension))
-			{
-				auto asset = assetManager->GetAssetByFilepath(dir.path());
-				if (!asset)
-				{
-					futures.push_back(std::async(std::launch::async, [=]() {
-						assetManager->LoadAsset<Mule::Texture2D>(filePath);
-						}));
-				}
-			}
-			else if (extension == ".hdr")
-			{
-				futures.push_back(std::async(std::launch::async, [=]() {
-					assetManager->LoadAsset<Mule::EnvironmentMap>(filePath);
-					}));
-			}
-			else if (extension == ".mat")
-			{
-				futures.push_back(std::async(std::launch::async, [=]() {
-					assetManager->LoadAsset<Mule::Material>(filePath);
-					}));
-			}
-			else if (extension == ".scene")
-				futures.push_back(std::async(std::launch::async, [=]() {
-				assetManager->LoadAsset<Mule::Scene>(filePath);
-					}));
+				});
 		}
-
-		for (auto& future : futures)
+		else if (extension == ".cs")
 		{
-			future.wait();
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->LoadAsset<Mule::ScriptClass>(filePath);
+				});
 		}
+		else if (imageExtensions.contains(extension))
+		{
+			auto asset = assetManager->GetAssetByFilepath(dir.path());
+			if (!asset)
+			{
+				jobSystem->PushJob([assetManager, filePath]() {
+					assetManager->LoadAsset<Mule::Texture2D>(filePath);
+					});
+			}
+		}
+		else if (extension == ".hdr")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->LoadAsset<Mule::EnvironmentMap>(filePath);
+				});
+		}
+		else if (extension == ".mat")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->LoadAsset<Mule::Material>(filePath);
+				});
+		}
+		else if (extension == ".scene")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->LoadAsset<Mule::Scene>(filePath);
+				});
+		}
+	}
+}
 
-		});
-
+EditorContext::~EditorContext()
+{
 }
 
 void EditorContext::SetSelectedEntity(Mule::Entity e)
@@ -84,9 +81,6 @@ void EditorContext::SetSelectedEntity(Mule::Entity e)
 	}
 
 	mSelectedEntity = e;
-	auto sceneRenderer = mEngineContext->GetSceneRenderer();
-	if (sceneRenderer)
-		sceneRenderer->GetDebugOptions().SelectedEntity = e;
 
 	if (mSelectedEntity)
 	{

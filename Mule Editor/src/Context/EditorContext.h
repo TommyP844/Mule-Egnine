@@ -17,6 +17,7 @@ class EditorContext
 {
 public:
 	EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineContext> engineContext);
+	~EditorContext();
 
 	const fs::path& GetProjectPath() const { return mProjectPath; }
 	const fs::path& GetAssetsPath() const { return mAssetsPath; }

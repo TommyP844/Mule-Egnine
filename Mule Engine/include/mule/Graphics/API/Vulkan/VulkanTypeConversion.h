@@ -1,0 +1,106 @@
+#pragma once
+
+#include "Graphics/API/GraphicsCore.h"
+
+#include <Volk/volk.h>
+
+#include <assert.h>
+
+namespace Mule::Vulkan
+{
+	constexpr VkFormat GetVulkanFormat(TextureFormat format)
+	{
+		switch (format)
+		{
+		case Mule::TextureFormat::R_8U:		return VK_FORMAT_R8_UNORM;
+		case Mule::TextureFormat::BGRA_8U:	return VK_FORMAT_B8G8R8A8_UNORM;
+		case Mule::TextureFormat::RGBA_8U:	return VK_FORMAT_R8G8B8A8_UNORM;
+		case Mule::TextureFormat::RGB_8U:	return VK_FORMAT_R8G8B8_UNORM;
+		case Mule::TextureFormat::R_32UI:	return VK_FORMAT_R32_UINT;
+		case Mule::TextureFormat::RG_32UI:	return VK_FORMAT_R32G32_UINT;
+		case Mule::TextureFormat::D_32F:	return VK_FORMAT_D32_SFLOAT;
+		case Mule::TextureFormat::D_24S8:	return VK_FORMAT_D24_UNORM_S8_UINT;
+		case Mule::TextureFormat::RGBA_16F:	return VK_FORMAT_R16G16B16A16_SFLOAT;
+		case Mule::TextureFormat::R_32F:	return VK_FORMAT_R32_SFLOAT;
+		case Mule::TextureFormat::RGBA_32F:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case Mule::TextureFormat::RGBA_32S:	return VK_FORMAT_R32G32B32A32_SINT;
+		case Mule::TextureFormat::RGBA_32U:	return VK_FORMAT_R32G32B32A32_UINT;
+		case Mule::TextureFormat::R_64UI:	return VK_FORMAT_R64_UINT;
+		case Mule::TextureFormat::NONE: 
+		default:
+			assert(false && "Invalid texture format for vulkan");
+			break;
+		}
+	}
+
+	constexpr VkCullModeFlags GetCullMode(CullMode mode)
+	{
+		switch (mode)
+		{
+		case Mule::CullMode::Back:	return VK_CULL_MODE_BACK_BIT;
+		case Mule::CullMode::Front:	return VK_CULL_MODE_FRONT_BIT;
+		case Mule::CullMode::None:	return VK_CULL_MODE_NONE;
+		default:
+			assert(false && "Invalid vulkan cull mode");
+		}
+	}
+
+	constexpr VkPolygonMode GetPolygonMode(FillMode mode)
+	{
+		switch (mode)
+		{
+		case Mule::FillMode::Solid:		return VK_POLYGON_MODE_FILL;
+		case Mule::FillMode::Line:		return VK_POLYGON_MODE_LINE;
+		case Mule::FillMode::Point:		return VK_POLYGON_MODE_POINT;
+		default:
+			assert(false && "Invalid vulkan polygon mode");
+		}
+	}
+
+	constexpr VkShaderStageFlags GetShaderStage(ShaderStage stage)
+	{
+		// TODO: handle multiple stages or'd together
+		switch (stage)
+		{
+		case ShaderStage::Vertex:						return VK_SHADER_STAGE_VERTEX_BIT;
+		case ShaderStage::Fragment:						return VK_SHADER_STAGE_FRAGMENT_BIT;
+		case ShaderStage::Geometry:						return VK_SHADER_STAGE_GEOMETRY_BIT;
+		case ShaderStage::TesselationControl:			return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		case ShaderStage::TesselationEvaluation:		return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		case ShaderStage::Compute:						return VK_SHADER_STAGE_COMPUTE_BIT;
+		}
+
+		// Assume we have multiple flags
+		VkShaderStageFlags flags = (VkShaderStageFlagBits)0;
+
+		if ((stage & ShaderStage::Vertex) == ShaderStage::Vertex) flags |= VK_SHADER_STAGE_VERTEX_BIT;
+		if ((stage & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+		if ((stage & ShaderStage::Geometry) == ShaderStage::Geometry) flags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+		if ((stage & ShaderStage::TesselationControl) == ShaderStage::TesselationControl) flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		if ((stage & ShaderStage::TesselationEvaluation) == ShaderStage::TesselationEvaluation) flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		if ((stage & ShaderStage::Compute) == ShaderStage::Compute) flags |= VK_SHADER_STAGE_COMPUTE_BIT;
+
+		return flags;
+	}
+
+	constexpr VkIndexType GetIndexFormat(IndexType type)
+	{
+		switch (type)
+		{
+		case Mule::IndexType::Size_16Bit: return VK_INDEX_TYPE_UINT16;
+		case Mule::IndexType::Size_32Bit: return VK_INDEX_TYPE_UINT32;
+		default:
+			assert(false && "Invalid vulkan index type");
+		}
+	}
+
+	constexpr VkDescriptorType GetResourceType(ShaderResourceType type)
+	{
+		switch (type)
+		{
+		case Mule::ShaderResourceType::UniformBuffer:	return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case Mule::ShaderResourceType::Sampler:			return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case Mule::ShaderResourceType::StorageImage:	return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		}
+	}
+}

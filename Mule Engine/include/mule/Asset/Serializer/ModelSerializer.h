@@ -2,9 +2,9 @@
 
 #include "IAssetSerializer.h"
 #include "Graphics/Model.h"
-#include "Graphics/Context/GraphicsContext.h"
 #include "Asset/AssetManager.h"
 #include "Graphics/Material.h"
+#include "Graphics/API/Texture2D.h"
 
 #include <assimp/scene.h>
 
@@ -23,7 +23,7 @@ namespace Mule
 	class ModelSerializer : public IAssetSerializer<Model, AssetType::Model>
 	{
 	public:
-		ModelSerializer(WeakRef<ServiceManager> serviceManager);
+		ModelSerializer(Ref<ServiceManager> serviceManager);
 		virtual ~ModelSerializer() {}
 
 		Ref<Model> Load(const fs::path& filepath) override;

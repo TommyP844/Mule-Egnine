@@ -1,77 +1,53 @@
 #pragma once
 
-#include "Graphics/API/GraphicsCore.h"
-#include "Graphics/API/Vulkan/Texture/VulkanImage.h"
-#include <glm/glm.hpp>
-#include <imgui.h>
+#include "Ref.h"
+#include "WeakRef.h"
+#include "VulkanImage.h"
+#include "VulkanTextureView.h"
 
-/*
-* 
-* Everty type of vulkan texture should inherit from this class
-* This way all texture logic is defined in one place
-* Make it abstract so its not tighly coupled to one use case
-
-*/
+#include <vector>
 
 namespace Mule::Vulkan
 {
-	enum class TextureType {
-		Type_1D,
-		Type_1DArray,
-		Type_2D,
-		Type_2DArray,
-		Type_3D,
-		Type_Cube,
-		Type_CubeArray,
-	};
-
-
 	class IVulkanTexture
 	{
-	protected:
+	public:
 		IVulkanTexture() = default;
 		virtual ~IVulkanTexture();
+		void SetImageLayout(VkImageLayout imageLayout);
+		VkImageLayout GetImageLayout() const;
+		const VulkanImage& GetVulkanImage() const;
+		VkImageAspectFlags GetImageAspect() const;
 
-		void SetImageLayout(VkImageLayout layout) { mVulkanImage.Layout = layout; }
+		uint32_t GetImageWidth() const { return mWidth; }
+		uint32_t GetImageHeight() const { return mHeight; }
+		uint32_t GetImageDepth() const { return mDepth; }
 
-		VkImage GetImage() const { return mVulkanImage.Image; }
-		VkImageView GetImageView() const { return mVulkanImage.ImageView; }
-		VkImageView GetMipLayerImageView(uint32_t mipLevel, uint32_t layer = 0) const;
-		VkImageView GetMipImageView(uint32_t mipLevel) const;
-		ImTextureID GetImGuiMipLayerID(uint32_t mipLevel, uint32_t layer = 0) const;
-		ImTextureID GetImGuiMipID(uint32_t mipLevel) const;
+		uint32_t GetImageMipLevels() const { return mMipLevels; }
+		uint32_t GetImageArrayLayers() const { return mArrayLayers; }
 
-		void GenerateMips();
+		bool GetIsDepthTexture() const { return mIsDepthTexture; }
 
-		const VulkanImage& GetVulkanImage() const { return mVulkanImage; }
-
-		TextureType GetTextureType() const { return mTextureType; }
-
-		VkSampler GetSampler() const { return mSampler; }
+		WeakRef<VulkanTextureView> GetTextureView(uint32_t mipLevel, uint32_t arrayLayer) const;
 
 	protected:
-		void Initialize(void* data, uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, TextureFormat format, TextureFlags flags);
 
-		VkDevice mDevice;
-		VulkanImage mVulkanImage;
-		VkSampler mSampler;
+		bool Init(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags, VkImageAspectFlags aspect, VkImageViewType viewType);
+		bool InitCube(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags, VkImageAspectFlags aspect, VkImageViewType viewType);
 
-		struct MipView
-		{
-			ImTextureID ImGuiMipId;
-			VkImageView View;
+		bool CreateView(VkImageView& view, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspect, uint32_t baseMipLevel, uint32_t mipCount, uint32_t baseArrayLayer, uint32_t layerCount);
 
-			// Layers
-			std::vector<VkImageView> LayerViews;
-			std::vector<ImTextureID> ImGuiLayerIDs;
-		};
-
-		std::vector<MipView> mMipViews;
-		
+		uint32_t mWidth, mHeight, mDepth;
+		uint32_t mMipLevels, mArrayLayers;
 		bool mIsDepthTexture;
-		uint32_t mWidth, mHeight, mDepth, mMips, mLayers;
-		TextureFormat mFormat;
-		TextureType mTextureType;
-		TextureFlags mFlags;
+
+	private:
+		bool CreateImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);
+		bool CreateCubeImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);
+		bool AllocateMemory();
+		VulkanImage mVulkanImage;
+		VkImageAspectFlags mImageAspect;
+		
+		std::vector<std::vector<Ref<VulkanTextureView>>> mTextureViews;
 	};
 }

@@ -1,93 +1,71 @@
 #include "Graphics/API/Vulkan/VulkanFramebuffer.h"
 
-#include "Graphics/Context/GraphicsContext.h"
-
 // Submodule
 #include <spdlog/spdlog.h>
 
 // STD
 #include <set>
 
-namespace Mule
+namespace Mule::Vulkan
 {
-	VulkanFrameBuffer::VulkanFrameBuffer(WeakRef<GraphicsContext> context, const FramebufferDescription& desc)
+	VulkanFramebuffer::VulkanFramebuffer(const FramebufferDescription& desc)
 		:
-		mContext(context),
-		mDesc(desc)
+		mDescription(desc)
 	{
-		mClearValues.resize(mDesc.Attachments.size());
-		Resize(mDesc.Width, mDesc.Height);
+		mWidth = mDescription.Width;
+		mHeight = mDescription.Height;
+		mColorAttachmentCount = desc.ColorAttachments.size();
+		Resize(mWidth, mHeight);
 	}
 
-	VulkanFrameBuffer::~VulkanFrameBuffer()
+	VulkanFramebuffer::~VulkanFramebuffer()
 	{
-		Invalidate();
 	}
 
-	WeakRef<VulkanTexture2D> VulkanFrameBuffer::GetColorAttachment(int index)
+	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
+	{
+		mWidth = width;
+		mHeight = height;
+
+		// Release old framebuffer attachments
+		mColorAttachments.clear();
+		mDepthAttachment = nullptr;
+
+		for (auto attachmentDescription : mDescription.ColorAttachments)
+		{
+			Ref<VulkanTexture2D> attachment = MakeRef<VulkanTexture2D>(
+				"",
+				Buffer(),
+				mWidth,
+				mHeight,
+				attachmentDescription.Format, 
+				attachmentDescription.Flags | TextureFlags::RenderTarget
+			);
+
+			mColorAttachments.push_back(attachment);
+		}
+
+		if (mDescription.DepthAttachment.Format != TextureFormat::NONE)
+		{
+			mDepthAttachment = MakeRef<VulkanTexture2D>(
+				"",
+				Buffer(),
+				mWidth,
+				mHeight,
+				mDescription.DepthAttachment.Format,
+				mDescription.DepthAttachment.Flags | TextureFlags::RenderTarget | TextureFlags::DepthAttachment
+			);
+		}
+	}
+
+	Ref<Texture2D> VulkanFramebuffer::GetColorAttachment(uint32_t index)
 	{
 		return mColorAttachments[index];
 	}
 
-	WeakRef<VulkanTexture2D> VulkanFrameBuffer::GetDepthAttachment()
+	Ref<Texture2D> VulkanFramebuffer::GetDepthAttachment()
 	{
 		return mDepthAttachment;
-	}
-
-	void VulkanFrameBuffer::SetColorClearValue(int attachmentIndex, glm::vec4 clearColor)
-	{
-		mClearValues[attachmentIndex].color.float32[0] = clearColor.x;
-		mClearValues[attachmentIndex].color.float32[1] = clearColor.y;
-		mClearValues[attachmentIndex].color.float32[2] = clearColor.z;
-		mClearValues[attachmentIndex].color.float32[3] = clearColor.w;
-	}
-
-	void VulkanFrameBuffer::SetColorClearValue(int attachmentIndex, glm::ivec4 clearColor)
-	{
-		mClearValues[attachmentIndex].color.int32[0] = clearColor.x;
-		mClearValues[attachmentIndex].color.int32[1] = clearColor.y;
-		mClearValues[attachmentIndex].color.int32[2] = clearColor.z;
-		mClearValues[attachmentIndex].color.int32[3] = clearColor.w;
-	}
-
-	void VulkanFrameBuffer::SetColorClearValue(int attachmentIndex, glm::uvec4 clearColor)
-	{
-		mClearValues[attachmentIndex].color.uint32[0] = clearColor.x;
-		mClearValues[attachmentIndex].color.uint32[1] = clearColor.y;
-		mClearValues[attachmentIndex].color.uint32[2] = clearColor.z;
-		mClearValues[attachmentIndex].color.uint32[3] = clearColor.w;
-	}
-
-	void VulkanFrameBuffer::SetDepthClearColor(float clearValue)
-	{
-		mClearValues.back().depthStencil.depth = clearValue;
-	}
-
-	void VulkanFrameBuffer::Resize(uint32_t width, uint32_t height)
-	{
-		Invalidate();
-
-		mDesc.Width = width;
-		mDesc.Height = height;
-
-
-		for (auto attachmentDesc : mDesc.Attachments)
-		{
-			TextureFlags flags = (TextureFlags)((uint32_t)TextureFlags::RenderTarget | (uint32_t)attachmentDesc.Flags);
-			Ref<VulkanTexture2D> attachment = MakeRef<VulkanTexture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, attachmentDesc.Format, flags);
-			mColorAttachments.push_back(attachment);
-		}
-
-		if (mDesc.DepthAttachment.Format != TextureFormat::NONE)
-		{
-			mDepthAttachment = MakeRef<VulkanTexture2D>(mContext, nullptr, mDesc.Width, mDesc.Height, mDesc.LayerCount, mDesc.DepthAttachment.Format, (TextureFlags)(TextureFlags::RenderTarget | TextureFlags::DepthTexture));
-		}
-	}
-
-	void VulkanFrameBuffer::Invalidate()
-	{
-		mColorAttachments.clear();
-		mDepthAttachment = nullptr;
 	}
 
 }

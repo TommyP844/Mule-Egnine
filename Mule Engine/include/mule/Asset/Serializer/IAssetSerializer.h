@@ -24,7 +24,7 @@ namespace Mule
 	class IAssetSerializer : public IBaseSerializer
 	{
 	public:
-		IAssetSerializer(WeakRef<ServiceManager> serviceManager)
+		IAssetSerializer(Ref<ServiceManager> serviceManager)
 			:
 			mServiceManager(serviceManager)
 		{ }
@@ -35,6 +35,6 @@ namespace Mule
 		static constexpr AssetType sType = Type;
 
 	protected:
-		WeakRef<ServiceManager> mServiceManager;
+		Ref<ServiceManager> mServiceManager;
 	};
 }

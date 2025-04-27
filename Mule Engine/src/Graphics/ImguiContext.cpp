@@ -1,4 +1,4 @@
-#include "Graphics/Context/ImGuiContext.h"
+#include "Graphics/ImGuiContext.h"
 
 #include "Application/Events.h"
 
@@ -6,6 +6,11 @@
 #include "Graphics/imguiImpl/imgui_impl_vulkan.h"
 #include "Graphics/imguiImpl/imgui_impl_glfw.h"
 #include "ImGuizmo.h"
+
+// API
+#include "Graphics/API/Vulkan/VulkanContext.h"
+#include "Graphics/API/Vulkan/Execution/VulkanQueue.h"
+#include "Graphics/API/Vulkan/Execution/VulkanCommandBuffer.h"
 
 namespace Mule
 {
@@ -18,20 +23,21 @@ namespace Mule
 			abort();
 	}
 
-	ImGuiContext::ImGuiContext(WeakRef<GraphicsContext> graphicsContext)
+	ImGuiContext::ImGuiContext(Ref<Window> window)
 		:
-		mContext(graphicsContext),
-		mFrameIndex(0)
+		mFrameIndex(0),
+		mWindow(window)
 	{
-		mGraphicsQueue = graphicsContext->GetGraphicsQueue();
-		mFrameBuffer = graphicsContext->GetSwapchainFrameBuffer();
+		mAPI = GraphicsContext::Get().GetAPI();
+
+		mGraphicsQueue = GraphicsQueue::Create();
 
 		for (int i = 0; i < 2; i++)
 		{
-			mFrameData[i].CommandPool = mGraphicsQueue->CreateCommandPool();
+			mFrameData[i].CommandPool = CommandAllocator::Create();
 			mFrameData[i].CommandBuffer = mFrameData[i].CommandPool->CreateCommandBuffer();
-			mFrameData[i].Fence = graphicsContext->CreateFence();
-			mFrameData[i].Semaphore = graphicsContext->CreateSemaphore();
+			mFrameData[i].Fence = Fence::Create();
+			mFrameData[i].Semaphore = Semaphore::Create();
 		}
 
 		IMGUI_CHECKVERSION();
@@ -40,40 +46,19 @@ namespace Mule
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-		io.DisplaySize.x = graphicsContext->GetWindow()->GetWidth();
-		io.DisplaySize.y = graphicsContext->GetWindow()->GetHeight();
+		io.DisplaySize.x = mWindow->GetWidth();
+		io.DisplaySize.y = mWindow->GetHeight();
 
 		io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 
-		ImGui_ImplGlfw_InitForVulkan(graphicsContext->GetWindow()->GetGLFWWindow(), false);
-
-		ImGui_ImplVulkan_InitInfo initInfo{};
-		initInfo.Instance = graphicsContext->GetInstance();
-		initInfo.PhysicalDevice = graphicsContext->GetPhysicalDevice();
-		initInfo.Device = graphicsContext->GetDevice();
-		initInfo.DescriptorPool = graphicsContext->GetDescriptorPool();
-		initInfo.Queue = graphicsContext->GetGraphicsQueue()->GetHandle();
-		initInfo.QueueFamily = graphicsContext->GetGraphicsQueue()->GetQueueFamilyIndex();
-		initInfo.ImageCount = 2;
-		initInfo.MinImageCount = 2;
-		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		initInfo.PipelineCache = VK_NULL_HANDLE;
-		initInfo.Subpass = 0;
-		initInfo.UseDynamicRendering = true;
-		initInfo.Allocator = nullptr;
-		initInfo.CheckVkResultFn = check_vk_result;
-		initInfo.RenderPass = nullptr;
-
-		VkFormat colorFormats[1] = { graphicsContext->GetSurfaceFormat() };
-
-		initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
-		initInfo.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
-		initInfo.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
-		initInfo.PipelineRenderingCreateInfo.pNext = nullptr;
-		initInfo.PipelineRenderingCreateInfo.viewMask = 0;
-		ImGui_ImplVulkan_Init(&initInfo);
+		switch (mAPI)
+		{
+		case GraphicsAPI::Vulkan:
+			InitForVulkan();
+			break;
+		default:
+			assert(false && "Vulkan is the only API Mule currently supports");
+		}
 
 #pragma region Style
 
@@ -260,43 +245,55 @@ namespace Mule
 
 	ImGuiContext::~ImGuiContext()
 	{
-		vkDeviceWaitIdle(mContext->GetDevice());
-		for (int i = 0; i < 2; i++)
+		for (auto& frameData : mFrameData)
 		{
-			mFrameData[i].CommandBuffer = nullptr;
-			mFrameData[i].CommandPool = nullptr;
+			frameData.Fence->Wait();
 		}
-		ImGui_ImplVulkan_Shutdown();
+
+		ImGui_ImplVulkan_DestroyFontsTexture();
+
+		switch (mAPI)
+		{
+		case GraphicsAPI::Vulkan:
+			ImGui_ImplVulkan_Shutdown();
+			break;
+		}
 	}
 
 	void ImGuiContext::NewFrame()
 	{
 		// We put this here so when users grab the rendering finished semaphore they get the right one
 		mFrameIndex ^= 1;
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
+
+		switch (mAPI)
+		{
+		case GraphicsAPI::Vulkan:
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+			ImGuizmo::BeginFrame();
+			break;
+		}		
 	}
 
-	void ImGuiContext::EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores)
+	void ImGuiContext::EndFrame(const std::vector<Ref<Semaphore>>& waitSemaphores)
 	{
 		FrameData& frameData = mFrameData[mFrameIndex];
-		mFrameBuffer = mContext->GetSwapchainFrameBuffer();
 		
+		WeakRef<Vulkan::VulkanCommandBuffer> vulkanCommandBuffer = frameData.CommandBuffer;
+		VkCommandBuffer cmd = vulkanCommandBuffer->GetHandle();
+
 		frameData.Fence->Wait();
 		frameData.Fence->Reset();
-		frameData.CommandPool->Reset();
+		frameData.CommandBuffer->Reset();
 		frameData.CommandBuffer->Begin();
-		frameData.CommandBuffer->TransitionSwapchainFrameBufferForRendering(mFrameBuffer);
-		frameData.CommandBuffer->BeginRenderPass(mFrameBuffer);
+		frameData.CommandBuffer->BeginSwapchainRendering();
 
 		ImGui::Render();
 		ImDrawData* drawData = ImGui::GetDrawData();
-		ImGui_ImplVulkan_RenderDrawData(drawData, frameData.CommandBuffer->GetHandle());
+		ImGui_ImplVulkan_RenderDrawData(drawData, cmd);
 
-		frameData.CommandBuffer->EndRenderPass();
-		frameData.CommandBuffer->TransitionSwapchainFrameBufferForPresent(mFrameBuffer);
+		frameData.CommandBuffer->EndSwapchainRendering();
 		frameData.CommandBuffer->End();
 		mGraphicsQueue->Submit(frameData.CommandBuffer, waitSemaphores, { frameData.Semaphore }, frameData.Fence);
 
@@ -306,8 +303,8 @@ namespace Mule
 	void ImGuiContext::Resize(uint32_t width, uint32_t height)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize.x = mContext->GetWindow()->GetWidth();
-		io.DisplaySize.y = mContext->GetWindow()->GetHeight();
+		io.DisplaySize.x = mWindow->GetWidth();
+		io.DisplaySize.y = mWindow->GetHeight();
 	}
 
 	void ImGuiContext::OnEvent(Ref<Event> event)
@@ -347,5 +344,42 @@ namespace Mule
 		}
 		break;
 		}
+	}
+	
+	void ImGuiContext::InitForVulkan()
+	{
+		Vulkan::VulkanContext& context = Vulkan::VulkanContext::Get();
+		WeakRef<Window> window = context.GetWindow();
+		WeakRef<Vulkan::VulkanQueue> vulkanQueue = mGraphicsQueue;
+
+		ImGui_ImplGlfw_InitForVulkan(window->GetGLFWWindow(), false);
+
+		ImGui_ImplVulkan_InitInfo initInfo{};
+		initInfo.Instance = context.GetInstance();
+		initInfo.PhysicalDevice = context.GetPhysicalDevice();
+		initInfo.Device = context.GetDevice();
+		initInfo.DescriptorPool = context.GetDescriptorPool();
+		initInfo.Queue = vulkanQueue->GetHandle();
+		initInfo.QueueFamily = context.GetQueueFamilyIndex();
+		initInfo.ImageCount = 2;
+		initInfo.MinImageCount = 2;
+		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		initInfo.PipelineCache = VK_NULL_HANDLE;
+		initInfo.Subpass = 0;
+		initInfo.UseDynamicRendering = true;
+		initInfo.Allocator = nullptr;
+		initInfo.CheckVkResultFn = check_vk_result;
+		initInfo.RenderPass = nullptr;
+
+		VkFormat colorFormats[1] = { context.GetSurfaceFormat() };
+
+		initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats;
+		initInfo.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+		initInfo.PipelineRenderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+		initInfo.PipelineRenderingCreateInfo.pNext = nullptr;
+		initInfo.PipelineRenderingCreateInfo.viewMask = 0;
+		ImGui_ImplVulkan_Init(&initInfo);
 	}
 }

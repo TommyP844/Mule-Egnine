@@ -148,8 +148,8 @@ private:
     size_t* mRefCount;
 };
 
-template <class T, class... Args>
-constexpr auto MakeRef(Args&&... args) -> Ref<T>
+template <class T, typename... Args>
+Ref<T> MakeRef(Args&&... args)
 {
     return Ref<T>(new T(std::forward<Args>(args)...));
 }

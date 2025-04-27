@@ -15,7 +15,6 @@ void SceneRendererSettingsPanel::OnUIRender(float dt)
 	if (!mIsOpen) return;
 	if (ImGui::Begin(mName.c_str()))
 	{
-		auto sceneRenderer = mEngineContext->GetSceneRenderer();
 	}
 	ImGui::End();
 }

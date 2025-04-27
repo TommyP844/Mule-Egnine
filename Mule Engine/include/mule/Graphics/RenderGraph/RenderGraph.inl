@@ -3,54 +3,42 @@
 
 namespace Mule::RenderGraph
 {
-	template <typename T>
-	void RenderGraph::AddResource(uint32_t frameIndex, const std::string& name, Ref<T> resource)
+	template<typename T>
+	inline WeakRef<T> RenderGraph::CreatePass()
 	{
-		if (frameIndex >= mFrameCount)
+		if (!std::is_base_of<IRenderPass, T>())
+			assert("Type does not inherit from IRenderpass");
+
+		auto pass = MakeRef<T>(mServiceManager, this);
+		mPassesToCompile.push_back(pass);
+
+		return pass;
+	}
+
+	template<class T, typename ...Args>
+	inline ResourceHandle<T> RenderGraph::AddResource(Args && ...args)
+	{
+		ResourceHandle<T> handle = ResourceHandle<T>::Create();
+		InFlightResource<T> resource;
+		resource.Resources.resize(mFramesInFlight);
+		for (uint32_t i = 0; i < mFramesInFlight; i++)
 		{
-			SPDLOG_ERROR("FrameIndex out of range, valid values are 0 - {}", mFrameCount - 1);
-			return;
+			resource.Resources[i] = T::Create(std::forward<Args>(args)...);
 		}
 
-		auto& resources = mResources[frameIndex];
-		auto iter = resources.find(name);
-		
-		if (iter != resources.end())
-		{
-			SPDLOG_WARN("RenderGraph Resource already exists: {}", name);
-			return;
-		}
-		
-		auto res = MakeRef<Resource<T>>(resource);
-		resources[name] = res;
+		auto& map = GetResourceMap<T>();
+		map[handle] = resource;
+
+		return handle;
 	}
 
 	template<typename T>
-	inline WeakRef<T> RenderGraph::GetResource(uint32_t frameIndex, const std::string& name) const
+	inline Ref<T> Mule::RenderGraph::RenderGraph::GetResource(ResourceHandle<T> handle) const
 	{
-		if (frameIndex >= mFrameCount)
-		{
-			SPDLOG_ERROR("FrameIndex out of range, valid values are 0 - {}", mFrameCount - 1);
-			return nullptr;
-		}
+		auto& map = GetResourceMap<T>();
+		auto iter = map.find(handle);
+		assert(iter != map.end() && "Failed to find handle");
 
-		auto& resources = mResources[frameIndex];
-		auto iter = resources.find(name);
-
-		if (iter == resources.end())
-		{
-			SPDLOG_WARN("RenderGraph failed to fine resource: {}", name);
-			return nullptr;
-		}
-		Ref<Resource<T>> res = iter->second;
-		return res->Get();
-	}
-
-	template<typename T>
-	inline WeakRef<T> Mule::RenderGraph::RenderGraph::QueryResource(const std::string& name) const
-	{
-		const PerFrameData& perFrameData = mPerFrameData[mFrameIndex];
-		const PassContext& ctx = perFrameData.Ctx;
-		return ctx.Get<T>(name);
+		return iter->second.Resources[mFrameIndex];
 	}
 }

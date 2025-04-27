@@ -98,10 +98,12 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			modified |= DisplayTexture("Emissive", mMaterial->EmissiveMap);
 			modified |= DisplayTexture("Opacity", mMaterial->OpacityMap);
 
+			/*
 			if (modified)
 			{
 				mEngineContext->GetSceneRenderer()->UpdateMaterial(mMaterial);
 			}
+			*/
 		}
 	}
 	ImGui::End();

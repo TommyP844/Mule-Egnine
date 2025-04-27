@@ -3,7 +3,7 @@
 #include "Asset/Asset.h"
 
 #include "Ref.h"
-#include "Graphics/Texture/TextureCube.h"
+#include "Graphics/API/TextureCube.h"
 
 namespace Mule
 {

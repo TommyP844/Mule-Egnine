@@ -52,18 +52,29 @@ namespace Mule
 	class VertexLayout
 	{
 	public:
-		VertexLayout() {}
-		~VertexLayout() {}
+		VertexLayout()
+			:
+			mVertexSize(0)
+		{}
+
+		~VertexLayout() = default;
 
 		VertexLayout& AddAttribute(AttributeType type)
 		{
 			mTypes.push_back(type);
+			mVertexSize += GetAttributeSize(type);
 			return *this;
 		}
 
 		const std::vector<AttributeType>& GetAttributes() const { return mTypes; }
 
+		uint32_t GetVertexSize() const
+		{
+			return mVertexSize;
+		}
+
 	private:
 		std::vector<AttributeType> mTypes;
+		uint32_t mVertexSize;
 	};
 }

@@ -49,31 +49,33 @@ void TextureViewerPanel::OnUIRender(float dt)
 			ImGui::EndDisabled();
 
 			
-			if(mTexture->GetTextureType() == Mule::TextureType::Type_2D)
+			if(mTexture->GetType() == Mule::TextureType::TextureType_2D)
 			{
 				WeakRef<Mule::Texture2D> tex2d = mTexture;
 				id = tex2d->GetImGuiID();
 			}
 			
-			if (mTexture->GetLayerCount() > 1)
+			if (mTexture->GetArrayLayers() > 1)
 			{
 				ImGui::Text("Layer"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Layer", &mLayer, 0.02f, 0, mTexture->GetLayerCount() - 1);
+				ImGui::DragInt("##Layer", &mLayer, 0.02f, 0, mTexture->GetArrayLayers() - 1);
 			}
-			if (mTexture->GetMipCount() > 1)
+			if (mTexture->GetMipLevels() > 1)
 			{
 				ImGui::Text("Mip Level"); ImGui::SameLine(offset);
 				ImGui::PushItemWidth(width - offset);
-				ImGui::DragInt("##Mip", &mMipLevel, 0.02f, 0, mTexture->GetMipCount() - 1);
+				ImGui::DragInt("##Mip", &mMipLevel, 0.02f, 0, mTexture->GetMipLevels() - 1);
 			}
 
+			/*
 			id = mTexture->GetImGuiMipLayerID(mMipLevel, mLayer);
 
 			if (id != 0)
 			{
 				ImGui::Image(id, { 512, 512 });
 			}
+			*/
 		}
 	}
 	ImGui::End();
@@ -86,7 +88,7 @@ void TextureViewerPanel::OnEditorEvent(Ref<IEditorEvent> event)
 void TextureViewerPanel::SetTexture(Mule::AssetHandle textureHandle)
 {
 	auto assetManager = mEngineContext->GetAssetManager();
-	auto texture = assetManager->GetAsset<Mule::ITexture>(textureHandle);
+	auto texture = assetManager->GetAsset<Mule::Texture>(textureHandle);
 	mTexture = texture;
 	mMipLevel = 0;
 	mLayer = 0;

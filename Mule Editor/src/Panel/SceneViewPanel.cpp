@@ -118,6 +118,7 @@ void SceneViewPanel::OnUIRender(float dt)
 					ImGui::Text("Scale Snap");
 					ImGui::DragFloat("##ScaleSnap", &mScaleSnap[0], 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
+					/*
 					auto sceneRenderer = mEngineContext->GetSceneRenderer();
 					if (sceneRenderer)
 					{
@@ -128,6 +129,7 @@ void SceneViewPanel::OnUIRender(float dt)
 						ImGui::Checkbox("Show Selected Entity Colliders", &debugOptions.ShowSelectedEntityColliders);
 						ImGui::Checkbox("Show Selected Entity Lights", &debugOptions.ShowSelectedEntityLights);
 					}
+					*/
 				}
 				ImGui::End();
 			}
@@ -139,19 +141,16 @@ void SceneViewPanel::OnUIRender(float dt)
 		region = ImGui::GetContentRegionAvail();
 		ImTextureID texId = mBlackImage->GetImGuiID();
 		if (scene)
-		{
-			WeakRef<Mule::SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
-			
+		{			
 			if (region.x != mWidth || region.y != mHeight)
 			{
 				mWidth = region.x;
 				mHeight = region.y;
-				sceneRenderer->Resize(mWidth, mHeight);
 				scene->SetViewportDimension(mWidth, mHeight);
 				mEditorContext->GetEditorCamera().SetAspectRatio(mWidth / mHeight);
 			}
 
-			WeakRef<Mule::FrameBuffer> frameBuffer = sceneRenderer->GetFrameBuffer();
+			WeakRef<Mule::Framebuffer> frameBuffer = scene->GetRenderGraph()->GetCurrentFrameBuffer();
 			WeakRef<Mule::Texture2D> texture = frameBuffer->GetColorAttachment(0);
 			texId = texture->GetImGuiID();
 		}
@@ -404,6 +403,7 @@ void SceneViewPanel::HandlePicking(ImVec2 cursorPos)
 		uint32_t x = mousePos.x - cursorPos.x;
 		uint32_t y = mousePos.y - cursorPos.y;
 
+		/*
 		WeakRef<Mule::SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 		Mule::Guid guid = sceneRenderer->Pick(x, y);
 		if(guid != 0ull)
@@ -420,6 +420,7 @@ void SceneViewPanel::HandlePicking(ImVec2 cursorPos)
 					mEditorContext->SetSelectedEntity(entity);
 			}
 		}
+		*/
 	}	
 }
 

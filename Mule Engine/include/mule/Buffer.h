@@ -55,6 +55,11 @@ namespace Mule
 			return *this;
 		}
 
+		operator bool() const
+		{
+			return mData != nullptr && mSize != 0;
+		}
+
 		uint64_t GetSize() const { return mSize; }
 		void* GetData() const { return mData; }
 

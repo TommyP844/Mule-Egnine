@@ -11,15 +11,20 @@
 
 #include "Scripting/ScriptContext.h"
 
+// Renderers
+#include "Graphics/RenderGraph/RenderGraph.h"
+#include "Graphics/SceneRenderer.h"
+
 #include <entt/entt.hpp>
 
 #include <fstream>
 
 namespace Mule
 {
-	Scene::Scene()
+	Scene::Scene(Ref<ServiceManager> serviceManager)
 		: 
-		Asset()
+		Asset(),
+		mServiceManager(serviceManager)
 	{
 		mRegistry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentConstruct>(this);
 
@@ -88,7 +93,7 @@ namespace Mule
 
 	Ref<Scene> Scene::Copy()
 	{
-		auto scene = MakeRef<Scene>();
+		auto scene = MakeRef<Scene>(mServiceManager);
 		scene->SetHandle(Handle());
 
 		for (auto e : Iterate<RootComponent>())
@@ -129,6 +134,25 @@ namespace Mule
 	bool Scene::IsEntityValid(entt::entity id)
 	{
 		return mRegistry.valid(id);
+	}
+
+	void Scene::SetViewportDimension(float width, float height)
+	{ 
+		mViewportWidth = width; 
+		mViewportHeight = height; 
+		mRenderGraph->Resize(width, height);
+	}
+
+	void Scene::OnPrepare()
+	{
+		// TODO: load all required resources by scene
+
+		mRenderGraph = MakeRef<SceneRenderer>(mServiceManager);
+	}
+
+	void Scene::OnUnload()
+	{
+		mRenderGraph = nullptr;
 	}
 
 	void Scene::OnPlayStart()
@@ -248,6 +272,11 @@ namespace Mule
 				mPhysicsContext.SetPosition(metaComponent.Guid, transform.Translation);
 			}
 		}
+	}
+
+	void Scene::OnRender()
+	{
+		mRenderGraph->Execute(this);
 	}
 
 	Entity Scene::CopyEntityToScene(WeakRef<Scene> scene, Entity entity)

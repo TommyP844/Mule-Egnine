@@ -1,114 +1,115 @@
 #pragma once
 
-#include "PassContext.h"
-#include "RenderPassStats.h"
-
-#include "WeakRef.h"
 #include "Ref.h"
 
-#include "Graphics/Context/GraphicsContext.h"
-#include "Graphics/Execution/GraphicsQueue.h"
-#include "Graphics/Execution/CommandBuffer.h"
-#include "Graphics/Execution/CommandPool.h"
-#include "Graphics/Execution/Semaphore.h"
-#include "Graphics/Execution/Fence.h"
-#include "ECS/Scene.h"
-#include "Asset/AssetManager.h"
+#include "Services/ServiceManager.h"
 
-#include <string>
+#include "Graphics/API/GraphicsQueue.h"
+#include "Graphics/API/CommandAllocator.h"
+
+// Resources
+#include "Graphics/RenderGraph/ResourceHandle.h"
+#include "Graphics/API/Texture.h"
+#include "Graphics/API/UniformBuffer.h"
+#include "Graphics/API/Framebuffer.h"
+#include "Graphics/API/Semaphore.h"
+
 #include <vector>
-#include <functional>
+
+namespace Mule
+{
+	class Scene;
+}
 
 namespace Mule::RenderGraph
 {
-	class IResource;
+	class IRenderPass;
 
 	class RenderGraph
 	{
 	public:
-		RenderGraph() = default;
-		RenderGraph(WeakRef<GraphicsContext> context, WeakRef<AssetManager> assetManager);
-		~RenderGraph();
+		RenderGraph(Ref<ServiceManager> serviceManager);
+		virtual ~RenderGraph();
 
-		template<typename T>
-		void AddResource(uint32_t frameIndex, const std::string& name, Ref<T> resource);
+		// TODO: add factory system because almost all graph resources use a static Create() method for creation not constructors that MakeRef<T> takes
+		template<class T, typename... Args>
+		ResourceHandle<T> AddResource(Args&&... args);
 
-		template<typename T>
-		WeakRef<T> GetResource(uint32_t frameIndex, const std::string& name) const;
+		template<class T>
+		Ref<T> GetResource(ResourceHandle<T> handle) const;
 
-		const PassContext& GetPassContext() const;
+		void Execute(WeakRef<Scene> scene);
+		Ref<Semaphore> GetCurrentSemaphore();
 
-		WeakRef<FrameBuffer> GetCurrentFrameBuffer() const;
-		void SetCamera(const Camera& camera);
+		virtual Ref<Framebuffer> GetCurrentFrameBuffer() const = 0;
+		
 		void Resize(uint32_t width, uint32_t height);
-		void CreateFramebuffer(const FramebufferDescription& desc);
-		void SetFinalLayouts(std::vector<std::pair<uint32_t, ImageLayout>> layouts);
-		void AddPass(
-			const std::string& name, 
-			const std::vector<std::string>& dependecies, 
-			AssetHandle shaderHandle,
-			std::vector<std::pair<uint32_t, ImageLayout>> requiredLayouts,
-			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> func);
-		void Compile();
-		void Execute(WeakRef<Scene> scene, const std::vector<WeakRef<Semaphore>>& waitSemaphores);
-		void NextFrame();
+		
+	protected:
+		void Bake();
 
-		// Querys resource from the pass context used in the render passes
 		template<typename T>
-		WeakRef<T> QueryResource(const std::string& name) const;
+		WeakRef<T> CreatePass();
 
-		// Returns the semaphore from the last render pass
-		WeakRef<Semaphore> GetSemaphore() const;
-
-		bool IsValid() const { return mIsValid; }
-		uint32_t GetFrameCount() const { return mFrameCount; }
-		uint32_t GetFrameIndex() const { return mFrameIndex; }
-
-		void Wait();
-
-		std::vector<RenderPassStats> GetRenderPassStats() const;
+		void SetResizeCallback(std::function<void(uint32_t, uint32_t)> func);
 
 	private:
-		WeakRef<GraphicsContext> mGraphicsContext;
-		WeakRef<AssetManager> mAssetManager;
-		Ref<CommandPool> mCommandPool;
-		WeakRef<GraphicsQueue> mCommandQueue;
+		Ref<CommandAllocator> mCommandAllocator;
+		Ref<GraphicsQueue> mQueue;
+		Ref<ServiceManager> mServiceManager;
+		std::vector<Ref<IRenderPass>> mPassesToCompile;
+		uint32_t mFrameIndex;
+		uint32_t mFramesInFlight;
+		std::function<void(uint32_t, uint32_t)> mResizeCallback = nullptr;
 
-		struct RenderPassInfo
+		struct PassInFlight
 		{
-			AssetHandle ShaderHandle = AssetHandle::Null();
-			std::vector<std::string> Dependecies = {};
-			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> CallBack = nullptr;
-			std::vector<std::pair<uint32_t, ImageLayout>> RequiredLayouts = {};
+			Ref<CommandBuffer> Cmd							= nullptr;
+			Ref<Fence> Fence								= nullptr;
+			std::vector<Ref<Semaphore>> WaitSemaphores		= {};
+			std::vector<Ref<Semaphore>> SignalSemaphores	= {};
+			Ref<IRenderPass> Pass							= nullptr;
 		};
 
-		struct PerFrameData
+		std::vector<PassInFlight> mPasses; 
+
+		struct ResizeEvent
 		{
-			PassContext Ctx;
-			Ref<FrameBuffer> Framebuffer;
-			std::vector<std::pair<uint32_t, ImageLayout>> FinalLayouts = {};
-			Ref<CommandBuffer> LayoutTransitionCommandBuffer;
-			Ref<Fence> LayoutTransitionFence;
-			Ref<Semaphore> RenderingFinishedSemaphore;
+			bool Resize = false;
+			uint32_t Width = 0;
+			uint32_t Height = 0;
+		};
+		std::vector<ResizeEvent> mResizeEvents;
+
+		template<typename T>
+		struct InFlightResource
+		{
+			std::vector<Ref<T>> Resources;
 		};
 
-		struct PerPassData
-		{
-			std::function<void(WeakRef<CommandBuffer>, WeakRef<Scene>, WeakRef<GraphicsShader>, const PassContext&)> Callback;
-			std::vector<Ref<CommandBuffer>> CommandBuffers;
-			std::vector<Ref<Semaphore>> Semaphores;
-			std::vector<Ref<Fence>> Fences;
-			RenderPassStats Stats;
-			AssetHandle ShaderHandle;
-			std::vector<std::pair<uint32_t, ImageLayout>> RequiredLayouts = {};
-		};
+		template<typename T>
+		using ResourceMap = std::unordered_map<ResourceHandle<T>, InFlightResource<T>>;
 
-		std::vector<std::unordered_map<std::string, Ref<IResource>>> mResources;
-		std::unordered_map<std::string, RenderPassInfo> mPassesToCompile;
-		std::vector<PerPassData> mPassesToExecute;
-		std::vector<PerFrameData> mPerFrameData;
-		uint32_t mFrameCount, mFrameIndex;
-		bool mIsValid;
+		ResourceMap<Texture> mTextureResources;
+		ResourceMap<UniformBuffer> mUniformBufferResources;
+		ResourceMap<Framebuffer> mFramebufferResources;
+		ResourceMap<ShaderResourceGroup> mShaderResourceGroupResources;
+
+		template<typename T>
+		const ResourceMap<T>& GetResourceMap() const;
+		
+		template<typename T>
+		ResourceMap<T>& GetResourceMap();
+
+		template<> const ResourceMap<Texture>& GetResourceMap() const { return mTextureResources; }
+		template<> const ResourceMap<UniformBuffer>& GetResourceMap() const { return mUniformBufferResources; }
+		template<> const ResourceMap<Framebuffer>& GetResourceMap() const { return mFramebufferResources; }
+		template<> const ResourceMap<ShaderResourceGroup>& GetResourceMap() const { return mShaderResourceGroupResources; }
+
+		template<> ResourceMap<Texture>& GetResourceMap() { return mTextureResources; }
+		template<> ResourceMap<UniformBuffer>& GetResourceMap() { return mUniformBufferResources; }
+		template<> ResourceMap<Framebuffer>& GetResourceMap() { return mFramebufferResources; }
+		template<> ResourceMap<ShaderResourceGroup>& GetResourceMap() { return mShaderResourceGroupResources; }
 	};
 }
 

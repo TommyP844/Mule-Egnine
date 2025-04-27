@@ -22,7 +22,7 @@
 
 namespace Mule
 {
-	ModelSerializer::ModelSerializer(WeakRef<ServiceManager> serviceManager)
+	ModelSerializer::ModelSerializer(Ref<ServiceManager> serviceManager)
 		:
 		IAssetSerializer(serviceManager)
 	{
@@ -126,13 +126,13 @@ namespace Mule
 			verticePtr[i] = v;
 		}
 
-		IndexBufferType indexType;
+		IndexType indexType;
 		ScopedBuffer indices;
 		if (mesh->mNumFaces * 3 > UINT16_MAX)
 		{
 			indices.Allocate(sizeof(uint32_t) * mesh->mNumFaces * 3);
 			uint32_t* indexPtr = indices.As<uint32_t>();
-			indexType = IndexBufferType::BufferSize_32Bit;
+			indexType = IndexType::Size_32Bit;
 			for (int i = 0; i < mesh->mNumFaces; i++)
 			{
 				indexPtr[i * 3 + 0] = mesh->mFaces[i].mIndices[0];
@@ -143,7 +143,7 @@ namespace Mule
 		else
 		{
 			indices.Allocate(sizeof(uint16_t) * mesh->mNumFaces * 3);
-			indexType = IndexBufferType::BufferSize_16Bit;
+			indexType = IndexType::Size_16Bit;
 			uint16_t* indexPtr = indices.As<uint16_t>();
 			for (int i = 0; i < mesh->mNumFaces; i++)
 			{
@@ -155,22 +155,23 @@ namespace Mule
 
 		Ref<Material> material = LoadMaterial(info.Scene->mMaterials[mesh->mMaterialIndex], info);
 
-		MeshDescription meshDesc{};
-		meshDesc.Name = CreateAssetName(mesh->mName.C_Str(), info, AssetType::Mesh);;
-		meshDesc.Vertices = vertices;
-		meshDesc.VertexSize = sizeof(StaticVertex);
-		meshDesc.IndexBufferType = indexType;
-		meshDesc.Indices = indices;
-		meshDesc.DefaultMaterialHandle = material ? material->Handle() : AssetHandle::Null();
-
-		auto graphicsContext = mServiceManager->Get<GraphicsContext>();
 		auto assetManager = mServiceManager->Get<AssetManager>();
 
-		Ref<Mesh> muleMesh = graphicsContext->CreateMesh(meshDesc);
+		std::string meshName = CreateAssetName(mesh->mName.C_Str(), info, AssetType::Mesh);
+
+		Ref<VertexBuffer> vertexBuffer = VertexBuffer::Create(vertices, VertexLayout());
+		Ref<IndexBuffer> indexBuffer = IndexBuffer::Create(indices, indexType);
+
+		Ref<Mesh> muleMesh = Mesh::Create(
+			meshName,
+			vertexBuffer,
+			indexBuffer,
+			material ? material->Handle() : AssetHandle::Null()
+		);
 
 		if (muleMesh)
 		{
-			auto iter = info.Meshes.find(meshDesc.Name);
+			auto iter = info.Meshes.find(meshName);
 			if (iter != info.Meshes.end())
 			{
 				muleMesh->SetHandle(iter->second);
@@ -200,7 +201,6 @@ namespace Mule
 		WeakRef<Texture2D> emissiveMap = LoadTexture(material, { aiTextureType_EMISSIVE }, info);
 		Ref<Texture2D> metallicMap, roughnessMap;
 
-		auto graphicsContext = mServiceManager->Get<GraphicsContext>();
 		auto assetManager = mServiceManager->Get<AssetManager>();
 
 		// metallic / Roughness
@@ -215,8 +215,8 @@ namespace Mule
 				uint8_t* data = stbi_load(p.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
 				if (data != nullptr)
 				{
-					ScopedBuffer roughness(width * height * 4);
-					ScopedBuffer metallic(width * height * 4);
+					Buffer roughness(width * height * 4);
+					Buffer metallic(width * height * 4);
 
 					uint8_t* roughnessPtr = roughness.As<uint8_t>();
 					uint8_t* metallicPtr = metallic.As<uint8_t>();
@@ -237,7 +237,8 @@ namespace Mule
 						}
 					}
 
-					metallicMap = MakeRef<Texture2D>(graphicsContext, metallicPtr, width, height, TextureFormat::RGBA8U);
+					
+					metallicMap = Texture2D::Create("", roughness, width, height, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 					if (metallicMap)
 					{
 						assetManager->InsertAsset(metallicMap);
@@ -250,7 +251,7 @@ namespace Mule
 						}
 					}
 					
-					roughnessMap = MakeRef<Texture2D>(graphicsContext, roughnessPtr, width, height, TextureFormat::RGBA8U);
+					roughnessMap = Texture2D::Create("", metallic, width, height, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 					if (roughnessMap)
 					{
 						assetManager->InsertAsset(roughnessMap);
@@ -343,12 +344,16 @@ namespace Mule
 			void* data = stbi_load_from_memory(&texture->pcData[0].r, texture->mWidth, &width, &height, &channels, STBI_rgb_alpha);
 			if (data == nullptr)
 				return nullptr;
+
+			Buffer buffer(data, width * height * 4);
 			
-			tex = MakeRef<Texture2D>(graphicsContext, data, width, height, TextureFormat::RGBA8U, TextureFlags::GenerateMips);
+			tex = Texture2D::Create("", buffer, width, height, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 		}
 		else
 		{
-			tex = MakeRef<Texture2D>(graphicsContext, texture->pcData, texture->mWidth, texture->mHeight, TextureFormat::RGBA8U, TextureFlags::GenerateMips);
+			Buffer buffer(texture->pcData, texture->mWidth * texture->mHeight * 4);
+
+			tex = Texture2D::Create("", buffer, texture->mWidth, texture->mHeight, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 		}
 
 		assetManager->InsertAsset(tex);

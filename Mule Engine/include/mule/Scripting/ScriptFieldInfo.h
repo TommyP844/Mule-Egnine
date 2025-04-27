@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ECS/Entity.h"
 #include "ScriptFieldType.h"
 #include <spdlog/spdlog.h>
 #include <any>

@@ -2,7 +2,7 @@
 #include "Application/Application.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
-#include "Graphics/Context/GraphicsContext.h"
+#include "Graphics/API/GraphicsContext.h"
 
 #include "imgui.h"
 
@@ -30,17 +30,7 @@ namespace Mule
 
 		EngineContextDescription engineDescription{};
 		engineDescription.WindowName = "Mule";
-		engineDescription.GraphicsDescription.AppName = "Mule Editor";
-		engineDescription.GraphicsDescription.AppVersion = 1;
-		engineDescription.GraphicsDescription.EngineName = "Mule Engine";
-		engineDescription.GraphicsDescription.EngineVersion = 1;
 		engineDescription.ProjectPath = "C:/Development/Mule Projects/Test Project";
-		// engineDescription.GraphicsDescription.Window = mWindow; -- Will be set by engine context
-#ifdef _DEBUG
-		engineDescription.GraphicsDescription.EnableDebug = true;
-#else
-		graphicsContextDesc.EnableDebug = false;
-#endif
 
 		mEngineContext = MakeRef<EngineContext>(engineDescription);
 	}
@@ -56,8 +46,6 @@ namespace Mule
 	{
 		WeakRef<Window> window = mEngineContext->GetWindow();
 		WeakRef<ImGuiContext> imguiContext = mEngineContext->GetImGuiContext();
-		WeakRef<GraphicsContext> graphicsContext = mEngineContext->GetGraphicsContext();
-		WeakRef<SceneRenderer> sceneRenderer = mEngineContext->GetSceneRenderer();
 
 		float dt = 1.f;
 
@@ -77,22 +65,24 @@ namespace Mule
 			
 			OnUpdate(dt);
 			
-			if (graphicsContext->BeginFrame())
+			if (GraphicsContext::Get().NewFrame())
 			{
 				OnRender(dt);
 
 				WeakRef<Scene> scene = mEngineContext->GetScene();
-				std::vector<WeakRef<Semaphore>> waitSemaphores;
+				std::vector<Ref<Semaphore>> waitSemaphores;
 				if (scene)
 				{
-					waitSemaphores.push_back(sceneRenderer->GetSemaphore());
+					scene->OnRender();
+					Ref<Semaphore> semaphore = scene->GetRenderGraph()->GetCurrentSemaphore();
+					waitSemaphores.push_back(semaphore);
 				}
 
 				imguiContext->NewFrame();
 				OnUIRender(dt);
 				imguiContext->EndFrame({ waitSemaphores });
 
-				graphicsContext->EndFrame({ imguiContext->GetRenderSemaphore() });
+				GraphicsContext::Get().EndFrame({ imguiContext->GetRenderSemaphore() });
 			}
 
 			auto end = std::chrono::high_resolution_clock::now();
@@ -100,6 +90,10 @@ namespace Mule
 			dt = diff.count() * 1e-9f;
 			mRunning = window->WindowOpen();
 		}
+
+		while (!mLayerStack.empty()) PopLayer();
+
+		mEngineContext = nullptr;
 	}
 
 	void Application::PopLayer()
@@ -114,7 +108,7 @@ namespace Mule
 		case EventType::WindowResizeEvent:
 		{
 			Ref<WindowResizeEvent> resizeEvent = event;
-			mEngineContext->GetGraphicsContext()->ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
+			GraphicsContext::Get().ResizeSwapchain(resizeEvent->Width, resizeEvent->Height);
 			if (resizeEvent->Width == 0 || resizeEvent->Height == 0)
 				mMinimized = true;
 			else

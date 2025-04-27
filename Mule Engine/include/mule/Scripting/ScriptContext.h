@@ -16,6 +16,8 @@
 #include "Engine Context/EngineContext.h"
 #include "Scripting/ScriptFieldInfo.h"
 
+#include "ECS/Guid.h"
+
 namespace fs = std::filesystem;
 
 namespace Mule

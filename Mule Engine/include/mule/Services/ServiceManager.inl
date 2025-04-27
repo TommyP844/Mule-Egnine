@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include "ServiceManager.h"
 
 namespace Mule
 {
@@ -39,5 +40,19 @@ namespace Mule
 		WeakRef<Service<T>> service = iter->second;
 
 		return service->Get();
+	}
+	template<class Service>
+	inline void Mule::ServiceManager::Unload()
+	{
+		const std::type_index typeIndex = std::type_index(typeid(Service));
+
+		auto iter = mServices.find(typeIndex);
+		if (iter == mServices.end())
+		{
+			SPDLOG_INFO("Service not found: {}", typeid(Service).name());
+			return;
+		}
+
+		mServices.erase(typeIndex);
 	}
 }

@@ -13,8 +13,11 @@ namespace Mule::Vulkan
 			Layout(VK_IMAGE_LAYOUT_UNDEFINED)
 		{ }
 
-		VkImage Image;
-		VkImageView ImageView;
-		VkImageLayout Layout;
+		VkImage Image = VK_NULL_HANDLE;
+		VkDeviceMemory Memory = VK_NULL_HANDLE;
+
+		
+		VkImageView ImageView = VK_NULL_HANDLE;
+		VkImageLayout Layout = VK_IMAGE_LAYOUT_UNDEFINED;
 	};
 }

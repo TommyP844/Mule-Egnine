@@ -23,7 +23,7 @@ void PerformancePanel::OnUIRender(float dt)
 		ImGui::Text("Frame Time: %.3fms", ms);
 		ImGui::Text("FPS: %.f", 1.f / dt);
 
-		auto sceneRenderer = mEngineContext->GetSceneRenderer();
+		/*
 		auto stats = sceneRenderer->GetRenderStats();
 
 		ImGui::Text("Data Prep Time: %.3fms", stats.CPUPrepareTime * 1e3f);
@@ -39,6 +39,7 @@ void PerformancePanel::OnUIRender(float dt)
 				ImGui::TreePop();
 			}
 		}
+		*/
 	}
 	ImGui::End();
 }

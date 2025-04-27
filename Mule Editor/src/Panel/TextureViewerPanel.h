@@ -19,6 +19,6 @@ public:
 	void SetTexture(Mule::AssetHandle textureHandle);
 
 private:
-	WeakRef<Mule::ITexture> mTexture;
+	WeakRef<Mule::Texture> mTexture;
 	int mMipLevel, mLayer;
 };

@@ -1,8 +1,12 @@
 #pragma once
 
-#include "GraphicsContext.h"
-#include "Graphics/Execution/CommandPool.h"
-#include "Graphics/Execution/CommandBuffer.h"
+#include "Application/Window.h"
+
+#include "Graphics/API/CommandAllocator.h"
+#include "Graphics/API/CommandBuffer.h"
+#include "Graphics/API/GraphicsQueue.h"
+#include "Graphics/API/Fence.h"
+#include "Graphics/API/Semaphore.h"
 
 #include "Graphics/imguiImpl/imgui_impl_vulkan.h"
 
@@ -15,11 +19,11 @@ namespace Mule
 	class ImGuiContext
 	{
 	public:
-		ImGuiContext(WeakRef<GraphicsContext> graphicsContext);
+		ImGuiContext(Ref<Window> window);
 		~ImGuiContext();
 
 		void NewFrame();
-		void EndFrame(const std::vector<WeakRef<Semaphore>>& waitSemaphores = {});
+		void EndFrame(const std::vector<Ref<Semaphore>>& waitSemaphores = {});
 		void Resize(uint32_t width, uint32_t height);
 
 		void OnEvent(Ref<Event> event);
@@ -27,13 +31,15 @@ namespace Mule
 		Ref<Semaphore> GetRenderSemaphore() const { return mFrameData[mFrameIndex].Semaphore; }
 
 	private:
-		WeakRef<GraphicsContext> mContext;
-		WeakRef<GraphicsQueue> mGraphicsQueue;
-		Ref<SwapchainFrameBuffer> mFrameBuffer;
+		GraphicsAPI mAPI;
+		void InitForVulkan();
+
+		Ref<Window> mWindow;
+		Ref<GraphicsQueue> mGraphicsQueue;
 
 		struct FrameData
 		{
-			Ref<CommandPool> CommandPool;
+			Ref<CommandAllocator> CommandPool;
 			Ref<CommandBuffer> CommandBuffer;
 			Ref<Semaphore> Semaphore;
 			Ref<Fence> Fence;
