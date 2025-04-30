@@ -16,11 +16,6 @@ namespace Mule::Vulkan
 	public:
 		VulkanVertexBuffer(const Buffer& buffer, const VertexLayout& layout);
 		~VulkanVertexBuffer();
-
-		VkBuffer GetBuffer() const { return mBuffer; }
-
 	private:
-		VkBuffer mBuffer;
-		VkDeviceMemory mMemory;
 	};
 }

@@ -52,15 +52,31 @@ namespace Mule::RenderGraph
 		WeakRef<T> CreatePass();
 
 		void SetResizeCallback(std::function<void(uint32_t, uint32_t)> func);
+		void SetPreRenderCallback(std::function<void(Ref<CommandBuffer>)> func);
+		void SetPostRenderCallback(std::function<void(Ref<CommandBuffer>)> func);
 
 	private:
+		bool mIsBaked = false;
 		Ref<CommandAllocator> mCommandAllocator;
 		Ref<GraphicsQueue> mQueue;
 		Ref<ServiceManager> mServiceManager;
 		std::vector<Ref<IRenderPass>> mPassesToCompile;
 		uint32_t mFrameIndex;
 		uint32_t mFramesInFlight;
+
 		std::function<void(uint32_t, uint32_t)> mResizeCallback = nullptr;
+
+		std::function<void(Ref<CommandBuffer>)> mPreRenderCallback = nullptr;
+		Ref<Fence> mPreRenderFence = nullptr;
+		std::vector<Ref<Semaphore>> mPreRenderWaitSemaphores = {};
+		std::vector<Ref<Semaphore>> mPreRenderSignalSemaphores = {};
+		Ref<CommandBuffer> mPreRenderCmd = nullptr;
+
+		std::function<void(Ref<CommandBuffer>)> mPostRenderCallback = nullptr;
+		Ref<Fence> mPostRenderFence = nullptr;
+		std::vector<Ref<Semaphore>> mPostRenderWaitSemaphores = {};
+		std::vector<Ref<Semaphore>> mPostRenderSignalSemaphores = {};
+		Ref<CommandBuffer> mPostRenderCmd = nullptr;
 
 		struct PassInFlight
 		{

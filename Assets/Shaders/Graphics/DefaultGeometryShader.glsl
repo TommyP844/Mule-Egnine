@@ -119,7 +119,7 @@ layout(binding = 3) uniform samplerCube irradianceMap;
 layout(binding = 4) uniform samplerCube prefilterMap;
 layout(binding = 5) uniform sampler2D brdfLUT;
 
-layout(set = 1, binding = 0) uniform sampler2D textures[];
+layout(set = 1, binding = 0) uniform sampler2D textures[4096];
 
 layout(push_constant) uniform PushConstantBlock {
     layout(offset = 64) uint MaterialIndex;

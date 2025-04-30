@@ -31,14 +31,19 @@ namespace Mule::Vulkan
 			mMipLevels = 1;
 			mHasMips = false;
 		}
+
+		mIsDepthTexture = false;
 				
 		VkFormat textureFormat = GetVulkanFormat(format);
 		VkImageAspectFlags aspectFlags = ((flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 		VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-		if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget 
+		if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget
 			&& (flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
+		{
+			mIsDepthTexture = true;
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
 		else if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget) 
 			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		if ((flags & TextureFlags::StorageImage) == TextureFlags::StorageImage)	usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;

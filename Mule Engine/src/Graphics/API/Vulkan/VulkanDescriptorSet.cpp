@@ -3,6 +3,7 @@
 #include "Graphics/API/Vulkan/VulkanContext.h"
 #include "Graphics/API/Vulkan/VulkanDescriptorSetLayout.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanUniformBuffer.h"
+#include "Graphics/API/Vulkan/Texture/VulkanTextureCube.h"
 
 #include <spdlog/spdlog.h>
 
@@ -51,7 +52,7 @@ namespace Mule::Vulkan
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
-		WeakRef<IVulkanTexture> vkImage = texture;
+		WeakRef<VulkanTextureCube> vkImage = texture;
 
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.sampler = context.GetLinearSampler();

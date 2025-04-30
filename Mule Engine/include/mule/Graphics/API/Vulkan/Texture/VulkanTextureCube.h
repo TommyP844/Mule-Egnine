@@ -5,7 +5,7 @@
 
 namespace Mule::Vulkan
 {
-	class VulkanTextureCube : public TextureCube, IVulkanTexture
+	class VulkanTextureCube : public TextureCube, public IVulkanTexture
 	{
 	public:
 		VulkanTextureCube(const std::string& name, const Buffer& buffer, uint32_t width, TextureFormat format, TextureFlags flags);

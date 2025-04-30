@@ -103,4 +103,21 @@ namespace Mule::Vulkan
 		case Mule::ShaderResourceType::StorageImage:	return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		}
 	}
+
+	constexpr VkImageLayout GetImageLayout(ImageLayout layout)
+	{
+		switch (layout)
+		{
+		case Mule::ImageLayout::Undefined: return VK_IMAGE_LAYOUT_UNDEFINED;
+		case Mule::ImageLayout::TransferSrc: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		case Mule::ImageLayout::TransferDst: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		case Mule::ImageLayout::ColorAttachment: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		case Mule::ImageLayout::DepthAttachment: return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		case Mule::ImageLayout::ShaderReadOnly: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		case Mule::ImageLayout::General: return VK_IMAGE_LAYOUT_GENERAL;
+		default:
+			assert(false && "Invalid vulkan image layout");
+			break;
+		}
+	}
 }

@@ -23,12 +23,15 @@ namespace Mule
 		// Inputs
 		void SetCameraBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle);
 		void SetFramebufferHandle(RenderGraph::ResourceHandle<Framebuffer> framebufferHandle);
+		void SetBindlessTextureResourceHandle(RenderGraph::ResourceHandle<ShaderResourceGroup> resourceHandle);
+
 	private:
 		Ref<ServiceManager> mServiceManager;
 
 		// Inputs
 		RenderGraph::ResourceHandle<UniformBuffer> mCameraBufferHandle;
 		RenderGraph::ResourceHandle<Framebuffer> mFramebufferHandle;
+		RenderGraph::ResourceHandle<ShaderResourceGroup> mBindlessTextureResourceHandle;
 
 		// Pass Generated
 		RenderGraph::ResourceHandle<ShaderResourceGroup> mShaderResourceGroupHandle;

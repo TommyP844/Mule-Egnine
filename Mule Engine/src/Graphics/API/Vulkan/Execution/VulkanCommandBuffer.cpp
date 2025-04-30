@@ -19,6 +19,8 @@
 
 #include <Volk/volk.h>
 
+#include <vector>
+
 namespace Mule::Vulkan
 {
 	VulkanCommandBuffer::VulkanCommandBuffer(VkCommandPool commandPool)
@@ -265,7 +267,7 @@ namespace Mule::Vulkan
 		viewport.x = 0;
 		viewport.y = framebuffer->GetHeight();
 		viewport.width = framebuffer->GetWidth();
-		viewport.height = -framebuffer->GetHeight();
+		viewport.height = -((float)framebuffer->GetHeight());
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
 
@@ -341,12 +343,13 @@ namespace Mule::Vulkan
 		vkCmdEndRenderingKHR(mCommandBuffer);
 	}
 
+	// TODO: this only supports 2d textures, no arrays, cubes, or 3d images
 	void VulkanCommandBuffer::TranistionImageLayout(WeakRef<Texture> texture, ImageLayout newLayout)
 	{
-		WeakRef<IVulkanTexture> vulkanTexture = texture;
+		WeakRef<VulkanTexture2D> vulkanTexture = texture;
 
 		VkImageLayout oldLayout = vulkanTexture->GetVulkanImage().Layout;
-		VkImageLayout newVkLayout = (VkImageLayout)newLayout;
+		VkImageLayout newVkLayout = GetImageLayout(newLayout);
 
 		if (oldLayout == newVkLayout)
 			return;
@@ -532,6 +535,16 @@ namespace Mule::Vulkan
 
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // This is a color image
 		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newVkLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                  // No need to wait on anything
+			dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;     // Prepare for color attachment usage
+
+			barrier.srcAccessMask = 0;                                     // No need to wait for previous accesses
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // We will write as a color attachment
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // This is a color image
+			}
 		else
 		{
 			SPDLOG_ERROR("Invalid layout transition");
@@ -546,6 +559,8 @@ namespace Mule::Vulkan
 			0, nullptr,
 			1, &barrier
 		);
+
+		vulkanTexture->SetImageLayout(newVkLayout);
 	}
 
 	void VulkanCommandBuffer::CopyTexture(WeakRef<Texture> src, WeakRef<Texture> dst, const TextureCopyInfo& copyInfo) const
@@ -635,7 +650,7 @@ namespace Mule::Vulkan
 			size = range.Size;
 			SPDLOG_WARN("Attempting to push a constant that is to large for shader, stage: {}", (uint32_t)stage);
 		}
-		vkCmdPushConstants(mCommandBuffer, vulkanPipeline->GetPipelineLayout(), (VkShaderStageFlags)stage, range.Offset, size, data);
+		vkCmdPushConstants(mCommandBuffer, vulkanPipeline->GetPipelineLayout(), GetShaderStage(stage), range.Offset, size, data);
 	}
 
 	void VulkanCommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& descriptorSets)
@@ -655,6 +670,26 @@ namespace Mule::Vulkan
 	void VulkanCommandBuffer::Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ)
 	{
 		vkCmdDispatch(mCommandBuffer, workGroupsX, workGroupsY, workGroupsZ);
+	}
+
+	void VulkanCommandBuffer::BlendEnable(uint32_t attachment, bool blendEnable)
+	{
+		VkBool32 blendEnable32 = blendEnable;
+		vkCmdSetColorBlendEnableEXT(mCommandBuffer, attachment, 1, &blendEnable32);
+
+		VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		vkCmdSetColorWriteMaskEXT(mCommandBuffer, attachment, 1, &colorWriteMask);
+
+		VkColorBlendEquationEXT blendEquation = {};
+		blendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blendEquation.colorBlendOp = VK_BLEND_OP_ADD;
+
+		blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendEquation.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		vkCmdSetColorBlendEquationEXT(mCommandBuffer, attachment, 1, &blendEquation);
 	}
 
 	void VulkanCommandBuffer::BindMesh(WeakRef<Mesh> mesh)

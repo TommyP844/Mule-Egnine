@@ -55,6 +55,11 @@ namespace Mule
 		mFramebufferHandle = framebufferHandle;
 	}
 
+	void SolidGeometryPass::SetBindlessTextureResourceHandle(RenderGraph::ResourceHandle<ShaderResourceGroup> resourceHandle)
+	{
+		mBindlessTextureResourceHandle = resourceHandle;
+	}
+
 	void SolidGeometryPass::Render(Ref<CommandBuffer> cmd, WeakRef<Scene> scene)
 	{
 		auto assetManager = mServiceManager->Get<AssetManager>();
@@ -63,7 +68,9 @@ namespace Mule
 		auto shader = shaderFactory->GetOrCreateGraphicsPipeline("Geometry");
 
 		auto resourceGroup = mGraph->GetResource(mShaderResourceGroupHandle);
+		auto bindlessResourceGroup = mGraph->GetResource(mBindlessTextureResourceHandle);
 		auto frameBuffer = mGraph->GetResource(mFramebufferHandle);
+		
 		
 		// Resource Prep
 		{
@@ -103,8 +110,10 @@ namespace Mule
 			}
 		}
 
+		cmd->TranistionImageLayout(frameBuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
 		cmd->BeginRendering(frameBuffer, shader);
-		cmd->BindPipeline(shader, { resourceGroup });
+		cmd->BindPipeline(shader, { resourceGroup, bindlessResourceGroup });
+		cmd->BlendEnable(0, false);
 
 		for (auto entity : scene->Iterate<MeshComponent>())
 		{
@@ -113,11 +122,20 @@ namespace Mule
 			if (!meshComponent.Visible)
 				continue;
 
+			glm::mat4 transform = entity.GetTransform();
+
 			auto mesh = assetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
 			auto material = assetManager->GetAsset<Material>(meshComponent.MaterialHandle);
 
-			//TODO: set push constants
+			uint32_t constants[4] = {
+				0,
+				0,
+				0,
+				0
+			};
 
+			cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(transform));
+			cmd->SetPushConstants(shader, ShaderStage::Fragment, &constants, sizeof(uint32_t) * 4);
 			cmd->BindAndDrawMesh(mesh, 1);
 		}
 

@@ -47,12 +47,14 @@ namespace Mule::Vulkan
             vkFence = vulkanFence->GetHandle();
         }
 
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
         VkSubmitInfo info{
             .sType                  = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                  = nullptr,
             .waitSemaphoreCount     = static_cast<uint32_t>(waitVkSemaphores.size()),
             .pWaitSemaphores        = waitVkSemaphores.data(),
-            .pWaitDstStageMask      = nullptr,
+            .pWaitDstStageMask      = &waitStage,
             .commandBufferCount     = 1u,
             .pCommandBuffers        = &cmd,
             .signalSemaphoreCount   = static_cast<uint32_t>(signalVkSemaphores.size()),

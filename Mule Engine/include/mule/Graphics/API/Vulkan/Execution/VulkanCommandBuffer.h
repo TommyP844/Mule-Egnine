@@ -41,6 +41,7 @@ namespace Mule::Vulkan
 		// void SetPushConstants(WeakRef<VulkanComputeShader> shader, void* data, uint32_t size) override;
 		// void BindComputeDescriptorSet(WeakRef<VulkanComputeShader> shader, WeakRef<VulkanDescriptorSet> descriptorSet) override;
 		// void BindComputePipeline(WeakRef<VulkanComputeShader> shader) override;
+		void BlendEnable(uint32_t attachment, bool blendEnable) override;
 
 		// Mesh
 		void BindMesh(WeakRef<Mesh> mesh) override;

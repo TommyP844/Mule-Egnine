@@ -114,15 +114,57 @@ namespace Mule::RenderGraph
 			}
 		}
 		mFrameIndex = 0;
+
+		mIsBaked = true;
 	}
 
 	void RenderGraph::SetResizeCallback(std::function<void(uint32_t, uint32_t)> func)
 	{
+		assert(!mIsBaked && "RenderGraph is already baked, cannot set resize callback");
+
 		mResizeCallback = func;
+	}
+
+	void RenderGraph::SetPreRenderCallback(std::function<void(Ref<CommandBuffer>)> func)
+	{
+		assert(!mIsBaked && "RenderGraph is already baked, cannot set pre render callback");
+
+		mPreRenderCallback = func;
+		mPreRenderFence = Fence::Create();
+		mPreRenderCmd = mCommandAllocator->CreateCommandBuffer();
+	}
+
+	void RenderGraph::SetPostRenderCallback(std::function<void(Ref<CommandBuffer>)> func)
+	{
+		assert(!mIsBaked && "RenderGraph is already baked, cannot set post render callback");
+
+		mPostRenderCallback = func;
+		mPostRenderFence = Fence::Create();
+		mPostRenderCmd = mCommandAllocator->CreateCommandBuffer();
 	}
 
 	void RenderGraph::Execute(WeakRef<Scene> scene)
 	{
+		if (mResizeEvents[mFrameIndex].Resize && mResizeCallback)
+		{
+			for (auto& pass : mPasses)
+				pass.Fence->Wait();
+
+			mResizeCallback(mResizeEvents[mFrameIndex].Width, mResizeEvents[mFrameIndex].Height);
+		}
+
+		if (mPreRenderCallback)
+		{
+			mPreRenderFence->Wait();
+			mPreRenderFence->Reset();
+
+			mPreRenderCmd->Reset();
+			mPreRenderCmd->Begin();
+			mPreRenderCallback(mPreRenderCmd);
+			mPreRenderCmd->End();
+			mQueue->Submit(mPreRenderCmd, mPreRenderWaitSemaphores, mPreRenderSignalSemaphores, mPreRenderFence);
+		}
+
 		for (auto pass : mPasses)
 		{
 			pass.Fence->Wait();
@@ -137,11 +179,25 @@ namespace Mule::RenderGraph
 			pass.Cmd->Reset();
 			pass.Cmd->Begin();
 
+			//TODO: insert memory barriers
+
 			pass.Pass->Render(pass.Cmd, scene);
 
 			pass.Cmd->End();
 
 			mQueue->Submit(pass.Cmd, pass.WaitSemaphores, pass.SignalSemaphores, pass.Fence);
+		}
+
+		if (mPostRenderCallback)
+		{
+			mPostRenderFence->Wait();
+			mPostRenderFence->Reset();
+
+			mPostRenderCmd->Reset();
+			mPostRenderCmd->Begin();
+			mPostRenderCallback(mPostRenderCmd);
+			mPostRenderCmd->End();
+			mQueue->Submit(mPostRenderCmd, mPostRenderWaitSemaphores, mPostRenderSignalSemaphores, mPostRenderFence);
 		}
 
 		if (mResizeEvents[mFrameIndex].Resize)

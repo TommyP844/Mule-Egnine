@@ -56,6 +56,7 @@ namespace Mule
 		//virtual void SetPushConstants(WeakRef<VulkanComputeShader> shader, void* data, uint32_t size);
 		//virtual void BindComputeDescriptorSet(WeakRef<VulkanComputeShader> shader, WeakRef<VulkanDescriptorSet> descriptorSet);
 		//virtual void BindComputePipeline(WeakRef<VulkanComputeShader> shader);
+		virtual void BlendEnable(uint32_t attachment, bool blendEnable) = 0;
 
 		// Mesh
 		virtual void BindMesh(WeakRef<Mesh> mesh) = 0;

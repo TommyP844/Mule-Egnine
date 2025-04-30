@@ -28,5 +28,12 @@ namespace Mule
 		Ref<ServiceManager> mServiceManager;
 
 		Mule::RenderGraph::ResourceHandle<Framebuffer> mMainFramebufferHandle;
+		Mule::RenderGraph::ResourceHandle<ShaderResourceGroup> mBindlessTextureShaderResourceHandle;
+
+		Ref<ShaderResourceBlueprint> mBindlessShaderResourceBlueprint;
+
+		void PreRenderCallback(Ref<CommandBuffer> commandBuffer);
+		void PostRenderCallback(Ref<CommandBuffer> commandBuffer);
+		void ResizeCallback(uint32_t width, uint32_t height);
 	};
 }

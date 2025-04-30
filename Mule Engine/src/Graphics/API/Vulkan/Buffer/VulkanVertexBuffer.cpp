@@ -8,8 +8,6 @@ namespace Mule::Vulkan
 {
 	VulkanVertexBuffer::VulkanVertexBuffer(const Buffer& buffer, const VertexLayout& layout)
 		:
-		mBuffer(VK_NULL_HANDLE),
-		mMemory(VK_NULL_HANDLE),
 		VertexBuffer(buffer.GetSize(), layout),
 		IVulkanBuffer(
 			buffer.GetSize(),
@@ -22,7 +20,7 @@ namespace Mule::Vulkan
 		VulkanStagingBuffer stagingBuffer(buffer);
 
 		auto cmd = context.BeginSingleTimeCommandBuffer();
-		VulkanContext::Get().CopyBuffer(cmd, &stagingBuffer, this);
+ 		VulkanContext::Get().CopyBuffer(cmd, &stagingBuffer, this);
 		context.EndSingleTimeCommandBuffer(cmd);
 	}
 
