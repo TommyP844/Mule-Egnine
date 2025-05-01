@@ -1,17 +1,13 @@
 #include "Asset/Serializer/EnvironmentMapSerializer.h"
 
-#include "Graphics/API/CommandBuffer.h"
-#include "Graphics/API/CommandAllocator.h"
-#include "Graphics/API/GraphicsQueue.h"
-#include "Graphics/API/Texture2D.h"
-#include "Graphics/API/ShaderResourceBlueprint.h"
-#include "Graphics/API/ShaderResourceGroup.h"
-#include "Graphics/API/Image.h"
-
-#include <stb/stb_image.h>
-
 // STD
 #include <fstream>
+#include <yaml-cpp/yaml.h>
+
+#include "FileIO.h"
+
+// TODO: Move this file to a new folder under mule engine
+#include "Asset/Serializer/Convert/YamlConvert.h"
 
 namespace Mule
 {
@@ -19,174 +15,175 @@ namespace Mule
         :
         IAssetSerializer(serviceManager)
     {
-        auto assetManager = mServiceManager->Get<AssetManager>();
-
-        // Cube map descriptor
-        {
-            mCubeMapDescriptorSetLayout = ShaderResourceBlueprint::Create({
-                ShaderResourceDescription(0, ShaderResourceType::Sampler, ShaderStage::Compute, 1),
-                ShaderResourceDescription(1, ShaderResourceType::StorageImage, ShaderStage::Compute, 1)
-                });
-
-            mCubeMapDescriptorSet = ShaderResourceGroup::Create({ mCubeMapDescriptorSetLayout });
-        }
-
-        // Cube map compute
-        {
-            mShaderLoadFuture = std::async(std::launch::async, [&]() {
-                //mCubeMapCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/CubeMapCompute.glsl");
-                //mDiffuseIBLCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/DiffuseIBLCompute.glsl");
-                //mPreFilterCompute = gContext->CreateComputeShader("../Assets/Shaders/Compute/PrefilterEnvironmentMapCompute.glsl");
-                });
-        }
-
-        
-        // BRDF Compute
-        {
-            Image image = Image::Load("../Assets/Textures/brdf_lut.png");
- 
-            Ref<Texture2D> brdfImage = Texture2D::Create("BRDF", image.Data, image.Width, image.Height, image.Format, TextureFlags::TransferDst);
-
-            assetManager->InsertAsset(brdfImage);
-            mBRDFLutMap = brdfImage->Handle();
-        }
     }
 
     Ref<EnvironmentMap> EnvironmentMapSerializer::Load(const fs::path& filepath)
     {
-        return nullptr;
+		YAML::Node node = YAML::LoadFile(filepath.string());
 
-        if (!fs::exists(filepath))
-            return nullptr;
-        if (filepath.extension().string() != ".hdr")
-            return nullptr;
-
-        auto graphicsContext = mServiceManager->Get<GraphicsContext>();
-        auto assetManager = mServiceManager->Get<AssetManager>();
-
-        Image image = Image::Load(filepath);
-
-        Ref<Texture2D> texture = Texture2D::Create("", image.Data, image.Width, image.Height, TextureFormat::RGBA_32F, TextureFlags::TransferDst);
-        image.Data.Release();
+        auto cubeMapNode = node["CubeMap"];
+        TextureFormat format = cubeMapNode["Format"].as<TextureFormat>();
+        uint32_t axisSize = cubeMapNode["AxisSize"].as<uint32_t>();
+        AssetHandle handle = cubeMapNode["Handle"].as<AssetHandle>();
 
         std::string filename = filepath.filename().replace_extension().string();
+		fs::path path = filepath.parent_path();
 
-        auto fence = Fence::Create();
-        auto commandPool = CommandAllocator::Create();
-        auto commandBuffer = commandPool->CreateCommandBuffer();
-
-        //DescriptorSetUpdate update1{};
-        //DescriptorSetUpdate update2{};
-
-        mShaderLoadFuture.wait();
-        std::lock_guard<std::mutex> lock(mMutex);
-
-        // Cube Map
-        Ref<TextureCube> cubeMap = nullptr;
+        Buffer buffer;
+		fs::path bufferPath = path / (std::to_string((uint64_t)handle) + ".bin");
+        if (!ReadFileBytes(bufferPath, buffer))
         {
-            cubeMap = TextureCube::Create("", Buffer(), 1024, TextureFormat::RGBA_32F, TextureFlags::StorageImage | TextureFlags::GenerateMips);
-
-            commandBuffer->Begin();
-
-            commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::General);
-            
-            //DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { texture }, {});
-            //DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { cubeMap }, {});
-            //
-            //mCubeMapDescriptorSet->Update({ update1, update2 });
-            //
-            //commandBuffer->BindComputeDescriptorSet(mCubeMapCompute, mCubeMapDescriptorSet);
-            //commandBuffer->BindComputePipeline(mCubeMapCompute);
-            commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
-
-            commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
-
-            commandBuffer->End();
-            fence->Wait();
-            fence->Reset();
-            //queue->Submit(commandBuffer, {}, {}, fence);
-            fence->Wait();
-
-            //cubeMap->GenerateMips();
-            //cubeMap->SetName(filename);
-            assetManager->InsertAsset(cubeMap);
+			SPDLOG_ERROR("Failed to read file: {}", bufferPath.string());
+            return nullptr;
         }
-    
+        Ref<TextureCube> cubeMap = TextureCube::Create(filename + "-CubeMap", buffer, axisSize, format, TextureFlags::TransferDst);
+		cubeMap->SetHandle(handle);
+		buffer.Release();
 
-        Ref<TextureCube> irradianceMap;
-        // Irradiance Map
+        auto diffuseMapNode = node["DiffuseIBL"];
+        format = diffuseMapNode["Format"].as<TextureFormat>();
+        axisSize = diffuseMapNode["AxisSize"].as<uint32_t>();
+        handle = diffuseMapNode["Handle"].as<AssetHandle>();
+
+        bufferPath = path / (std::to_string((uint64_t)handle) + ".bin");
+        if (!ReadFileBytes(bufferPath, buffer))
         {
-            irradianceMap = TextureCube::Create("", {}, 1024, TextureFormat::RGBA_16F, TextureFlags::StorageImage);
+            SPDLOG_ERROR("Failed to read file: {}", bufferPath.string());
+            return nullptr;
+        }
+        Ref<TextureCube> diffuseIBLMap = TextureCube::Create(filename + "-DiffuseIBL", buffer, axisSize, format, TextureFlags::TransferDst);
+		diffuseIBLMap->SetHandle(handle);
+        buffer.Release();
 
-            commandPool->Reset();
-            commandBuffer->Begin();
+        auto preFilterMapNode = node["PreFilterMap"];
+        format = preFilterMapNode["Format"].as<TextureFormat>();
+        axisSize = preFilterMapNode["AxisSize"].as<uint32_t>();
+        handle = preFilterMapNode["Handle"].as<AssetHandle>();
+		uint32_t mipLevels = preFilterMapNode["MipLevels"].as<uint32_t>();
 
-            commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::General);
+        bufferPath = path / (std::to_string((uint64_t)handle) + ".bin");
+        if (!ReadFileBytes(bufferPath, buffer))
+        {
+            SPDLOG_ERROR("Failed to read file: {}", bufferPath.string());
+            return nullptr;
+        }
+        Ref<TextureCube> prefilterIBLMap = TextureCube::Create(filename + "-Prefilter", buffer, axisSize, format, TextureFlags::TransferDst | TextureFlags::GenerateMips);
+		prefilterIBLMap->SetHandle(handle);
 
-            //DescriptorSetUpdate update1(0, DescriptorType::Texture, 0, { cubeMap }, {});
-            //DescriptorSetUpdate update2(1, DescriptorType::StorageImage, 0, { irradianceMap }, {});
+        uint32_t offset = 0;
+        for (uint32_t i = 0; i < mipLevels; i++)
+        {
+			uint32_t mipWidth = std::max(axisSize >> i, 1u);
+			uint32_t size = mipWidth * mipWidth * 6 * GetFormatSize(format);
 
-            //mCubeMapDescriptorSet->Update({ update1, update2 });
-
-            //commandBuffer->BindComputeDescriptorSet(mDiffuseIBLCompute, mCubeMapDescriptorSet);
-            //commandBuffer->BindComputePipeline(mDiffuseIBLCompute);
-            commandBuffer->Execute((1024 + 32) / 32, (1024 + 32) / 32, 6);
-
-            commandBuffer->TranistionImageLayout(irradianceMap, ImageLayout::ShaderReadOnly);
-
-            commandBuffer->End();
-            fence->Wait();
-            fence->Reset();
-            //queue->Submit(commandBuffer, {}, {}, fence);
-            fence->Wait();
-
-            //irradianceMap->SetName(filename + "-IrradianceMap");
-            assetManager->InsertAsset(irradianceMap);
+			uint8_t* data = buffer.As<uint8_t>() + offset;
+			Buffer mipBuffer = Buffer(data, size);
+			offset += size;
+            prefilterIBLMap->WriteMipLevel(i, mipBuffer);
         }
 
-        Ref<TextureCube> prefilterMap = nullptr;
-        // Pre-Filter Map
-        {
-            prefilterMap = TextureCube::Create("", {}, 1024, TextureFormat::RGBA_16F, (TextureFlags)(TextureFlags::StorageImage | TextureFlags::GenerateMips));
+        buffer.Release();
 
-            //uint32_t preFilterMipLevelCount = prefilterMap->GetMipCount();
-            //for (uint32_t i = 0; i < preFilterMipLevelCount; i++)
-            //{
-            //    commandPool->Reset();
-            //    commandBuffer->Begin();
-            //
-            //    commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::General);
-            //                    
-            //    //DescriptorSetUpdate update(1, DescriptorType::StorageImage, 0, prefilterMap->GetMipImageView(i), prefilterMap->GetSampler(), prefilterMap->GetVulkanImage().Layout);
-            //
-            //    //mCubeMapDescriptorSet->Update({ update });
-            //
-            //    //commandBuffer->BindComputeDescriptorSet(mPreFilterCompute, mCubeMapDescriptorSet);
-            //   //commandBuffer->BindComputePipeline(mPreFilterCompute);
-            //
-            //    float roughness = (static_cast<float>(i)) / (static_cast<float>(preFilterMipLevelCount - 1.f));
-            //
-            //    //glm::ivec2 dimension = prefilterMap->GetMipLevelSize(i);
-            //    //commandBuffer->SetPushConstants(mPreFilterCompute, &roughness, sizeof(float));
-            //    //commandBuffer->Execute((dimension.x + 32) / 32, (dimension.y + 32) / 32, 6);
-            //    //commandBuffer->TranistionImageLayout(prefilterMap, ImageLayout::ShaderReadOnly);
-            //
-            //    commandBuffer->End();
-            //    fence->Wait();
-            //    fence->Reset();
-            //    //queue->Submit(commandBuffer, {}, {}, fence);
-            //    fence->Wait();
-            //}
-            //
-            //filename = filepath.filename().replace_extension().string();
-            ////prefilterMap->SetName(filename + "-PreFilterMap");
-            //assetManager->InsertAsset(prefilterMap);
-        }
+		auto assetManager = mServiceManager->Get<AssetManager>();
+		assetManager->InsertAsset(cubeMap);
+		assetManager->InsertAsset(diffuseIBLMap);
+		assetManager->InsertAsset(prefilterIBLMap);
 
-        return nullptr; //MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), mBRDFLutMap, irradianceMap->Handle(), prefilterMap->Handle());
+        return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), diffuseIBLMap->Handle(), prefilterIBLMap->Handle());
+
     }
 
     void EnvironmentMapSerializer::Save(Ref<EnvironmentMap> asset)
     {
+		auto assetManager = mServiceManager->Get<AssetManager>();
+
+		auto cubeMap = assetManager->GetAsset<Texture>(asset->GetCubeMapHandle());
+		auto diffuseMap = assetManager->GetAsset<Texture>(asset->GetDiffuseIBLMap());
+		auto preFilterMap = assetManager->GetAsset<Texture>(asset->GetPreFilterMap());
+
+		Buffer cubeMapData = cubeMap->ReadTextureData();
+		Buffer diffuseMapData = diffuseMap->ReadTextureData();
+
+        auto path = asset->FilePath().parent_path();
+
+        // Cube Map
+        {
+            auto filepath = path / (std::to_string((uint64_t)asset->GetCubeMapHandle()) + ".bin");
+            auto file = std::ofstream(filepath, std::ios::binary);
+            if (!file)
+            {
+                SPDLOG_ERROR("Failed to open file for writing: {}", filepath.string());
+                return;
+            }
+
+            file.write(reinterpret_cast<const char*>(cubeMapData.GetData()), cubeMapData.GetSize());
+            cubeMapData.Release();
+            file.close();
+        }
+
+        // Diffuse IBL
+        {
+            auto filepath = path / (std::to_string((uint64_t)asset->GetDiffuseIBLMap()) + ".bin");
+            auto file = std::ofstream(filepath, std::ios::binary);
+            if (!file)
+            {
+                SPDLOG_ERROR("Failed to open file for writing: {}", filepath.string());
+                return;
+            }
+
+            file.write(reinterpret_cast<const char*>(diffuseMapData.GetData()), diffuseMapData.GetSize());
+            diffuseMapData.Release();
+            file.close();
+        }
+        
+        // Prefilter IBL
+        {
+            auto filepath = path / (std::to_string((uint64_t)asset->GetPreFilterMap()) + ".bin");
+            auto file = std::ofstream(filepath, std::ios::binary);
+            if (!file)
+            {
+                SPDLOG_ERROR("Failed to open file for writing: {}", filepath.string());
+                return;
+            }
+
+            for (uint32_t i = 0; i < preFilterMap->GetMipLevels(); i++)
+            {
+                Buffer preFilterMapData = preFilterMap->ReadTextureData(i);
+                file.write(reinterpret_cast<const char*>(preFilterMapData.GetData()), preFilterMapData.GetSize());
+                preFilterMapData.Release();
+            }
+            file.close();
+        }
+
+        YAML::Emitter emitter;
+        YAML::Node node;
+
+        auto cubeMapNode = node["CubeMap"];
+        cubeMapNode["Format"] = cubeMap->GetFormat();
+		cubeMapNode["AxisSize"] = cubeMap->GetWidth();
+        cubeMapNode["Handle"] = cubeMap->Handle();
+
+		auto diffuseMapNode = node["DiffuseIBL"];
+		diffuseMapNode["Format"] = diffuseMap->GetFormat();
+		diffuseMapNode["AxisSize"] = diffuseMap->GetWidth();
+		diffuseMapNode["Handle"] = diffuseMap->Handle();
+
+		auto preFilterMapNode = node["PreFilterMap"];
+		preFilterMapNode["Format"] = preFilterMap->GetFormat();
+		preFilterMapNode["AxisSize"] = preFilterMap->GetWidth();
+		preFilterMapNode["MipLevels"] = preFilterMap->GetMipLevels();
+		preFilterMapNode["Handle"] = preFilterMap->Handle();
+
+        emitter << node;
+
+        std::ofstream file(asset->FilePath());
+		if (!file)
+		{
+			SPDLOG_ERROR("Failed to open file for writing: {}", asset->FilePath().string());
+			return;
+		}
+
+        file << emitter.c_str();
+        file.close();
     }
 }

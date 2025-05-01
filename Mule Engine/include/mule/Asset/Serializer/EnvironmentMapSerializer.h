@@ -20,8 +20,8 @@ namespace Mule
 	public:
 		EnvironmentMapSerializer(Ref<ServiceManager> serviceManager);
 
-		virtual Ref<EnvironmentMap> Load(const fs::path& filepath) override;
-		virtual void Save(Ref<EnvironmentMap> asset) override;
+		Ref<EnvironmentMap> Load(const fs::path& filepath) override;
+		void Save(Ref<EnvironmentMap> asset) override;
 
 	private:
 		std::mutex mMutex;

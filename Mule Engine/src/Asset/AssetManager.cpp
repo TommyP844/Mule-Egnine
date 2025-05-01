@@ -92,16 +92,18 @@ namespace Mule
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
-		for (auto [handle, asset] : mAssets)
+		auto iter = mLoadedHandles.find(path);
+		if (iter == mLoadedHandles.end())
 		{
-			if(asset->FilePath().empty())
-				continue;
-
-			if (fs::equivalent(path, asset->FilePath()))
-			{
-				return asset;
-			}
+			SPDLOG_WARN("Trying to get asset by invalid filepath: {}", path.string());
+			return nullptr;
 		}
-		return nullptr;
+
+		auto assetIter = mAssets.find(iter->second);
+		if (assetIter == mAssets.end())
+		{
+			return nullptr;
+		}
+		return assetIter->second;		
 	}
 }

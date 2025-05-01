@@ -13,6 +13,16 @@ namespace Mule::Vulkan
 	{
 		WriteData(buffer);
 	}
+
+	VulkanStagingBuffer::VulkanStagingBuffer(uint32_t size)
+		:
+		StagingBuffer(),
+		IVulkanBuffer(size,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_QUEUE_TRANSFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+	{
+	}
 	
 	VulkanStagingBuffer::~VulkanStagingBuffer()
 	{

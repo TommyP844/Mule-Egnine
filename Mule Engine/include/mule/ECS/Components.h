@@ -135,6 +135,9 @@ namespace Mule
 		AssetHandle MeshHandle;
 		AssetHandle MaterialHandle;
 		bool CastsShadows = true;
+
+		// Internal
+		uint32_t MaterialIndex = 0;
 	};
 
 	struct ScriptComponent

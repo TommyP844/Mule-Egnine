@@ -27,7 +27,12 @@ namespace Mule
 		mServiceManager(serviceManager)
 	{
 		mRegistry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentConstruct>(this);
+	}
 
+	Scene::~Scene()
+	{
+		if (mRenderGraph)
+			mRenderGraph.Release();
 	}
 
 	Entity Scene::CreateEntity(const std::string& name, const Guid& guid)
@@ -145,9 +150,21 @@ namespace Mule
 
 	void Scene::OnPrepare()
 	{
-		// TODO: load all required resources by scene
-
 		mRenderGraph = MakeRef<SceneRenderer>(mServiceManager);
+
+		for (auto entity : mRegistry.view<MeshComponent>())
+		{
+			auto& meshComponent = mRegistry.get<MeshComponent>(entity);
+			if (!meshComponent.Visible || meshComponent.MaterialHandle == AssetHandle::Null() || meshComponent.MaterialHandle == AssetHandle::Null())
+				continue;
+			auto material = mServiceManager->Get<AssetManager>()->GetAsset<Material>(meshComponent.MaterialHandle);
+
+			if (!material)
+				continue;
+
+			WeakRef<SceneRenderer> graph = mRenderGraph;
+			meshComponent.MaterialIndex = graph->AddMaterial(material);
+		}
 	}
 
 	void Scene::OnUnload()
@@ -274,9 +291,9 @@ namespace Mule
 		}
 	}
 
-	void Scene::OnRender()
+	void Scene::OnRender(WeakRef<Camera> cameraOverride)
 	{
-		mRenderGraph->Execute(this);
+		mRenderGraph->Execute(this, cameraOverride);
 	}
 
 	Entity Scene::CopyEntityToScene(WeakRef<Scene> scene, Entity entity)

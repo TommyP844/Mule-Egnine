@@ -17,31 +17,33 @@ namespace Mule::Vulkan
 		mPipeline(VK_NULL_HANDLE),
 		mPipelineLayout(VK_NULL_HANDLE)
 	{
-		mBlueprints = description.Resources;
-
 		VkDevice device = VulkanContext::Get().GetDevice();
-
-		VkPipelineShaderStageCreateInfo stageInfo{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
-			.module = nullptr,
-			.pName = "main",
-			.pSpecializationInfo = nullptr,
-		};		
+		std::map<ShaderStage, std::vector<uint32_t>> byteCodes;
+		
+		Compile(description.Filepath, byteCodes, {});
+		ReflectionData reflectionData = Reflect(byteCodes);
+		auto stages = BuildShaderStages(byteCodes);
 
 		std::vector<VkDescriptorSetLayout> layouts;
-		for (auto blueprint : description.Resources)
+		for (auto layout : reflectionData.Layouts)
 		{
-			Ref<VulkanDescriptorSetLayout> layout = blueprint;
-			layouts.push_back(layout->GetLayout());
+			mBlueprints.push_back(layout);
+			Ref<VulkanDescriptorSetLayout> vkLayout = layout;
+			layouts.push_back(vkLayout->GetLayout());
 		}
-		
+
+		uint32_t pcSize = 0;
+
+		for (auto pc : reflectionData.PushConstants)
+		{
+			pcSize = pc.Size;
+			break;
+		}
+
 		VkPushConstantRange range{
 			.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
 			.offset = 0,
-			.size = description.ConstantBufferSize,
+			.size = pcSize,
 		};
 
 		// Create pipeline layout
@@ -57,29 +59,23 @@ namespace Mule::Vulkan
 		{
 			SPDLOG_ERROR("Failed to create compute pipeline layout for {}", description.Filepath.string());
 		}
-
-		VkPipelineShaderStageCreateInfo computeShaderStage{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
-			.module = stageInfo.module,
-			.pName = "main",
-		};
-
+				
 		VkComputePipelineCreateInfo pipelineInfo{
 			.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-			.stage = computeShaderStage,
+			.stage = stages[0],
 			.layout = mPipelineLayout,
 		};
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mPipeline);
+
 		if (result != VK_SUCCESS)
 		{
 			SPDLOG_ERROR("failed to create compute pipeline: {}", description.Filepath.string());
 		}
 
-		if (stageInfo.module)
+		if (stages[0].module)
 		{
-			vkDestroyShaderModule(device, stageInfo.module, nullptr);
+			vkDestroyShaderModule(device, stages[0].module, nullptr);
 		}
 	}
 

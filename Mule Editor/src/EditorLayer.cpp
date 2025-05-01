@@ -36,6 +36,7 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mSceneRendererSettingsPanel.SetContext(mEditorState, context);
 	mPrimitiveObjectPanel.SetContext(mEditorState, context);
 	mPerformancePanel.SetContext(mEditorState, context);
+	mEnvironmentMapGeneratorPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -47,10 +48,12 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mSceneRendererSettingsPanel.OnAttach();
 	mPrimitiveObjectPanel.OnAttach();
 	mPerformancePanel.OnAttach();
+	mEnvironmentMapGeneratorPanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
 	mTextureViewerPanel.Close();
+	mEnvironmentMapGeneratorPanel.Close();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -191,6 +194,15 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Texture Viewer", "", mTextureViewerPanel.OpenPtr());
 			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Tools"))
+		{
+			if (ImGui::BeginMenu("Generators"))
+			{
+				ImGui::MenuItem("Environment Map", "", mEnvironmentMapGeneratorPanel.OpenPtr());
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenu();
+		}
 		ImGui::EndMainMenuBar();
 	}
 
@@ -224,6 +236,7 @@ void EditorLayer::OnUIRender(float dt)
 		mSceneRendererSettingsPanel.OnEditorEvent(event);
 		mPrimitiveObjectPanel.OnEditorEvent(event);
 		mPerformancePanel.OnEditorEvent(event);
+		mEnvironmentMapGeneratorPanel.OnEditorEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -239,6 +252,7 @@ void EditorLayer::OnUIRender(float dt)
 	mSceneRendererSettingsPanel.OnUIRender(dt);
 	mPrimitiveObjectPanel.OnUIRender(dt);
 	mPerformancePanel.OnUIRender(dt);
+	mEnvironmentMapGeneratorPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		auto serviceManager = mEngineContext->GetServiceManager();

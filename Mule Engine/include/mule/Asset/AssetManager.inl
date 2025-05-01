@@ -88,12 +88,16 @@ namespace Mule
 	template<typename T>
 	inline void AssetManager::SaveAssetText(Ref<T> asset)
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
-
 		constexpr AssetType type = T::sType;
 		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
-		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
-		loader->SaveText(asset);
+		Ref<IAssetSerializer<T, type>> loader = nullptr;
+		
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			loader = mLoaders[type];
+		}
+
+		loader->Save(asset);		
 	}
 
 	template<typename T>
@@ -103,6 +107,8 @@ namespace Mule
 
 		mAssets[asset->Handle()] = asset;
 		mAssetTypes[T::sType].push_back(asset);
+		if(!asset->mFilepath.empty())
+			mLoadedHandles[asset->mFilepath] = asset->Handle();
 	}
 
 	template<typename T>

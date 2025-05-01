@@ -10,16 +10,14 @@ namespace Mule
 	class EnvironmentMap : public Asset<AssetType::EnvironmentMap>
 	{
 	public:
-		EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle, AssetHandle brdfLut, AssetHandle diffuseIBL, AssetHandle prefilterMap);
+		EnvironmentMap(const fs::path& filepath, AssetHandle cubeMapHandle, AssetHandle diffuseIBL, AssetHandle prefilterMap);
 
 		AssetHandle GetCubeMapHandle() const { return mCubemap; }
-		AssetHandle GetBRDFLutMap() const { return mBRDFLutMap; }
 		AssetHandle GetDiffuseIBLMap() const { return mDiffuseIBL; }
 		AssetHandle GetPreFilterMap() const { return mPreFilterMap; }
 
 	private:
 		AssetHandle mCubemap;
-		AssetHandle mBRDFLutMap;
 		AssetHandle mDiffuseIBL;
 		AssetHandle mPreFilterMap;
 	};

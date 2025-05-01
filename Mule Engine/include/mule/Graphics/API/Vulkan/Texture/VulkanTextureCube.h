@@ -17,5 +17,9 @@ namespace Mule::Vulkan
 		uint32_t GetArrayLayers() override;
 		ImTextureID GetImGuiID(uint32_t mipLevel = 0, uint32_t arrayLayer = 0) const override;
 		WeakRef<TextureView> GetView(uint32_t mipLevel, uint32_t arrayLayer = 0) const override;
+		WeakRef<TextureView> GetMipView(uint32_t mipLevel) override;
+		void TransitionImageLayoutImmediate(ImageLayout newLayout) override;
+		Buffer ReadTextureData(uint32_t mipLevel = 0) override;
+		void WriteMipLevel(uint32_t mipLevel, const Buffer& data) override;
 	};
 }

@@ -4,6 +4,7 @@
 #include "Graphics/API/Texture.h"
 #include "Graphics/API/Framebuffer.h"
 #include "Graphics/API/GraphicsPipeline.h"
+#include "Graphics/API/ComputePipeline.h"
 #include "Graphics/API/StagingBuffer.h"
 #include "Graphics/API/ShaderResourceGroup.h"
 
@@ -48,15 +49,14 @@ namespace Mule
 		virtual void CopyTexture(WeakRef<Texture> src, WeakRef<Texture> dst, const TextureCopyInfo& copyInfo) const = 0;
 		virtual void ReadTexture(WeakRef<Texture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const = 0;
 
-		// Shader
+		// Graphics Pipelines
 		virtual void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		virtual void SetPushConstants(WeakRef<GraphicsPipeline> shader, ShaderStage stage, const void* data, uint32_t size) = 0;
-		virtual void BindGraphicsDescriptorSet(WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& descriptorSets) = 0;
+		
+		// Compute Pipelines
+		virtual void BindComputePipeline(WeakRef<ComputePipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
+		virtual void SetPushConstants(WeakRef<ComputePipeline> shader, void* data, uint32_t size) = 0;
 		virtual void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ) = 0;
-		//virtual void SetPushConstants(WeakRef<VulkanComputeShader> shader, void* data, uint32_t size);
-		//virtual void BindComputeDescriptorSet(WeakRef<VulkanComputeShader> shader, WeakRef<VulkanDescriptorSet> descriptorSet);
-		//virtual void BindComputePipeline(WeakRef<VulkanComputeShader> shader);
-		virtual void BlendEnable(uint32_t attachment, bool blendEnable) = 0;
 
 		// Mesh
 		virtual void BindMesh(WeakRef<Mesh> mesh) = 0;

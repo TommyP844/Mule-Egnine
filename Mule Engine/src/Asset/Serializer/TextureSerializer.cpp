@@ -24,6 +24,8 @@ namespace Mule
 		auto texture = Texture2D::Create("", image.Data, image.Width, image.Height, image.Format, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 		image.Data.Release();
 
+		texture->SetFilePath(filepath);
+
 		return texture;
 	}
 	

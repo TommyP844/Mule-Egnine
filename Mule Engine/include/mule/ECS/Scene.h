@@ -7,6 +7,8 @@
 #include "Physics/PhysicsContext.h"
 #include "Services/ServiceManager.h"
 
+#include "Graphics/Camera.h"
+
 #include <entt/entt.hpp>
 
 #include <string>
@@ -26,7 +28,7 @@ namespace Mule
 	{
 	public:
 		Scene(Ref<ServiceManager> serviceManager);
-		~Scene() {}
+		~Scene();
 
 		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid());
 		Entity CopyEntity(Entity entity);
@@ -91,7 +93,7 @@ namespace Mule
 
 		void OnUpdate(float dt);
 
-		void OnRender();
+		void OnRender(WeakRef<Camera> cameraOverride = nullptr);
 
 
 		void SetModified() { mModified = true; }

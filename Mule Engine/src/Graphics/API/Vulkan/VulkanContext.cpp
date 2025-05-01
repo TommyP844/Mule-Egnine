@@ -225,16 +225,11 @@ namespace Mule::Vulkan
 
 #pragma region Logical Device
 
-		VkPhysicalDeviceExtendedDynamicState3FeaturesEXT extendedDynamicState3Features = {};
-		extendedDynamicState3Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT;
-		extendedDynamicState3Features.extendedDynamicState3ColorBlendEnable = VK_TRUE;
-		extendedDynamicState3Features.extendedDynamicState3ColorBlendEquation = VK_TRUE;
-		extendedDynamicState3Features.extendedDynamicState3ColorWriteMask = VK_TRUE;
 
 		VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT dynamicRenderingUnusedAttachmentsFeatures{};
 		dynamicRenderingUnusedAttachmentsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
 		dynamicRenderingUnusedAttachmentsFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
-		dynamicRenderingUnusedAttachmentsFeatures.pNext = &extendedDynamicState3Features;
+		dynamicRenderingUnusedAttachmentsFeatures.pNext = nullptr;
 
 		VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
 		dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
@@ -314,8 +309,7 @@ namespace Mule::Vulkan
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 			"VK_KHR_depth_stencil_resolve",
-			"VK_EXT_dynamic_rendering_unused_attachments",
-			VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME
+			"VK_EXT_dynamic_rendering_unused_attachments"
 		};
 
 		VkDeviceCreateInfo deviceCreateInfo{};
@@ -955,6 +949,17 @@ namespace Mule::Vulkan
 			buffer,
 			image,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&bufferImageCopy);
+	}
+
+	void VulkanContext::CopyImageToBuffer(Ref<VulkanCommandBuffer> cmd, VkImage image, VkBuffer buffer, const VkBufferImageCopy& bufferImageCopy)
+	{
+		vkCmdCopyImageToBuffer(
+			cmd->GetHandle(),
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			buffer,
 			1,
 			&bufferImageCopy);
 	}

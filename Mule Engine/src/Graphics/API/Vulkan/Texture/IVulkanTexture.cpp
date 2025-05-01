@@ -162,12 +162,49 @@ namespace Mule::Vulkan
 		mMipLevels = mipLevels;
 		mArrayLayers = arrayLayers;
 
+		mMipViews.resize(mipLevels);
+
 		mIsDepthTexture = (aspect & VK_IMAGE_ASPECT_DEPTH_BIT) ? true : false;
 
 		mImageAspect = aspect;
 		bool success = CreateCubeImage(type, format, width, height, depth, mipLevels, arrayLayers, usageFlags);
 		success |= AllocateMemory();
 		success |= CreateView(mVulkanImage.ImageView, viewType, format, aspect, 0, mipLevels, 0, arrayLayers);
+
+		VulkanContext& context = VulkanContext::Get();
+		VkDevice device = context.GetDevice();
+
+		mTextureViews.resize(arrayLayers);
+
+		for (uint32_t layer = 0; layer < arrayLayers; layer++)
+		{
+			mTextureViews[layer].resize(mipLevels);
+			for (uint32_t level = 0; level < mipLevels; level++)
+			{
+				VkImageViewCreateInfo viewInfo{};
+				viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+				viewInfo.pNext = nullptr;
+				viewInfo.flags = 0;
+				viewInfo.image = mVulkanImage.Image;
+				viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+				viewInfo.format = format;
+				viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewInfo.subresourceRange.aspectMask = aspect;
+				viewInfo.subresourceRange.baseArrayLayer = layer;
+				viewInfo.subresourceRange.layerCount = 1;
+				viewInfo.subresourceRange.baseMipLevel = level;
+				viewInfo.subresourceRange.levelCount = 1;
+
+				VkImageView view;
+				vkCreateImageView(device, &viewInfo, nullptr, &view);
+
+				mTextureViews[layer][level] = MakeRef<VulkanTextureView>(view);
+			}
+		}
+
 		return success;
 	}
 

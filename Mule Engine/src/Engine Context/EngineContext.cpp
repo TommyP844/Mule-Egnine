@@ -16,6 +16,8 @@
 #include "Asset/Serializer/MaterialSerializer.h"
 #include "Asset/Serializer/ScriptSerializer.h"
 
+// Generators
+#include "Asset/Generator/EnvironmentMapGenerator.h"
 
 namespace Mule
 {
@@ -34,6 +36,8 @@ namespace Mule
 		mServiceManager->Register<ScriptContext>(this);
 		mServiceManager->Register<JobSystem>();
 		mServiceManager->Register<ShaderFactory>();
+		mServiceManager->Register<EnvironmentMapGenerator>(mServiceManager);
+
 
 		assetManager->LoadRegistry(mFilePath / "Registry.mrz");
 		assetManager->RegisterLoader<SceneSerializer>(mServiceManager);
@@ -209,23 +213,57 @@ namespace Mule
 			assetManager->UpdateAssetHandle(texture->Handle(), MULE_SPOT_LIGHT_ICON_TEXTURE_HANDLE);
 			});
 
-		VertexLayout geometryShaderVertexLayout;
-		geometryShaderVertexLayout.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec3)
-			.AddAttribute(AttributeType::Vec2)
-			.AddAttribute(AttributeType::Vec4);
+		// BRDF LUT
+		jobSystem->PushJob([assetManager]() {
+			auto texture = assetManager->LoadAsset<Texture2D>("../Assets/Textures/brdf_lut.png");
+			assetManager->UpdateAssetHandle(texture->Handle(), MULE_BDRF_LUT_TEXTURE_HANDLE);
+			});
 
-		GraphicsPipelineDescription geometryPipeline{};
-		geometryPipeline.Filepath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
-		geometryPipeline.FilleMode = FillMode::Solid;
-		geometryPipeline.CullMode = CullMode::Back;
-		geometryPipeline.VertexLayout = geometryShaderVertexLayout;
-		geometryPipeline.DepthFormat = TextureFormat::D_32F;
-		geometryPipeline.EnableDepthTest = true;
-		geometryPipeline.EnableDepthWrite = true;
-		geometryPipeline.LineWidth = 1.f;
+		// Graphics Pipelines
+		{
+			VertexLayout defaultVertexLayout;
+			defaultVertexLayout.AddAttribute(AttributeType::Vec3)
+				.AddAttribute(AttributeType::Vec3)
+				.AddAttribute(AttributeType::Vec3)
+				.AddAttribute(AttributeType::Vec2)
+				.AddAttribute(AttributeType::Vec4);
 
-		shaderFactory->RegisterGraphicsPipeline("Geometry", geometryPipeline);
+
+			GraphicsPipelineDescription geometryPipeline{};
+			geometryPipeline.Filepath = "../Assets/Shaders/Graphics/DefaultGeometryShader.glsl";
+			geometryPipeline.FilleMode = FillMode::Solid;
+			geometryPipeline.CullMode = CullMode::Back;
+			geometryPipeline.VertexLayout = defaultVertexLayout;
+			geometryPipeline.DepthFormat = TextureFormat::D_32F;
+			geometryPipeline.EnableDepthTest = true;
+			geometryPipeline.EnableDepthWrite = true;
+			shaderFactory->RegisterGraphicsPipeline("Geometry", geometryPipeline);
+
+
+			GraphicsPipelineDescription environmentMapPipeline{};
+			environmentMapPipeline.Filepath = "../Assets/Shaders/Graphics/EnvironmentMapShader.glsl";
+			environmentMapPipeline.FilleMode = FillMode::Solid;
+			environmentMapPipeline.CullMode = CullMode::Front;
+			environmentMapPipeline.VertexLayout = defaultVertexLayout;
+			environmentMapPipeline.DepthFormat = TextureFormat::D_32F;
+			environmentMapPipeline.EnableDepthTest = false;
+			environmentMapPipeline.EnableDepthWrite = false;
+			shaderFactory->RegisterGraphicsPipeline("EnvironmentMap", environmentMapPipeline);
+		}
+
+		// Compute Pipelines
+		{
+			ComputePipelineDescription cubeMapCompute{};
+			cubeMapCompute.Filepath = "../Assets/Shaders/Compute/HDRToCubeMapCompute.glsl";
+			shaderFactory->RegisterComputePipeline("HDRToCubemap", cubeMapCompute);
+
+			ComputePipelineDescription diffuseIBLCompute{};
+			diffuseIBLCompute.Filepath = "../Assets/Shaders/Compute/DiffuseIBLCompute.glsl";
+			shaderFactory->RegisterComputePipeline("DiffuseIBL", diffuseIBLCompute);
+
+			ComputePipelineDescription prefilterIBLCompute{};
+			prefilterIBLCompute.Filepath = "../Assets/Shaders/Compute/PrefilterIBLCompute.glsl";
+			shaderFactory->RegisterComputePipeline("PrefilterIBL", prefilterIBLCompute);
+		}
 	}
 }

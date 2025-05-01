@@ -18,7 +18,7 @@ namespace Mule
 	class ShaderResourceBlueprint
 	{
 	public:
-		static Ref<ShaderResourceBlueprint> Create(const std::initializer_list<ShaderResourceDescription>& resources);
+		static Ref<ShaderResourceBlueprint> Create(const std::vector<ShaderResourceDescription>& resources);
 
 		virtual ~ShaderResourceBlueprint() = default;
 	};

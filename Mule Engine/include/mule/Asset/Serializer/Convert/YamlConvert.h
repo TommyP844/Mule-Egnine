@@ -186,6 +186,25 @@ namespace YAML {
         }
     };
 
+    template<>
+    struct convert<Mule::TextureFormat>
+    {
+        static Node encode(const Mule::TextureFormat& format)
+        {
+            Node node;
+            node = Mule::ToString(format);
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::TextureFormat& format)
+        {
+			format = Mule::ToFormat(node.as<std::string>());
+
+            return true;
+        }
+    };
+
 #pragma region Components
 
     template<>

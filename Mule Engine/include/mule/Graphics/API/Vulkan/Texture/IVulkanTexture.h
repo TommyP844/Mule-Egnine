@@ -41,6 +41,8 @@ namespace Mule::Vulkan
 		uint32_t mMipLevels, mArrayLayers;
 		bool mIsDepthTexture;
 
+		std::vector<Ref<VulkanTextureView>> mMipViews;
+
 	private:
 		bool CreateImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);
 		bool CreateCubeImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);
@@ -49,5 +51,6 @@ namespace Mule::Vulkan
 		VkImageAspectFlags mImageAspect;
 		
 		std::vector<std::vector<Ref<VulkanTextureView>>> mTextureViews;
+		
 	};
 }

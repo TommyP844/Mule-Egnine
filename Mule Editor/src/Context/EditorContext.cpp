@@ -1,5 +1,7 @@
 #include "EditorContext.h"
 
+#include "Util.h"
+
 EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineContext> engineContext)
 	:
 	mProjectPath(projectPath),
@@ -23,10 +25,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 		std::string extension = dir.path().extension().string();
 		fs::path filePath = dir.path();
 
-		const std::set<std::string> modelExtensions = { ".gltf", ".fbx", ".dae", ".obj" };
-		const std::set<std::string> imageExtensions = { ".jpg", ".jpeg", ".png", ".tga", ".bmp" };
-
-		if (modelExtensions.contains(extension))
+		if (IsModelExtension(dir.path()))
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
 					assetManager->LoadAsset<Mule::Model>(filePath);
@@ -38,7 +37,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 				assetManager->LoadAsset<Mule::ScriptClass>(filePath);
 				});
 		}
-		else if (imageExtensions.contains(extension))
+		else if (IsTextureExtension(dir.path()))
 		{
 			auto asset = assetManager->GetAssetByFilepath(dir.path());
 			if (!asset)
@@ -48,7 +47,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 					});
 			}
 		}
-		else if (extension == ".hdr")
+		else if (extension == ".envmap")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
 				assetManager->LoadAsset<Mule::EnvironmentMap>(filePath);

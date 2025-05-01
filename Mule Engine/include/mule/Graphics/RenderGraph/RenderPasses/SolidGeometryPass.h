@@ -24,6 +24,8 @@ namespace Mule
 		void SetCameraBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle);
 		void SetFramebufferHandle(RenderGraph::ResourceHandle<Framebuffer> framebufferHandle);
 		void SetBindlessTextureResourceHandle(RenderGraph::ResourceHandle<ShaderResourceGroup> resourceHandle);
+		void SetLightBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle);
+		void SetMaterialBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle);
 
 	private:
 		Ref<ServiceManager> mServiceManager;
@@ -32,6 +34,8 @@ namespace Mule
 		RenderGraph::ResourceHandle<UniformBuffer> mCameraBufferHandle;
 		RenderGraph::ResourceHandle<Framebuffer> mFramebufferHandle;
 		RenderGraph::ResourceHandle<ShaderResourceGroup> mBindlessTextureResourceHandle;
+		RenderGraph::ResourceHandle<UniformBuffer> mLightBufferHandle;
+		RenderGraph::ResourceHandle<UniformBuffer> mMaterialBufferHandle;
 
 		// Pass Generated
 		RenderGraph::ResourceHandle<ShaderResourceGroup> mShaderResourceGroupHandle;

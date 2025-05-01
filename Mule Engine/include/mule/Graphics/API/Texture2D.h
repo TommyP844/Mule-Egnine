@@ -13,7 +13,6 @@
 
 namespace Mule
 {
-
 	class Texture2D : public Texture
 	{
 	public:

@@ -5,11 +5,13 @@
 #include "Graphics/API/Vulkan/Buffer/VulkanUniformBuffer.h"
 #include "Graphics/API/Vulkan/Texture/VulkanTextureCube.h"
 
+#include "Graphics/API/Vulkan/VulkanTypeConversion.h"
+
 #include <spdlog/spdlog.h>
 
 namespace Mule::Vulkan
 {
-	VulkanDescriptorSet::VulkanDescriptorSet(const std::vector<Ref<ShaderResourceBlueprint>>& blueprints)
+	VulkanDescriptorSet::VulkanDescriptorSet(Ref<ShaderResourceBlueprint> blueprint)
 		:
 		mDescriptorSet(VK_NULL_HANDLE)
 	{
@@ -17,20 +19,17 @@ namespace Mule::Vulkan
 		VkDevice device = context.GetDevice();
 		mDescriptorPool = context.GetDescriptorPool();
 
-		std::vector<VkDescriptorSetLayout> vkLayouts;
-		for (const auto& blueprint : blueprints)
-		{
-			Ref<VulkanDescriptorSetLayout> layout = blueprint;
-			vkLayouts.push_back(layout->GetLayout());
-		}
+		mBlueprint = blueprint;
+		Ref<VulkanDescriptorSetLayout> layout = blueprint;
+		VkDescriptorSetLayout vkLayout = layout->GetLayout();		
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.pNext = nullptr;
 		allocInfo.descriptorPool = mDescriptorPool;
-		allocInfo.descriptorSetCount = vkLayouts.size();
-		allocInfo.pSetLayouts = vkLayouts.data();
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &vkLayout;
 
 		VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &mDescriptorSet);
 		if (result != VK_SUCCESS)
@@ -48,7 +47,7 @@ namespace Mule::Vulkan
 		vkFreeDescriptorSets(device, mDescriptorPool, 1, &mDescriptorSet);
 	}
 
-	void VulkanDescriptorSet::Update(uint32_t binding, WeakRef<Texture> texture, uint32_t arrayIndex)
+	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, WeakRef<Texture> texture, uint32_t arrayIndex)
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
@@ -66,7 +65,7 @@ namespace Mule::Vulkan
 		write.dstBinding = binding;
 		write.dstArrayElement = arrayIndex;
 		write.descriptorCount = 1;
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write.descriptorType = GetDescriptorType(type);
 		write.pImageInfo = &imageInfo;
 		write.pBufferInfo = nullptr;
 		write.pTexelBufferView = nullptr;		
@@ -75,7 +74,7 @@ namespace Mule::Vulkan
 	}
 
 	// TODO: Texture view needs an image layout
-	void VulkanDescriptorSet::Update(uint32_t binding, WeakRef<TextureView> texture, uint32_t arrayIndex)
+	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, ImageLayout layout, WeakRef<TextureView> texture, uint32_t arrayIndex)
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
@@ -84,7 +83,7 @@ namespace Mule::Vulkan
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.sampler = context.GetLinearSampler();
 		imageInfo.imageView = vkImage->GetView();
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageLayout = GetImageLayout(layout);
 
 		VkWriteDescriptorSet write{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -93,7 +92,7 @@ namespace Mule::Vulkan
 		write.dstBinding = binding;
 		write.dstArrayElement = arrayIndex;
 		write.descriptorCount = 1;
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write.descriptorType = GetDescriptorType(type);
 		write.pImageInfo = &imageInfo;
 		write.pBufferInfo = nullptr;
 		write.pTexelBufferView = nullptr;

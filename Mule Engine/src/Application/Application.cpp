@@ -73,7 +73,6 @@ namespace Mule
 				std::vector<Ref<Semaphore>> waitSemaphores;
 				if (scene)
 				{
-					scene->OnRender();
 					Ref<Semaphore> semaphore = scene->GetRenderGraph()->GetCurrentSemaphore();
 					waitSemaphores.push_back(semaphore);
 				}

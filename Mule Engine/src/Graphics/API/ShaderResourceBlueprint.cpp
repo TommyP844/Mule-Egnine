@@ -7,7 +7,7 @@
 
 namespace Mule
 {
-	Ref<ShaderResourceBlueprint> ShaderResourceBlueprint::Create(const std::initializer_list<ShaderResourceDescription>& resources)
+	Ref<ShaderResourceBlueprint> ShaderResourceBlueprint::Create(const std::vector<ShaderResourceDescription>& resources)
 	{
 		GraphicsAPI API = GraphicsContext::Get().GetAPI();
 

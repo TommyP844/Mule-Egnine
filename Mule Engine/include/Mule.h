@@ -61,3 +61,6 @@
 
 // Services
 #include "JobSystem/JobSystem.h"
+
+// Generators
+#include "Asset/Generator/EnvironmentMapGenerator.h"

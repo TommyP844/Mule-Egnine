@@ -14,6 +14,7 @@
 #include "Panel/SceneRendererSettingsPanel.h"
 #include "Panel/PrimitiveObjectPanel.h"
 #include "Panel/PerformancePanel.h"
+#include "Panel/EnvironmentMapGeneratorPanel.h"
 
 
 // STD
@@ -46,6 +47,7 @@ private:
 	SceneRendererSettingsPanel mSceneRendererSettingsPanel;
 	PrimitiveObjectPanel mPrimitiveObjectPanel;
 	PerformancePanel mPerformancePanel;
+	EnvironmentMapGeneratorPanel mEnvironmentMapGeneratorPanel;
 
 	bool mShowDemoWindow = false;
 

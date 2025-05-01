@@ -192,6 +192,8 @@ namespace Mule::Vulkan
 						VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 						0, mMipLevels,
 						0, 1);
+
+					SetImageLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 				}
 				else
 				{
@@ -202,6 +204,8 @@ namespace Mule::Vulkan
 						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 						0, mMipLevels,
 						0, 1);
+
+					SetImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				}
 			}
 			else
@@ -214,6 +218,8 @@ namespace Mule::Vulkan
 					VK_IMAGE_LAYOUT_GENERAL,
 					0, mMipLevels,
 					0, 1);
+
+				SetImageLayout(VK_IMAGE_LAYOUT_GENERAL);
 			}
 		}
 
@@ -258,5 +264,110 @@ namespace Mule::Vulkan
 	WeakRef<TextureView> VulkanTexture2D::GetView(uint32_t mipLevel, uint32_t arrayLayer) const
 	{
 		return GetTextureView(mipLevel, arrayLayer);
+	}
+
+	WeakRef<TextureView> VulkanTexture2D::GetMipView(uint32_t mipLevel)
+	{
+		assert(mipLevel < mMipLevels && "Invalid mip level");
+
+		if (!mMipViews[mipLevel])
+		{
+			VulkanContext& context = VulkanContext::Get();
+			VkDevice device = context.GetDevice();
+
+			VkImageViewCreateInfo viewInfo{};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.pNext = nullptr;
+			viewInfo.flags = 0;
+			viewInfo.image = GetVulkanImage().Image;
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = GetVulkanFormat(GetFormat());
+			viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.subresourceRange.aspectMask = GetImageAspect();
+			viewInfo.subresourceRange.baseArrayLayer = 0;
+			viewInfo.subresourceRange.layerCount = mArrayLayers;
+			viewInfo.subresourceRange.baseMipLevel = mipLevel;
+			viewInfo.subresourceRange.levelCount = 1;
+
+			VkImageView view;
+			vkCreateImageView(device, &viewInfo, nullptr, &view);
+
+			mMipViews[mipLevel] = MakeRef<VulkanTextureView>(view);
+		}
+
+		return mMipViews[mipLevel];
+	}
+	
+	void VulkanTexture2D::TransitionImageLayoutImmediate(ImageLayout newLayout)
+	{
+		VulkanContext& context = VulkanContext::Get();
+
+		auto cmd = context.BeginSingleTimeCommandBuffer();
+
+		context.TransitionImageLayout(cmd, this, GetVulkanImage().Layout, Vulkan::GetImageLayout(newLayout), 0, mMipLevels, 0, mArrayLayers);
+		SetImageLayout(Vulkan::GetImageLayout(newLayout));
+
+		context.EndSingleTimeCommandBuffer(cmd);
+	}
+
+	Buffer VulkanTexture2D::ReadTextureData(uint32_t mipLevel)
+	{
+		uint32_t width = std::max(mWidth >> mipLevel, 1u);
+		uint32_t height = std::max(mHeight >> mipLevel, 1u);
+
+		uint32_t size = width * height * GetFormatSize(GetFormat());
+		VulkanStagingBuffer stagingBuffer(size);
+
+		VulkanContext& context = VulkanContext::Get();
+
+		VkBufferImageCopy copyInfo{};
+		copyInfo.bufferOffset = 0;
+		copyInfo.bufferRowLength = 0;
+		copyInfo.bufferImageHeight = 0;
+		copyInfo.imageSubresource.aspectMask = GetImageAspect();
+		copyInfo.imageSubresource.mipLevel = mipLevel;
+		copyInfo.imageSubresource.baseArrayLayer = 0;
+		copyInfo.imageSubresource.layerCount = mArrayLayers;
+		copyInfo.imageOffset = { 0, 0, 0 };
+		copyInfo.imageExtent = { mWidth, mHeight, 1 };
+		
+		auto cmd = context.BeginSingleTimeCommandBuffer();
+		context.CopyBufferToImage(cmd, stagingBuffer.GetBuffer(), GetVulkanImage().Image, copyInfo);
+		context.EndSingleTimeCommandBuffer(cmd);
+
+		Buffer buffer = stagingBuffer.ReadData(0, size);
+
+		return buffer;
+	}
+
+	void VulkanTexture2D::WriteMipLevel(uint32_t mipLevel, const Buffer& data)
+	{
+		uint32_t width = std::max(mWidth >> mipLevel, 1u);
+		uint32_t height = std::max(mHeight >> mipLevel, 1u);
+
+		VulkanContext& context = VulkanContext::Get();
+		auto cmd = context.BeginSingleTimeCommandBuffer();
+
+		VkBufferImageCopy copyInfo{};
+		copyInfo.bufferOffset = 0;
+		copyInfo.bufferRowLength = 0;
+		copyInfo.bufferImageHeight = 0;
+		copyInfo.imageSubresource.aspectMask = GetImageAspect();
+		copyInfo.imageSubresource.mipLevel = mipLevel;
+		copyInfo.imageSubresource.baseArrayLayer = 0;
+		copyInfo.imageSubresource.layerCount = mArrayLayers;
+		copyInfo.imageExtent = { width, height, 1 };
+		copyInfo.imageOffset = { 0, 0, 0 };
+
+		VulkanStagingBuffer stagingBuffer(data);
+		auto oldLayout = GetImageLayout();
+		context.TransitionImageLayout(cmd, this, oldLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, 1, 0, mArrayLayers);
+		context.CopyBufferToImage(cmd, stagingBuffer.GetBuffer(), GetVulkanImage().Image, copyInfo);
+		context.TransitionImageLayout(cmd, this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, oldLayout, mipLevel, 1, 0, mArrayLayers);
+
+		context.EndSingleTimeCommandBuffer(cmd);
 	}
 }

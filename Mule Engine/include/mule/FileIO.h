@@ -24,16 +24,19 @@ namespace Mule
 
 	static bool ReadFileBytes(const fs::path& path, Buffer& buffer)
 	{
-		std::ifstream file(path, std::ios::binary);
+		std::ifstream file(path, std::ios::binary | std::ios::ate); // open at end
 		if (!file.is_open())
 			return false;
 
-		file.seekg(std::ios::end);
-		size_t size = file.tellg();
-		file.seekg(std::ios::beg);
+		std::streamsize size = file.tellg();
+		if (size <= 0)
+			return false;
 
-		buffer.Allocate(size);
-		file.read(buffer.As<char>(), size);
+		file.seekg(0, std::ios::beg); // go back to start
+
+		buffer.Allocate(static_cast<size_t>(size));
+		if (!file.read(buffer.As<char>(), size))
+			return false;
 
 		file.close();
 		return true;

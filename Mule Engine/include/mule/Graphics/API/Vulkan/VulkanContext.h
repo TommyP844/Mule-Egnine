@@ -51,6 +51,7 @@ namespace Mule::Vulkan
 		void EndSingleTimeCommandBuffer(Ref<VulkanCommandBuffer> cmd);
 		void CopyBuffer(Ref<VulkanCommandBuffer> cmd, WeakRef<IVulkanBuffer> src, WeakRef<IVulkanBuffer> dst);
 		void CopyBufferToImage(Ref<VulkanCommandBuffer> cmd, VkBuffer buffer, VkImage image, const VkBufferImageCopy& bufferImageCopy);
+		void CopyImageToBuffer(Ref<VulkanCommandBuffer> cmd, VkImage image, VkBuffer buffer, const VkBufferImageCopy& bufferImageCopy);
 		void BlitMip(Ref<VulkanCommandBuffer> cmd, WeakRef<IVulkanTexture> texture, const VkImageBlit& blit);
 		void TransitionImageLayout(Ref<VulkanCommandBuffer> cmd, WeakRef<IVulkanTexture> texture, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
 

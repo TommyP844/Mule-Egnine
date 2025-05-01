@@ -3,6 +3,7 @@
 #include "ImGuiExtension.h"
 #include "Event/EditMaterialEvent.h"
 #include "Event/ViewTextureEvent.h"
+#include "Util.h"
 
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
@@ -69,6 +70,7 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 		file.FilePath = dir.path();
 		file.DisplayName = dir.path().filename().string();
 		file.TexId = dir.is_directory() ? mFolderTexture->GetImGuiID() : mFileTexture->GetImGuiID();
+		file.AssetType = dir.is_directory() ? Mule::AssetType::None : GetAssetTypeFromExt(dir.path()); 
 		if (!dir.is_directory())
 		{
 			auto asset = assetManager->GetAssetByFilepath(dir.path());
@@ -76,12 +78,12 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 			{
 				file.Handle = asset->Handle();
 				file.AssetType = asset->GetType();
-				//if (file.AssetType == Mule::AssetType::Texture)
-				//{
-				//	Ref<Mule::Texture2D> texture = asset;
-				//	file.TexId = texture->GetImGuiID();
-				//}
-				//else
+				if (file.AssetType == Mule::AssetType::Texture)
+				{
+					Ref<Mule::Texture2D> texture = asset;
+					file.TexId = texture->GetImGuiID();
+				}
+				else
 				{
 					file.TexId = mThumbnailManager->GetThumbnail(asset->Handle())->GetImGuiID();
 				}

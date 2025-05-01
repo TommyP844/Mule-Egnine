@@ -100,7 +100,7 @@ namespace Mule::Vulkan
 		{
 		case Mule::ShaderResourceType::UniformBuffer:	return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		case Mule::ShaderResourceType::Sampler:			return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		case Mule::ShaderResourceType::StorageImage:	return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		case Mule::ShaderResourceType::StorageImage:	return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		}
 	}
 
@@ -117,6 +117,36 @@ namespace Mule::Vulkan
 		case Mule::ImageLayout::General: return VK_IMAGE_LAYOUT_GENERAL;
 		default:
 			assert(false && "Invalid vulkan image layout");
+			break;
+		}
+	}
+
+	constexpr ImageLayout GetImageLayout(VkImageLayout layout)
+	{
+		switch (layout)
+		{
+		case VK_IMAGE_LAYOUT_UNDEFINED: return Mule::ImageLayout::Undefined;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: return Mule::ImageLayout::TransferSrc;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: return Mule::ImageLayout::TransferDst;
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: return Mule::ImageLayout::ColorAttachment;
+		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL: return Mule::ImageLayout::DepthAttachment;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: return Mule::ImageLayout::ShaderReadOnly;
+		case VK_IMAGE_LAYOUT_GENERAL: return Mule::ImageLayout::General;
+		default:
+			assert(false && "Invalid vulkan image layout");
+			break;
+		}
+	}
+
+	constexpr VkDescriptorType GetDescriptorType(DescriptorType type)
+	{
+		switch (type)
+		{
+		case Mule::DescriptorType::Texture: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		case Mule::DescriptorType::UniformBuffer: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		case Mule::DescriptorType::StorageImage: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		default:
+			assert(false && "Invalid vulkan descriptor type");
 			break;
 		}
 	}

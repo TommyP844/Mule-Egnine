@@ -12,7 +12,7 @@ namespace Mule::Vulkan
 			buffer.GetSize(),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_QUEUE_GRAPHICS_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 	{
 		SetData(buffer);
 	}
@@ -23,19 +23,14 @@ namespace Mule::Vulkan
 			size,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_QUEUE_GRAPHICS_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 	{
 	}
 
 	void VulkanUniformBuffer::SetData(const Buffer& buffer, uint32_t offset)
 	{
-		VulkanContext& context = VulkanContext::Get();
-
-		VulkanStagingBuffer stagingBuffer(buffer);
-
-		auto cmd = context.BeginSingleTimeCommandBuffer();
-		context.CopyBuffer(cmd, &stagingBuffer, this);
-		context.EndSingleTimeCommandBuffer(cmd);
+		uint8_t* ptr = (uint8_t*)buffer.GetData();
+		memcpy(mMappedPtr, ptr + offset, buffer.GetSize());
 	}
 
 }

@@ -9,11 +9,11 @@ namespace Mule::Vulkan
 	class VulkanDescriptorSet : ShaderResourceGroup
 	{
 	public:
-		VulkanDescriptorSet(const std::vector<Ref<ShaderResourceBlueprint>>& blueprints);
+		VulkanDescriptorSet(Ref<ShaderResourceBlueprint> blueprint);
 		~VulkanDescriptorSet();
 
-		void Update(uint32_t binding, WeakRef<Texture> texture, uint32_t arrayIndex = 0) override;
-		void Update(uint32_t binding, WeakRef<TextureView> texture, uint32_t arrayIndex = 0) override;
+		void Update(uint32_t binding, DescriptorType type, WeakRef<Texture> texture, uint32_t arrayIndex = 0) override;
+		void Update(uint32_t binding, DescriptorType type, ImageLayout layout, WeakRef<TextureView> texture, uint32_t arrayIndex = 0) override;
 		void Update(uint32_t binding, WeakRef<UniformBuffer> buffer, uint32_t arrayIndex = 0) override;
 
 		VkDescriptorSet GetDescriptorSet() const { return mDescriptorSet; }

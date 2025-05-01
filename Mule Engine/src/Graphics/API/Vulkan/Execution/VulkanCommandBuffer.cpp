@@ -14,6 +14,7 @@
 #include "Graphics/API/Vulkan/VulkanDescriptorSet.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanIndexBuffer.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanVertexBuffer.h"
+#include "Graphics/API/Vulkan/Buffer/VulkanStagingBuffer.h"
 
 #include "Graphics/API/Vulkan/VulkanTypeConversion.h"
 
@@ -306,7 +307,7 @@ namespace Mule::Vulkan
 				&range
 			);
 
-			TranistionImageLayout(attachment, (ImageLayout)oldLayout);
+			TranistionImageLayout(attachment, GetImageLayout(oldLayout));
 		}
 
 		WeakRef<VulkanTexture2D> depthAttachment = framebuffer->GetDepthAttachment();
@@ -334,7 +335,7 @@ namespace Mule::Vulkan
 				&range
 			);
 
-			TranistionImageLayout(depthAttachment, (ImageLayout)oldLayout);
+			TranistionImageLayout(depthAttachment, GetImageLayout(oldLayout));
 		}
 	}
 
@@ -565,8 +566,8 @@ namespace Mule::Vulkan
 
 	void VulkanCommandBuffer::CopyTexture(WeakRef<Texture> src, WeakRef<Texture> dst, const TextureCopyInfo& copyInfo) const
 	{
-		WeakRef<IVulkanTexture> vulkanSrc = src;
-		WeakRef<IVulkanTexture> vulkanDst = dst;
+		WeakRef<VulkanTexture2D> vulkanSrc = src;
+		WeakRef<VulkanTexture2D> vulkanDst = dst;
 
 		VkImageCopy region{};
 		region.srcOffset.x = copyInfo.SrcOffset.x;
@@ -596,8 +597,8 @@ namespace Mule::Vulkan
 
 	void VulkanCommandBuffer::ReadTexture(WeakRef<Texture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const
 	{
-		WeakRef<IVulkanTexture> vulkanTexture = texture;
-		WeakRef<IVulkanBuffer> vulkanBuffer = buffer;
+		WeakRef<VulkanTexture2D> vulkanTexture = texture;
+		WeakRef<VulkanStagingBuffer> vulkanBuffer = buffer;
 
 		VkBufferImageCopy region = {};
 		region.bufferOffset = 0;
@@ -653,43 +654,30 @@ namespace Mule::Vulkan
 		vkCmdPushConstants(mCommandBuffer, vulkanPipeline->GetPipelineLayout(), GetShaderStage(stage), range.Offset, size, data);
 	}
 
-	void VulkanCommandBuffer::BindGraphicsDescriptorSet(WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& descriptorSets)
+	void VulkanCommandBuffer::BindComputePipeline(WeakRef<ComputePipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups)
 	{
-		WeakRef<VulkanGraphicsPipeline> vulkanPipeline = shader;
+		WeakRef<VulkanComputePipeline> vkPipeline = shader;
+		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->GetPipeline());
 
 		std::vector<VkDescriptorSet> sets;
-		for (auto set : descriptorSets)
+		for (auto set : groups)
 		{
 			WeakRef<VulkanDescriptorSet> vulkanSet = set;
 			sets.push_back(vulkanSet->GetDescriptorSet());
 		}
-		
-		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->GetPipelineLayout(), 0, sets.size(), sets.data(), 0, nullptr);
+
+		vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->GetPipelineLayout(), 0, sets.size(), sets.data(), 0, nullptr);
+	}
+
+	void VulkanCommandBuffer::SetPushConstants(WeakRef<ComputePipeline> shader, void* data, uint32_t size)
+	{
+		WeakRef<VulkanComputePipeline> vkPipeline = shader;
+		vkCmdPushConstants(mCommandBuffer, vkPipeline->GetPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, size, data);
 	}
 
 	void VulkanCommandBuffer::Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ)
 	{
 		vkCmdDispatch(mCommandBuffer, workGroupsX, workGroupsY, workGroupsZ);
-	}
-
-	void VulkanCommandBuffer::BlendEnable(uint32_t attachment, bool blendEnable)
-	{
-		VkBool32 blendEnable32 = blendEnable;
-		vkCmdSetColorBlendEnableEXT(mCommandBuffer, attachment, 1, &blendEnable32);
-
-		VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		vkCmdSetColorWriteMaskEXT(mCommandBuffer, attachment, 1, &colorWriteMask);
-
-		VkColorBlendEquationEXT blendEquation = {};
-		blendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		blendEquation.colorBlendOp = VK_BLEND_OP_ADD;
-
-		blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		blendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		blendEquation.alphaBlendOp = VK_BLEND_OP_ADD;
-
-		vkCmdSetColorBlendEquationEXT(mCommandBuffer, attachment, 1, &blendEquation);
 	}
 
 	void VulkanCommandBuffer::BindMesh(WeakRef<Mesh> mesh)

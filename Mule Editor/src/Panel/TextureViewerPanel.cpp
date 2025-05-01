@@ -68,14 +68,14 @@ void TextureViewerPanel::OnUIRender(float dt)
 				ImGui::DragInt("##Mip", &mMipLevel, 0.02f, 0, mTexture->GetMipLevels() - 1);
 			}
 
-			/*
-			id = mTexture->GetImGuiMipLayerID(mMipLevel, mLayer);
+			
+			id = mTexture->GetImGuiID(mMipLevel, mLayer);
 
 			if (id != 0)
 			{
 				ImGui::Image(id, { 512, 512 });
 			}
-			*/
+			
 		}
 	}
 	ImGui::End();

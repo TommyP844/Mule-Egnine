@@ -28,20 +28,20 @@ namespace Mule::Vulkan
 		void EndRendering() override;
 
 
-		// Texture
+		// WARNING, the following commands only work with 2d textures
+		// Texture 2D
 		void TranistionImageLayout(WeakRef<Texture> texture, ImageLayout newLayout) override;
 		void CopyTexture(WeakRef<Texture> src, WeakRef<Texture> dst, const TextureCopyInfo& copyInfo) const override;
 		void ReadTexture(WeakRef<Texture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const override;
 
-		// Shader
+		// Graphics Pipelines
 		void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 		void SetPushConstants(WeakRef<GraphicsPipeline> shader, ShaderStage stage, const void* data, uint32_t size) override;
-		void BindGraphicsDescriptorSet(WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& descriptorSets) override;
+		
+		// Compute Pipelines
+		void BindComputePipeline(WeakRef<ComputePipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
+		void SetPushConstants(WeakRef<ComputePipeline> shader, void* data, uint32_t size) override;
 		void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ) override;
-		// void SetPushConstants(WeakRef<VulkanComputeShader> shader, void* data, uint32_t size) override;
-		// void BindComputeDescriptorSet(WeakRef<VulkanComputeShader> shader, WeakRef<VulkanDescriptorSet> descriptorSet) override;
-		// void BindComputePipeline(WeakRef<VulkanComputeShader> shader) override;
-		void BlendEnable(uint32_t attachment, bool blendEnable) override;
 
 		// Mesh
 		void BindMesh(WeakRef<Mesh> mesh) override;

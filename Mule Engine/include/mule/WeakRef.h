@@ -32,12 +32,14 @@ public:
     template<typename Derived>
     WeakRef(const Ref<Derived>& other)
     {
+		static_assert(std::is_base_of<T, Derived>::value || std::is_base_of<Derived, T>::value, "WeakRef can only be constructed from Ref of a derived type");
         mPtr = (T*)other.Get();
     }
 
     template<typename Derived>
     WeakRef(const WeakRef<Derived>& other)
     {
+        static_assert(std::is_base_of<T, Derived>::value || std::is_base_of<Derived, T>::value, "WeakRef can only be constructed from WeakRef of a derived type");
         mPtr = (T*)other.Get();
     }
 

@@ -125,7 +125,7 @@ namespace Mule::RenderGraph
 		mResizeCallback = func;
 	}
 
-	void RenderGraph::SetPreRenderCallback(std::function<void(Ref<CommandBuffer>)> func)
+	void RenderGraph::SetPreRenderCallback(std::function<void(Ref<CommandBuffer>, WeakRef<Scene>, WeakRef<Camera>)> func)
 	{
 		assert(!mIsBaked && "RenderGraph is already baked, cannot set pre render callback");
 
@@ -134,7 +134,7 @@ namespace Mule::RenderGraph
 		mPreRenderCmd = mCommandAllocator->CreateCommandBuffer();
 	}
 
-	void RenderGraph::SetPostRenderCallback(std::function<void(Ref<CommandBuffer>)> func)
+	void RenderGraph::SetPostRenderCallback(std::function<void(Ref<CommandBuffer>, WeakRef<Scene>)> func)
 	{
 		assert(!mIsBaked && "RenderGraph is already baked, cannot set post render callback");
 
@@ -143,13 +143,13 @@ namespace Mule::RenderGraph
 		mPostRenderCmd = mCommandAllocator->CreateCommandBuffer();
 	}
 
-	void RenderGraph::Execute(WeakRef<Scene> scene)
+	void RenderGraph::Execute(WeakRef<Scene> scene, WeakRef<Camera> cameraOverride)
 	{
+		for (auto& pass : mPasses)
+			pass.Fence->Wait();
+
 		if (mResizeEvents[mFrameIndex].Resize && mResizeCallback)
 		{
-			for (auto& pass : mPasses)
-				pass.Fence->Wait();
-
 			mResizeCallback(mResizeEvents[mFrameIndex].Width, mResizeEvents[mFrameIndex].Height);
 		}
 
@@ -160,14 +160,15 @@ namespace Mule::RenderGraph
 
 			mPreRenderCmd->Reset();
 			mPreRenderCmd->Begin();
-			mPreRenderCallback(mPreRenderCmd);
+			mPreRenderCallback(mPreRenderCmd, scene, cameraOverride);
 			mPreRenderCmd->End();
 			mQueue->Submit(mPreRenderCmd, mPreRenderWaitSemaphores, mPreRenderSignalSemaphores, mPreRenderFence);
 		}
 
 		for (auto pass : mPasses)
 		{
-			pass.Fence->Wait();
+			// Fence wait is above so that pre render pass can modify frame resources
+			// pass.Fence->Wait();
 			pass.Fence->Reset();
 
 			if (mResizeEvents[mFrameIndex].Resize)
@@ -195,7 +196,7 @@ namespace Mule::RenderGraph
 
 			mPostRenderCmd->Reset();
 			mPostRenderCmd->Begin();
-			mPostRenderCallback(mPostRenderCmd);
+			mPostRenderCallback(mPostRenderCmd, scene);
 			mPostRenderCmd->End();
 			mQueue->Submit(mPostRenderCmd, mPostRenderWaitSemaphores, mPostRenderSignalSemaphores, mPostRenderFence);
 		}

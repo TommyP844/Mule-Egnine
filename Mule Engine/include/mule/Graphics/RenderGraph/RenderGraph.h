@@ -14,6 +14,8 @@
 #include "Graphics/API/Framebuffer.h"
 #include "Graphics/API/Semaphore.h"
 
+#include "Graphics/Camera.h"
+
 #include <vector>
 
 namespace Mule
@@ -38,7 +40,7 @@ namespace Mule::RenderGraph
 		template<class T>
 		Ref<T> GetResource(ResourceHandle<T> handle) const;
 
-		void Execute(WeakRef<Scene> scene);
+		void Execute(WeakRef<Scene> scene, WeakRef<Camera> cameraOverride = nullptr);
 		Ref<Semaphore> GetCurrentSemaphore();
 
 		virtual Ref<Framebuffer> GetCurrentFrameBuffer() const = 0;
@@ -52,8 +54,8 @@ namespace Mule::RenderGraph
 		WeakRef<T> CreatePass();
 
 		void SetResizeCallback(std::function<void(uint32_t, uint32_t)> func);
-		void SetPreRenderCallback(std::function<void(Ref<CommandBuffer>)> func);
-		void SetPostRenderCallback(std::function<void(Ref<CommandBuffer>)> func);
+		void SetPreRenderCallback(std::function<void(Ref<CommandBuffer>, WeakRef<Scene>, WeakRef<Camera>)> func);
+		void SetPostRenderCallback(std::function<void(Ref<CommandBuffer>, WeakRef<Scene>)> func);
 
 	private:
 		bool mIsBaked = false;
@@ -66,13 +68,13 @@ namespace Mule::RenderGraph
 
 		std::function<void(uint32_t, uint32_t)> mResizeCallback = nullptr;
 
-		std::function<void(Ref<CommandBuffer>)> mPreRenderCallback = nullptr;
+		std::function<void(Ref<CommandBuffer>, WeakRef<Scene>, WeakRef<Camera>)> mPreRenderCallback = nullptr;
 		Ref<Fence> mPreRenderFence = nullptr;
 		std::vector<Ref<Semaphore>> mPreRenderWaitSemaphores = {};
 		std::vector<Ref<Semaphore>> mPreRenderSignalSemaphores = {};
 		Ref<CommandBuffer> mPreRenderCmd = nullptr;
 
-		std::function<void(Ref<CommandBuffer>)> mPostRenderCallback = nullptr;
+		std::function<void(Ref<CommandBuffer>, WeakRef<Scene>)> mPostRenderCallback = nullptr;
 		Ref<Fence> mPostRenderFence = nullptr;
 		std::vector<Ref<Semaphore>> mPostRenderWaitSemaphores = {};
 		std::vector<Ref<Semaphore>> mPostRenderSignalSemaphores = {};

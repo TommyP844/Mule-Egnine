@@ -11,8 +11,6 @@ namespace Mule
 	struct ComputePipelineDescription
 	{
 		std::filesystem::path Filepath;
-		std::vector<Ref<ShaderResourceBlueprint>> Resources;
-		uint32_t ConstantBufferSize;
 	};
 
 	class ComputePipeline

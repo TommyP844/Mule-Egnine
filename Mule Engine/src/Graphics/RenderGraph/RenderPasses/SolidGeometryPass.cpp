@@ -20,11 +20,8 @@ namespace Mule
 	{
 		auto shaderFactory = mServiceManager->Get<ShaderFactory>();
 		auto shader = shaderFactory->GetOrCreateGraphicsPipeline("Geometry");
-		auto blueprint = shader->GetBlueprintIndex(0);
-		std::vector<Ref<ShaderResourceBlueprint>> blueprints = {
-			blueprint
-		};
-		mShaderResourceGroupHandle = mGraph->AddResource<ShaderResourceGroup>(blueprints);
+
+		mShaderResourceGroupHandle = mGraph->AddResource<ShaderResourceGroup>(shader->GetBlueprintIndex(0));
 	}
 
 	bool SolidGeometryPass::Validate()
@@ -37,8 +34,12 @@ namespace Mule
 		//TODO: Update descriptor sets
 		auto resourceGroup = mGraph->GetResource(mShaderResourceGroupHandle);
 		WeakRef<UniformBuffer> cameraBuffer = mGraph->GetResource(mCameraBufferHandle);
+		WeakRef<UniformBuffer> lightBuffer = mGraph->GetResource(mLightBufferHandle);
+		WeakRef<UniformBuffer> materialBuffer = mGraph->GetResource(mMaterialBufferHandle);
 
 		resourceGroup->Update(0, cameraBuffer);
+		resourceGroup->Update(1, materialBuffer);
+		resourceGroup->Update(2, lightBuffer);
 	}
 
 	void SolidGeometryPass::Resize(uint32_t width, uint32_t height)
@@ -58,6 +59,16 @@ namespace Mule
 	void SolidGeometryPass::SetBindlessTextureResourceHandle(RenderGraph::ResourceHandle<ShaderResourceGroup> resourceHandle)
 	{
 		mBindlessTextureResourceHandle = resourceHandle;
+	}
+
+	void SolidGeometryPass::SetLightBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle)
+	{
+		mLightBufferHandle = bufferHandle;
+	}
+
+	void SolidGeometryPass::SetMaterialBufferHandle(RenderGraph::ResourceHandle<UniformBuffer> bufferHandle)
+	{
+		mMaterialBufferHandle = bufferHandle;
 	}
 
 	void SolidGeometryPass::Render(Ref<CommandBuffer> cmd, WeakRef<Scene> scene)
@@ -88,11 +99,11 @@ namespace Mule
 
 				auto irradianceMap = assetManager->GetAsset<Texture>(envMap->GetDiffuseIBLMap());
 				auto prefilterMap = assetManager->GetAsset<Texture>(envMap->GetPreFilterMap());
-				auto brdfLut = assetManager->GetAsset<Texture>(envMap->GetBRDFLutMap());
+				auto brdfLut = assetManager->GetAsset<Texture>(MULE_BDRF_LUT_TEXTURE_HANDLE);
 
-				resourceGroup->Update(3, irradianceMap);
-				resourceGroup->Update(4, prefilterMap);
-				resourceGroup->Update(5, brdfLut);
+				resourceGroup->Update(3, DescriptorType::Texture, irradianceMap);
+				resourceGroup->Update(4, DescriptorType::Texture, prefilterMap);
+				resourceGroup->Update(5, DescriptorType::Texture, brdfLut);
 				
 				foundEnvMap = true;
 
@@ -104,20 +115,20 @@ namespace Mule
 				auto blackCube = assetManager->GetAsset<Texture>(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 				auto blackImage = assetManager->GetAsset<Texture>(MULE_BLACK_TEXTURE_HANDLE);
 
-				resourceGroup->Update(3, blackCube, 0);
-				resourceGroup->Update(4, blackCube, 0);
-				resourceGroup->Update(5, blackImage, 0);
+				resourceGroup->Update(3, DescriptorType::Texture, blackCube, 0);
+				resourceGroup->Update(4, DescriptorType::Texture, blackCube, 0);
+				resourceGroup->Update(5, DescriptorType::Texture, blackImage, 0);
 			}
 		}
 
 		cmd->TranistionImageLayout(frameBuffer->GetColorAttachment(0), ImageLayout::ColorAttachment);
 		cmd->BeginRendering(frameBuffer, shader);
 		cmd->BindPipeline(shader, { resourceGroup, bindlessResourceGroup });
-		cmd->BlendEnable(0, false);
 
 		for (auto entity : scene->Iterate<MeshComponent>())
 		{
 			const auto& meshComponent = entity.GetComponent<MeshComponent>();
+			uint64_t guid = entity.Guid();
 
 			if (!meshComponent.Visible)
 				continue;
@@ -128,10 +139,10 @@ namespace Mule
 			auto material = assetManager->GetAsset<Material>(meshComponent.MaterialHandle);
 
 			uint32_t constants[4] = {
-				0,
-				0,
-				0,
-				0
+				meshComponent.MaterialIndex,
+				(uint32_t)guid >> 32,
+				(uint32_t)guid & 0xFFFFFFFFull,
+				0 // Padding
 			};
 
 			cmd->SetPushConstants(shader, ShaderStage::Vertex, &transform[0][0], sizeof(transform));

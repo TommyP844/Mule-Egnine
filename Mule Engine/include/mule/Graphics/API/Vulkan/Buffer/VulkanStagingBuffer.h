@@ -10,6 +10,7 @@ namespace Mule::Vulkan
 	{
 	public:
 		VulkanStagingBuffer(const Buffer& buffer);
+		VulkanStagingBuffer(uint32_t size);
 		virtual ~VulkanStagingBuffer();
 
 		void WriteData(const Buffer& buffer) override;
