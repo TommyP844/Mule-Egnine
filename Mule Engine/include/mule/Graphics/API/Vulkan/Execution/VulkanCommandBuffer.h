@@ -23,7 +23,7 @@ namespace Mule::Vulkan
 		// Framebuffer
 		void BeginSwapchainRendering() override;
 		void EndSwapchainRendering() override;
-		void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader) override;
+		void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 		void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) override;
 		void EndRendering() override;
 
@@ -35,7 +35,6 @@ namespace Mule::Vulkan
 		void ReadTexture(WeakRef<Texture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const override;
 
 		// Graphics Pipelines
-		void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 		void SetPushConstants(WeakRef<GraphicsPipeline> shader, ShaderStage stage, const void* data, uint32_t size) override;
 		
 		// Compute Pipelines

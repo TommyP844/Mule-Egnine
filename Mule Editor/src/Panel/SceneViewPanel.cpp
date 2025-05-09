@@ -150,9 +150,9 @@ void SceneViewPanel::OnUIRender(float dt)
 				mEditorContext->GetEditorCamera().SetAspectRatio(mWidth / mHeight);
 			}
 			
-			scene->OnRender(WeakRef<Mule::Camera>(&mEditorContext->GetEditorCamera()));
-			WeakRef<Mule::Framebuffer> frameBuffer = scene->GetRenderGraph()->GetCurrentFrameBuffer();
-			WeakRef<Mule::Texture2D> texture = frameBuffer->GetColorAttachment(0);
+			WeakRef<Mule::Camera> editorCamera = &mEditorContext->GetEditorCamera();
+			scene->OnEditorRender(editorCamera);
+			WeakRef<Mule::Texture2D> texture = editorCamera->GetColorOutput();
 			texId = texture->GetImGuiID();
 		}
 

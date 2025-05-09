@@ -11,9 +11,7 @@
 
 #include "Scripting/ScriptContext.h"
 
-// Renderers
-#include "Graphics/RenderGraph/RenderGraph.h"
-#include "Graphics/SceneRenderer.h"
+#include "Graphics/Renderer/Renderer.h"
 
 #include <entt/entt.hpp>
 
@@ -31,8 +29,6 @@ namespace Mule
 
 	Scene::~Scene()
 	{
-		if (mRenderGraph)
-			mRenderGraph.Release();
 	}
 
 	Entity Scene::CreateEntity(const std::string& name, const Guid& guid)
@@ -144,32 +140,15 @@ namespace Mule
 	void Scene::SetViewportDimension(float width, float height)
 	{ 
 		mViewportWidth = width; 
-		mViewportHeight = height; 
-		mRenderGraph->Resize(width, height);
+		mViewportHeight = height;
 	}
 
 	void Scene::OnPrepare()
 	{
-		mRenderGraph = MakeRef<SceneRenderer>(mServiceManager);
-
-		for (auto entity : mRegistry.view<MeshComponent>())
-		{
-			auto& meshComponent = mRegistry.get<MeshComponent>(entity);
-			if (!meshComponent.Visible || meshComponent.MaterialHandle == AssetHandle::Null() || meshComponent.MaterialHandle == AssetHandle::Null())
-				continue;
-			auto material = mServiceManager->Get<AssetManager>()->GetAsset<Material>(meshComponent.MaterialHandle);
-
-			if (!material)
-				continue;
-
-			WeakRef<SceneRenderer> graph = mRenderGraph;
-			meshComponent.MaterialIndex = graph->AddMaterial(material);
-		}
 	}
 
 	void Scene::OnUnload()
 	{
-		mRenderGraph = nullptr;
 	}
 
 	void Scene::OnPlayStart()
@@ -230,7 +209,7 @@ namespace Mule
 			mPhysicsContext.CreateRigidBody(info);	
 		}
 
-		auto scriptContext = mEngineContext->GetScriptContext();
+		auto scriptContext = mServiceManager->Get<ScriptContext>();
 		for (auto entity : mRegistry.view<ScriptComponent>())
 		{
 			Entity e(entity, this);
@@ -273,7 +252,7 @@ namespace Mule
 			cameraComponent.Camera->SetAspectRatio(mViewportWidth / mViewportHeight);
 		}
 
-		auto scriptContext = mEngineContext->GetScriptContext();
+		auto scriptContext = mServiceManager->Get<ScriptContext>();
 		for (auto entity : mRegistry.view<ScriptComponent>())
 		{
 			Entity e(entity, this);
@@ -291,9 +270,36 @@ namespace Mule
 		}
 	}
 
-	void Scene::OnRender(WeakRef<Camera> cameraOverride)
+	void Scene::OnEditorRender(WeakRef<Camera> editorCamera)
 	{
-		mRenderGraph->Execute(this, cameraOverride);
+		RecordRuntimeDrawCommands();
+		RecordEditorDrawCommands();
+
+		Renderer::Get().Submit(*editorCamera, mCommandList);
+
+		mCommandList.Flush();
+	}
+
+	void Scene::OnRender()
+	{
+		Ref<Camera> camera = GetMainCamera();
+		RecordRuntimeDrawCommands();
+		
+		Renderer::Get().Submit(*camera, mCommandList);
+
+		mCommandList.Flush();
+	}
+
+	Ref<Camera> Scene::GetMainCamera() const
+	{
+		for (auto entity : mRegistry.view<CameraComponent>())
+		{
+			const auto& cameraComponent = GetComponent<CameraComponent>(entity);
+			if (cameraComponent.Active)
+				return cameraComponent.Camera;
+		}
+
+		return nullptr;
 	}
 
 	Entity Scene::CopyEntityToScene(WeakRef<Scene> scene, Entity entity)
@@ -329,5 +335,34 @@ namespace Mule
 	void Scene::OnCameraComponentConstruct(entt::registry& registry, entt::entity id)
 	{
 		registry.get<CameraComponent>(id).Camera = MakeRef<Camera>();
+	}
+
+	void Scene::RecordRuntimeDrawCommands()
+	{
+		auto assetManager = mServiceManager->Get<AssetManager>();
+
+		for (auto entity : mRegistry.view<MeshComponent>())
+		{
+			const auto& meshComponent = GetComponent<MeshComponent>(entity);
+			const auto& transformComponent = GetComponent<TransformComponent>(entity);
+
+			if (!meshComponent.Visible)
+				continue;
+
+			auto mesh = assetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
+			auto material = assetManager->GetAsset<Material>(meshComponent.MaterialHandle);
+
+			DrawCommand drawCommand{
+				mesh,
+				material,
+				transformComponent.TRS(),
+			};
+
+			mCommandList.AddCommand(drawCommand);
+		}
+	}
+
+	void Scene::RecordEditorDrawCommands()
+	{
 	}
 }

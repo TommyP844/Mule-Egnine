@@ -28,6 +28,7 @@ namespace Mule
 		mWindow = MakeRef<Window>(description.WindowName);
 
 		GraphicsContext::Init(GraphicsAPI::Vulkan, mWindow);
+		ShaderFactory::Init();
 
 		mServiceManager = MakeRef<ServiceManager>();
 
@@ -35,7 +36,6 @@ namespace Mule
 		mServiceManager->Register<ImGuiContext>(mWindow);
 		mServiceManager->Register<ScriptContext>(this);
 		mServiceManager->Register<JobSystem>();
-		mServiceManager->Register<ShaderFactory>();
 		mServiceManager->Register<EnvironmentMapGenerator>(mServiceManager);
 
 
@@ -64,6 +64,7 @@ namespace Mule
 
 		mServiceManager.Release();
 
+		ShaderFactory::Shutdown();
 		GraphicsContext::Shutdown();
 	}
 
@@ -102,7 +103,7 @@ namespace Mule
 	{
 		auto assetManager = mServiceManager->Get<AssetManager>();
 		auto jobSystem = mServiceManager->Get<JobSystem>();
-		auto shaderFactory = mServiceManager->Get<ShaderFactory>();
+		auto& shaderFactory = ShaderFactory::Get();
 
 		// Engine Assets		
 		uint8_t blackImageData[] = {
@@ -237,7 +238,7 @@ namespace Mule
 			geometryPipeline.DepthFormat = TextureFormat::D_32F;
 			geometryPipeline.EnableDepthTest = true;
 			geometryPipeline.EnableDepthWrite = true;
-			shaderFactory->RegisterGraphicsPipeline("Geometry", geometryPipeline);
+			shaderFactory.RegisterGraphicsPipeline("Geometry", geometryPipeline);
 
 
 			GraphicsPipelineDescription environmentMapPipeline{};
@@ -248,22 +249,22 @@ namespace Mule
 			environmentMapPipeline.DepthFormat = TextureFormat::D_32F;
 			environmentMapPipeline.EnableDepthTest = false;
 			environmentMapPipeline.EnableDepthWrite = false;
-			shaderFactory->RegisterGraphicsPipeline("EnvironmentMap", environmentMapPipeline);
+			shaderFactory.RegisterGraphicsPipeline("EnvironmentMap", environmentMapPipeline);
 		}
 
 		// Compute Pipelines
 		{
 			ComputePipelineDescription cubeMapCompute{};
 			cubeMapCompute.Filepath = "../Assets/Shaders/Compute/HDRToCubeMapCompute.glsl";
-			shaderFactory->RegisterComputePipeline("HDRToCubemap", cubeMapCompute);
+			shaderFactory.RegisterComputePipeline("HDRToCubemap", cubeMapCompute);
 
 			ComputePipelineDescription diffuseIBLCompute{};
 			diffuseIBLCompute.Filepath = "../Assets/Shaders/Compute/DiffuseIBLCompute.glsl";
-			shaderFactory->RegisterComputePipeline("DiffuseIBL", diffuseIBLCompute);
+			shaderFactory.RegisterComputePipeline("DiffuseIBL", diffuseIBLCompute);
 
 			ComputePipelineDescription prefilterIBLCompute{};
 			prefilterIBLCompute.Filepath = "../Assets/Shaders/Compute/PrefilterIBLCompute.glsl";
-			shaderFactory->RegisterComputePipeline("PrefilterIBL", prefilterIBLCompute);
+			shaderFactory.RegisterComputePipeline("PrefilterIBL", prefilterIBLCompute);
 		}
 	}
 }

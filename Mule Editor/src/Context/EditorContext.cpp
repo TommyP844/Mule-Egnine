@@ -12,8 +12,10 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 		fs::create_directory(mAssetsPath);
 
 	mProjectName = projectPath.filename().string();
-
 	mScriptEditorContext = MakeRef<ScriptEditorContext>(mProjectPath);
+
+	auto registry = Mule::Renderer::Get().CreateResourceRegistry();
+	mEditorCamera.SetResourceRegistry(registry);
 
 	auto jobSystem = mEngineContext->GetServiceManager()->Get<Mule::JobSystem>();
 	auto assetManager = mEngineContext->GetAssetManager();

@@ -44,9 +44,11 @@ namespace Mule
 	enum class TextureFormat : uint32_t
 	{
 		R_8U,
+
 		BGRA_8U,
 		RGBA_8U,
 		RGB_8U,
+		RGB_32F,
 
 		R_32UI,
 		RG_32UI,

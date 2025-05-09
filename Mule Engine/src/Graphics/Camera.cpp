@@ -3,6 +3,8 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
+#include "Graphics/Renderer/Renderer.h"
+
 namespace Mule
 {
 	Camera::Camera()
@@ -138,5 +140,11 @@ namespace Mule
 		mUp = glm::normalize(glm::cross(mRight, mViewDir));
 
 		UpdateView();
+	}
+
+	Ref<Texture2D> Camera::GetColorOutput() const
+	{
+		uint32_t frameIndex = Renderer::Get().GetFrameIndex();
+		return mResourceRegistry->GetColorOutput(frameIndex);
 	}
 }

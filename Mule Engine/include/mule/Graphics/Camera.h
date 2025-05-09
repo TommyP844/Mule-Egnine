@@ -2,6 +2,9 @@
 
 #include <glm/glm.hpp>
 
+#include "Ref.h"
+#include "Graphics/Renderer/RenderGraph/ResourceRegistry.h"
+
 namespace Mule
 {
 	class Camera
@@ -21,8 +24,6 @@ namespace Mule
 		void SetFOVDegrees(float degrees);
 		void SetAspectRatio(float aspectRatio);
 
-		void Rotate(float yawDelata, float pitchDelata);
-
 		// Getters
 		const glm::mat4& GetView() const { return mView; }
 		const glm::mat4& GetProj() const { return mProj; }
@@ -40,14 +41,23 @@ namespace Mule
 		float GetPitch() const { return mPitch; }
 
 
+		void Rotate(float yawDelata, float pitchDelata);
 		void UpdateView();
 		void UpdateProjection();
 		void UpdateViewProjection();
 		void UpdateLocalVectors();
+
+		void SetResourceRegistry(Ref<ResourceRegistry> registry) { mResourceRegistry = registry; }
+		Ref<ResourceRegistry> GetRegistry() const { return mResourceRegistry; }
+		
+		Ref<Texture2D> GetColorOutput() const;
+
 	private:
 		glm::mat4 mView, mProj, mVP;
 
 		glm::vec3 mPosition, mWorldUp, mViewDir, mRight, mUp;
 		float mFOVDeg, mNearPlane, mFarPlane, mAspectRatio, mYaw, mPitch;
+
+		Ref<ResourceRegistry> mResourceRegistry;
 	};
 }

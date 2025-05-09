@@ -12,20 +12,21 @@ namespace Mule::Vulkan
 	{
 		switch (format)
 		{
-		case Mule::TextureFormat::R_8U:		return VK_FORMAT_R8_UNORM;
-		case Mule::TextureFormat::BGRA_8U:	return VK_FORMAT_B8G8R8A8_UNORM;
-		case Mule::TextureFormat::RGBA_8U:	return VK_FORMAT_R8G8B8A8_UNORM;
-		case Mule::TextureFormat::RGB_8U:	return VK_FORMAT_R8G8B8_UNORM;
-		case Mule::TextureFormat::R_32UI:	return VK_FORMAT_R32_UINT;
-		case Mule::TextureFormat::RG_32UI:	return VK_FORMAT_R32G32_UINT;
-		case Mule::TextureFormat::D_32F:	return VK_FORMAT_D32_SFLOAT;
-		case Mule::TextureFormat::D_24S8:	return VK_FORMAT_D24_UNORM_S8_UINT;
-		case Mule::TextureFormat::RGBA_16F:	return VK_FORMAT_R16G16B16A16_SFLOAT;
-		case Mule::TextureFormat::R_32F:	return VK_FORMAT_R32_SFLOAT;
-		case Mule::TextureFormat::RGBA_32F:	return VK_FORMAT_R32G32B32A32_SFLOAT;
-		case Mule::TextureFormat::RGBA_32S:	return VK_FORMAT_R32G32B32A32_SINT;
-		case Mule::TextureFormat::RGBA_32U:	return VK_FORMAT_R32G32B32A32_UINT;
-		case Mule::TextureFormat::R_64UI:	return VK_FORMAT_R64_UINT;
+		case TextureFormat::R_8U:		return VK_FORMAT_R8_UNORM;
+		case TextureFormat::BGRA_8U:	return VK_FORMAT_B8G8R8A8_UNORM;
+		case TextureFormat::RGBA_8U:	return VK_FORMAT_R8G8B8A8_UNORM;
+		case TextureFormat::RGB_8U:	return VK_FORMAT_R8G8B8_UNORM;
+		case TextureFormat::R_32UI:	return VK_FORMAT_R32_UINT;
+		case TextureFormat::RG_32UI:	return VK_FORMAT_R32G32_UINT;
+		case TextureFormat::D_32F:	return VK_FORMAT_D32_SFLOAT;
+		case TextureFormat::D_24S8:	return VK_FORMAT_D24_UNORM_S8_UINT;
+		case TextureFormat::RGBA_16F:	return VK_FORMAT_R16G16B16A16_SFLOAT;
+		case TextureFormat::R_32F:	return VK_FORMAT_R32_SFLOAT;
+		case TextureFormat::RGBA_32F:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case TextureFormat::RGBA_32S:	return VK_FORMAT_R32G32B32A32_SINT;
+		case TextureFormat::RGBA_32U:	return VK_FORMAT_R32G32B32A32_UINT;
+		case TextureFormat::R_64UI:	return VK_FORMAT_R64_UINT;
+		case TextureFormat::RGB_32F:		return VK_FORMAT_R32G32B32_SFLOAT;
 		case Mule::TextureFormat::NONE: 
 		default:
 			assert(false && "Invalid texture format for vulkan");

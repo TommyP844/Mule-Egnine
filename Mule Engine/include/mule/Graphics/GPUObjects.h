@@ -4,15 +4,15 @@
 
 namespace Mule::GPU
 {
-
-	struct GPUCamera
+	struct Camera
 	{
+		alignas(16) glm::mat4 ViewProjection;
 		alignas(16) glm::mat4 View;
-		alignas(16) glm::mat4 Proj;
-		alignas(16) glm::vec3 CameraPos;
+		alignas(16) glm::vec3 Position;
+		alignas(16) glm::vec3 ViewDirection;
 	};
 
-	struct GPUMaterial
+	struct Material
 	{
 		alignas(16) glm::vec4 AlbedoColor;
 		alignas(8) glm::vec2 TextureScale;
@@ -29,24 +29,24 @@ namespace Mule::GPU
 		alignas(4) float Transparency;
 	};
 
-	struct GPUDirectionalLight
+	struct DirectionalLight
 	{
 		alignas(4)  float Intensity = 0.f;
 		alignas(16) glm::vec3 Color = glm::vec3(0.f);
 		alignas(16) glm::vec3 Direction = glm::vec3(0.f, 1.f, 0.f);
 	};
 
-	struct GPUPointLight
+	struct PointLight
 	{
 		alignas(4)  float Intensity = 0.f;
 		alignas(16) glm::vec3 Color = glm::vec3(0.f);
 		alignas(16) glm::vec3 Position;
 	};
 
-	struct GPULightData
+	struct LightData
 	{
-		GPUDirectionalLight DirectionalLight;
-		GPUPointLight PointLights[1024];
+		DirectionalLight DirectionalLight;
+		PointLight PointLights[1024];
 		alignas(4) uint32_t NumPointLights = 0;
 	};
 }

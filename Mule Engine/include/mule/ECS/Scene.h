@@ -6,6 +6,8 @@
 #include "Asset/Asset.h"
 #include "Physics/PhysicsContext.h"
 #include "Services/ServiceManager.h"
+#include "Graphics/API/Texture2D.h"
+#include "Graphics/Renderer/CommandList.h"
 
 #include "Graphics/Camera.h"
 
@@ -14,15 +16,9 @@
 #include <string>
 #include <set>
 
-namespace Mule::RenderGraph
-{
-	class RenderGraph;
-}
-
 namespace Mule
 {
 	class Entity;
-	class EngineContext;
 
 	class Scene : public Asset<AssetType::Scene>
 	{
@@ -32,9 +28,9 @@ namespace Mule
 
 		Entity CreateEntity(const std::string& name = "Entity", const Guid& guid = Guid());
 		Entity CopyEntity(Entity entity);
+		Entity GetEntityByGUID(Guid guid);
 		Ref<Scene> Copy();
 		void DestroyEntity(Entity e);
-		Entity GetEntityByGUID(Guid guid);
 
 		template<typename ...Components>
 		auto Iterate();
@@ -77,23 +73,19 @@ namespace Mule
 
 		void SetViewportDimension(float width, float height);
 
-		// States
-
-		// Call this function to load all scene resources
+		
 		void OnPrepare();
-
-		// Call this function to unload all scene resources
 		void OnUnload();
 
 		// Call this function to create runtime resources
 		void OnPlayStart();
-
-		// call this function to unload all runtime resources
 		void OnPlayStop();
 
 		void OnUpdate(float dt);
 
-		void OnRender(WeakRef<Camera> cameraOverride = nullptr);
+		void OnEditorRender(WeakRef<Camera> editorCamera);
+		void OnRender();
+
 
 
 		void SetModified() { mModified = true; }
@@ -101,20 +93,18 @@ namespace Mule
 		bool IsModified() const { return mModified; }
 
 		PhysicsContext& GetPhysicsContext() { return mPhysicsContext; }
-		Ref<RenderGraph::RenderGraph> GetRenderGraph() const { return mRenderGraph; }
+		
+		Ref<Camera> GetMainCamera() const;
 
 	private:
 		float mViewportWidth = 1.f;
 		float mViewportHeight = 1.f;
-		WeakRef<EngineContext> mEngineContext;
-		Ref<ServiceManager> mServiceManager;
-		
+		Ref<ServiceManager> mServiceManager;		
 		PhysicsContext mPhysicsContext;
-		Ref<RenderGraph::RenderGraph> mRenderGraph;
-
 		entt::registry mRegistry;
 		std::unordered_map<Guid, entt::entity> mEntityLookup;
 		bool mModified;
+		CommandList mCommandList;
 
 		template<typename T>
 		static void CopyComponent(Entity dst, Entity src);
@@ -123,6 +113,10 @@ namespace Mule
 
 		// Component Sinks
 		void OnCameraComponentConstruct(entt::registry& registry, entt::entity id);
+
+		// Command Lists
+		void RecordRuntimeDrawCommands();
+		void RecordEditorDrawCommands();
 	};
 
 }

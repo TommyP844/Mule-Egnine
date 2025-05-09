@@ -38,6 +38,7 @@
 #include "Graphics/API/Semaphore.h"
 #include "Graphics/API/Framebuffer.h"
 #include "Graphics/API/GraphicsPipeline.h"
+#include "Graphics/Renderer/Renderer.h"
 
 // Events
 #include "Application/Events/Event.h"

@@ -12,6 +12,7 @@ namespace Mule
 	{
 	public:
 		static Ref<ShaderResourceGroup> Create(Ref<ShaderResourceBlueprint> blueprint);
+
 		static Ref<ShaderResourceGroup> Create(const std::vector<ShaderResourceDescription>& blueprintDescriptions);
 
 		// Binds a texture to a resource binding

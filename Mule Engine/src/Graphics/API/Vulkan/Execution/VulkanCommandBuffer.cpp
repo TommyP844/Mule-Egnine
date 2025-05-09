@@ -196,7 +196,7 @@ namespace Mule::Vulkan
 		);
 	}
 
-	void VulkanCommandBuffer::BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader)
+	void VulkanCommandBuffer::BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups)
 	{
 		VkRect2D rect{};
 		rect.offset.x = 0;
@@ -276,6 +276,26 @@ namespace Mule::Vulkan
 		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->GetPipeline());
+
+		if (groups.size() > 0)
+		{
+			std::vector<VkDescriptorSet> sets(groups.size());
+			for (uint32_t i = 0; i < groups.size(); i++)
+			{
+				WeakRef<VulkanDescriptorSet> descriptorSet = groups[i];
+				sets[i] = descriptorSet->GetDescriptorSet();
+			}
+			vkCmdBindDescriptorSets(
+				mCommandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetPipelineLayout(),
+				0,
+				sets.size(),
+				sets.data(),
+				0,
+				nullptr
+			);
+		}
 	}
 
 	void VulkanCommandBuffer::ClearFrameBuffer(WeakRef<Framebuffer> framebuffer)
@@ -614,32 +634,6 @@ namespace Mule::Vulkan
 		// Copy the image to the staging buffer
 		vkCmdCopyImageToBuffer(mCommandBuffer, vulkanTexture->GetVulkanImage().Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			vulkanBuffer->GetBuffer(), 1, &region);
-	}
-
-	void VulkanCommandBuffer::BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups)
-	{
-		WeakRef<VulkanGraphicsPipeline> vkPipeline = pipeline;
-		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetPipeline());
-
-		if (groups.size() > 0)
-		{
-			std::vector<VkDescriptorSet> sets(groups.size());
-			for (uint32_t i = 0; i < groups.size(); i++)
-			{
-				WeakRef<VulkanDescriptorSet> descriptorSet = groups[i];
-				sets[i] = descriptorSet->GetDescriptorSet();
-			}
-			vkCmdBindDescriptorSets(
-				mCommandBuffer, 
-				VK_PIPELINE_BIND_POINT_GRAPHICS, 
-				vkPipeline->GetPipelineLayout(), 
-				0, 
-				sets.size(), 
-				sets.data(), 
-				0, 
-				nullptr
-			);
-		}
 	}
 
 	void VulkanCommandBuffer::SetPushConstants(WeakRef<GraphicsPipeline> shader, ShaderStage stage, const void* data, uint32_t size)

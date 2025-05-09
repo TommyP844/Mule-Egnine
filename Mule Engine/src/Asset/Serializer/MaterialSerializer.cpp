@@ -2,7 +2,6 @@
 
 // Mule
 #include "Asset/Serializer/Convert/YamlConvert.h"
-#include "Graphics/SceneRenderer.h"
 
 // Submodules
 #include "yaml-cpp/yaml.h"

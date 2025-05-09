@@ -10,9 +10,9 @@
 #include "Ref.h"
 #include "Asset/AssetManager.h"
 #include "Graphics/ImGuiContext.h"
-#include "Graphics/SceneRenderer.h"
 #include "Application/Window.h"
 #include "Services/ServiceManager.h"
+#include "ECS/Scene.h"
 
 namespace Mule
 {

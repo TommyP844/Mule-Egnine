@@ -4,12 +4,33 @@
 
 namespace Mule
 {
+	ShaderFactory* ShaderFactory::sFactory = nullptr;
+
 	ShaderFactory::ShaderFactory()
 	{
 	}
 
 	ShaderFactory::~ShaderFactory()
 	{
+	}
+
+	void ShaderFactory::Init()
+	{
+		assert(sFactory == nullptr && "Shader Factory already initialized");
+		sFactory = new ShaderFactory();
+	}
+
+	void ShaderFactory::Shutdown()
+	{
+		assert(sFactory != nullptr && "Shader Factory has not been initialized");
+		delete sFactory;
+		sFactory = nullptr;
+	}
+
+	ShaderFactory& ShaderFactory::Get()
+	{
+		assert(sFactory && "Shader Factory needs to be initialized");
+		return *sFactory;
 	}
 
 	void ShaderFactory::RegisterGraphicsPipeline(const std::string& name, const GraphicsPipelineDescription& description)

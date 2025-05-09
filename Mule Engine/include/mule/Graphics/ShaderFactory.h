@@ -14,8 +14,11 @@ namespace Mule
 	class ShaderFactory
 	{
 	public:
-		ShaderFactory();
 		~ShaderFactory();
+
+		static void Init();
+		static void Shutdown();
+		static ShaderFactory& Get();
 						
 		void RegisterGraphicsPipeline(const std::string& name, const GraphicsPipelineDescription& description);
 		void RegisterComputePipeline(const std::string& name, const ComputePipelineDescription& description);
@@ -27,6 +30,10 @@ namespace Mule
 		void UnloadComputePipeline(const std::string& name);
 
 	private:
+		static ShaderFactory* sFactory;
+
+		ShaderFactory();
+
 		std::unordered_map<std::string, GraphicsPipelineDescription> mGraphicsPipelineDescriptions;
 		std::unordered_map<std::string, ComputePipelineDescription> mComputePipelineDescriptions;
 

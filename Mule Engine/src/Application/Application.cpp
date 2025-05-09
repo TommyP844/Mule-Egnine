@@ -9,6 +9,7 @@
 // Events
 #include "Application/Events/Event.h"
 #include "Application/Events/WindowResizeEvent.h"
+#include "Graphics/Renderer/Renderer.h"
 
 // STD
 #include <vector>
@@ -33,6 +34,8 @@ namespace Mule
 		engineDescription.ProjectPath = "C:/Development/Mule Projects/Test Project";
 
 		mEngineContext = MakeRef<EngineContext>(engineDescription);
+
+		Renderer::Init();
 	}
 
 	Application::~Application()
@@ -71,11 +74,8 @@ namespace Mule
 
 				WeakRef<Scene> scene = mEngineContext->GetScene();
 				std::vector<Ref<Semaphore>> waitSemaphores;
-				if (scene)
-				{
-					Ref<Semaphore> semaphore = scene->GetRenderGraph()->GetCurrentSemaphore();
-					waitSemaphores.push_back(semaphore);
-				}
+
+				Renderer::Get().Render();
 
 				imguiContext->NewFrame();
 				OnUIRender(dt);
@@ -92,6 +92,7 @@ namespace Mule
 
 		while (!mLayerStack.empty()) PopLayer();
 
+		Renderer::Shutdown();
 		mEngineContext = nullptr;
 	}
 

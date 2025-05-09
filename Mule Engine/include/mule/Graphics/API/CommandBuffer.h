@@ -39,7 +39,7 @@ namespace Mule
 		// Framebuffer
 		virtual void BeginSwapchainRendering() = 0;
 		virtual void EndSwapchainRendering() = 0;
-		virtual void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader) = 0;
+		virtual void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		virtual void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) = 0;
 		virtual void EndRendering() = 0;
 
@@ -50,7 +50,6 @@ namespace Mule
 		virtual void ReadTexture(WeakRef<Texture> texture, uint32_t x, uint32_t y, uint32_t width, uint32_t height, WeakRef<StagingBuffer> buffer) const = 0;
 
 		// Graphics Pipelines
-		virtual void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		virtual void SetPushConstants(WeakRef<GraphicsPipeline> shader, ShaderStage stage, const void* data, uint32_t size) = 0;
 		
 		// Compute Pipelines

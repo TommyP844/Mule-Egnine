@@ -1,12 +1,8 @@
 #include "ThumbnailManager.h"
 
 ThumbnailManager::ThumbnailManager(WeakRef<Mule::EngineContext> context, WeakRef<EditorContext> editorContext)
-	:
-	mEngineContext(context),
-	mEditorContext(editorContext),
-	mRunning(true)
 {
-	auto assetManager = mEngineContext->GetAssetManager();
+	auto assetManager = context->GetAssetManager();
 	mLoadingImage = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/Loading.png");
 }
 

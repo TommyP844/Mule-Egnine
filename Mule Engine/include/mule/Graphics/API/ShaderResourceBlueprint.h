@@ -9,6 +9,15 @@ namespace Mule
 {
 	struct ShaderResourceDescription
 	{
+		ShaderResourceDescription() = default;
+		ShaderResourceDescription(uint32_t binding, ShaderResourceType type, ShaderStage stages, uint32_t arrayCount = 1)
+			:
+			Binding(binding),
+			Type(type),
+			Stages(stages),
+			ArrayCount(arrayCount)
+		{ }
+
 		uint32_t Binding;
 		ShaderResourceType Type;
 		ShaderStage Stages;
