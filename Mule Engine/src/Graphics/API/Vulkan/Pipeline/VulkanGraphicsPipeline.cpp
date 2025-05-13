@@ -181,7 +181,7 @@ namespace Mule::Vulkan
 		{
 			VkPipelineColorBlendAttachmentState state{};
 
-			state.blendEnable = VK_FALSE; // Blending disabled
+			state.blendEnable = mDescription.EnableBlending; // Blending disabled
 			state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // Irrelevant when blendEnable is false
 			state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Irrelevant when blendEnable is false
 			state.colorBlendOp = VK_BLEND_OP_ADD;             // Irrelevant when blendEnable is false

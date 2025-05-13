@@ -38,7 +38,7 @@ namespace Mule
 		Ref<TextureCube> cubeMap = TextureCube::Create("Environment Map", {}, size, TextureFormat::RGBA_16F, TextureFlags::TransferSrc | TextureFlags::TransferDst | TextureFlags::StorageImage);
 		cubeMap->TransitionImageLayoutImmediate(ImageLayout::General);
 
-		auto hdrImage = assetManager->GetAsset<Texture>(hdrImageHandle);
+		auto hdrImage = assetManager->Get<Texture>(hdrImageHandle);
 		hdrToCubemapSRG->Update(0, DescriptorType::Texture, hdrImage);
 		hdrToCubemapSRG->Update(1, DescriptorType::StorageImage, (WeakRef<Texture>)cubeMap);
 
@@ -51,7 +51,7 @@ namespace Mule
 		queue->Submit(commandBuffer, {}, {}, fence);
 		fence->Wait();
 		fence->Reset();
-		assetManager->InsertAsset(cubeMap);
+		assetManager->Insert(cubeMap);
 		
 
 		// Generate irradiance map
@@ -71,7 +71,7 @@ namespace Mule
 		queue->Submit(commandBuffer, {}, {}, fence);
 		fence->Wait();
 		fence->Reset();
-		assetManager->InsertAsset(diffuseIBL);
+		assetManager->Insert(diffuseIBL);
 		
 
 		// Generate pre-filtered map
@@ -106,11 +106,11 @@ namespace Mule
 			fence->Wait();
 			fence->Reset();
 		}
-		assetManager->InsertAsset(prefilterMap);
+		assetManager->Insert(prefilterMap);
 		
 
 		auto envMap = MakeRef<EnvironmentMap>(outFilepath, cubeMap->Handle(), diffuseIBL->Handle(), prefilterMap->Handle());
-		assetManager->InsertAsset(envMap);
+		assetManager->Insert(envMap);
 
 		return envMap;
 	}

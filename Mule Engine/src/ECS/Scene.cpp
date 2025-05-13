@@ -141,6 +141,16 @@ namespace Mule
 	{ 
 		mViewportWidth = width; 
 		mViewportHeight = height;
+
+		for (auto entity : Iterate<CameraComponent>())
+		{
+			const CameraComponent& cameraComponent = entity.GetComponent<CameraComponent>();
+			cameraComponent.Camera->SetAspectRatio(width / height);
+			auto registry = cameraComponent.Camera->GetRegistry();
+
+			if(registry)
+				registry->Resize(width, height);
+		}
 	}
 
 	void Scene::OnPrepare()
@@ -349,8 +359,8 @@ namespace Mule
 			if (!meshComponent.Visible)
 				continue;
 
-			auto mesh = assetManager->GetAsset<Mesh>(meshComponent.MeshHandle);
-			auto material = assetManager->GetAsset<Material>(meshComponent.MaterialHandle);
+			auto mesh = assetManager->Get<Mesh>(meshComponent.MeshHandle);
+			auto material = assetManager->Get<Material>(meshComponent.MaterialHandle);
 
 			DrawCommand drawCommand{
 				mesh,

@@ -96,7 +96,7 @@ void SceneHierarchyPanel::RecurseEntities(Mule::Entity e)
 		if (file.AssetType == Mule::AssetType::Model)
 		{
 			fs::path filepath = file.FilePath;
-			auto model = assetManager->GetAssetByFilepath(filepath);
+			auto model = assetManager->GetByFilepath(filepath);
 			e.AddModel(model);
 		}
 	}

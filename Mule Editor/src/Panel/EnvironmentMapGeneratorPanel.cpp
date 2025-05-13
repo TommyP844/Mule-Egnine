@@ -12,7 +12,7 @@ EnvironmentMapGeneratorPanel::EnvironmentMapGeneratorPanel()
 void EnvironmentMapGeneratorPanel::OnAttach()
 {
 	auto assetManager = mEngineContext->GetAssetManager();
-	mBlackTexture = assetManager->GetAsset<Mule::Texture2D>(MULE_BLACK_TEXTURE_HANDLE);
+	mBlackTexture = assetManager->Get<Mule::Texture2D>(MULE_BLACK_TEXTURE_HANDLE);
 
 	mTextureHandles.resize(6);
 	mTextures.resize(6);
@@ -161,7 +161,7 @@ void EnvironmentMapGeneratorPanel::DragDropTexture(uint32_t index)
 		if (ddf.AssetType == Mule::AssetType::Texture)
 		{
 			auto assetManager = mEngineContext->GetAssetManager();
-			auto texture = assetManager->GetAsset<Mule::Texture2D>(ddf.AssetHandle);
+			auto texture = assetManager->Get<Mule::Texture2D>(ddf.AssetHandle);
 			if (texture)
 			{
 				mTextures[index] = texture->GetImGuiID();
@@ -204,7 +204,7 @@ void EnvironmentMapGeneratorPanel::Generate()
 
 	if (envMap)
 	{
-		assetManager->SaveAssetText(envMap);
+		assetManager->Save(envMap);
 
 		memset(mAssetName, 0, 260);
 		mSavePath = fs::path();

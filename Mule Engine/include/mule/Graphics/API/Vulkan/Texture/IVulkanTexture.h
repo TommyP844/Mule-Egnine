@@ -43,6 +43,8 @@ namespace Mule::Vulkan
 
 		std::vector<Ref<VulkanTextureView>> mMipViews;
 
+		void ReleaseViews();
+
 	private:
 		bool CreateImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);
 		bool CreateCubeImage(VkImageType type, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLayers, VkImageUsageFlags usageFlags);

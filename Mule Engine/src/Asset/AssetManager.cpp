@@ -58,7 +58,7 @@ namespace Mule
 		}
 	}
 
-	void AssetManager::UpdateAssetHandle(AssetHandle oldHandle, AssetHandle newHandle)
+	void AssetManager::UpdateHandle(AssetHandle oldHandle, AssetHandle newHandle)
 	{
 		auto asset = mAssets[oldHandle];
 		asset->SetHandle(newHandle);
@@ -75,7 +75,7 @@ namespace Mule
 		return iter->second;
 	}
 
-	void AssetManager::RemoveAsset(AssetHandle handle)
+	void AssetManager::Remove(AssetHandle handle)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
@@ -88,7 +88,7 @@ namespace Mule
 		mAssets.erase(handle);
 	}
 
-	Ref<IAsset> AssetManager::GetAssetByFilepath(const fs::path& path)
+	Ref<IAsset> AssetManager::GetByFilepath(const fs::path& path)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 

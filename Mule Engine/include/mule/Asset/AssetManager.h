@@ -30,7 +30,7 @@ namespace Mule
 		void SaveRegistry(const fs::path& filepath);
 		void LoadRegistry(const fs::path& filepath);
 
-		void UpdateAssetHandle(AssetHandle oldHandle, AssetHandle newHandle);
+		void UpdateHandle(AssetHandle oldHandle, AssetHandle newHandle);
 
 		// Loaders
 		template<typename T, typename ... Args>
@@ -40,31 +40,37 @@ namespace Mule
 		WeakRef<T> GetLoader();
 
 		template<typename T>
-		Ref<T> LoadAsset(const fs::path& filepath);
+		Ref<T> Load(const fs::path& filepath);
 
 		template<typename T, typename Loader, typename ... Args>
-		Ref<T> LoadAsset(Args&&... args);
+		Ref<T> Load(Args&&... args);
 
 		template<typename T>
-		void SaveAssetText(AssetHandle handle);
+		void Save(AssetHandle handle);
 
 		template<typename T>
-		void SaveAssetText(Ref<T> asset);
+		void Save(Ref<T> asset);
 
 		template<typename T>
-		void InsertAsset(Ref<T> asset);
+		void Insert(Ref<T> asset);
 
 		template<typename T>
-		std::future<Ref<T>> LoadAssetAsync(const fs::path& filepath);
+		void RegisterLoadCallback(std::function<void(WeakRef<T>)> callback);
 
 		template<typename T>
-		WeakRef<T> GetAsset(AssetHandle);
+		void RegisterUnloadCallback(std::function<void(WeakRef<T>)> callback);
 
-		Ref<IAsset> GetAssetByFilepath(const fs::path& path);
+		template<typename T>
+		std::future<Ref<T>> LoadAsync(const fs::path& filepath);
+
+		template<typename T>
+		WeakRef<T> Get(AssetHandle);
+
+		Ref<IAsset> GetByFilepath(const fs::path& path);
 
 		std::vector<Ref<IAsset>> GetAssetsOfType(AssetType type) const;
 
-		void RemoveAsset(AssetHandle handle);
+		void Remove(AssetHandle handle);
 
 		const std::unordered_map<AssetHandle, Ref<IAsset>>& GetAllAssets() const { return mAssets; }
 
@@ -76,6 +82,18 @@ namespace Mule
 		std::unordered_map<fs::path, AssetHandle> mLoadedHandles;
 
 		std::map<AssetType, Ref<IBaseSerializer>> mLoaders;
+
+		struct ICallback {
+			virtual ~ICallback() = default;
+		};
+
+		template<typename T>
+		struct Callback : ICallback {
+			std::function<void(WeakRef<T>)> Callback;
+		};
+
+		std::unordered_map<std::type_index, Ref<ICallback>> mLoadCallbacks;
+		std::unordered_map<std::type_index, Ref<ICallback>> mUnLoadCallbacks;
 	};
 }
 

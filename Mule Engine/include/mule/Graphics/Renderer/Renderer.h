@@ -2,10 +2,12 @@
 
 #include "Ref.h"
 
-#include "Graphics/Camera.h"
 #include "Graphics/Renderer/RenderGraph/RenderGraph.h"
 #include "Graphics/Renderer/RenderGraph/ResourceBuilder.h"
-#include "CommandList.h"
+#include "Graphics/Renderer/CommandList.h"
+#include "Graphics/Camera.h"
+#include "Graphics/GuidArray.h"
+#include "Graphics/GPUObjects.h"
 
 #include <vector>
 #include <mutex>
@@ -27,33 +29,65 @@ namespace Mule
 
 		void Render();
 
+		void AddTexture(WeakRef<Texture> texture);
+		void RemoveTexture(WeakRef<Texture> texture);
+
+		void AddMaterial(WeakRef<Material> material);
+		void UpdateMaterial(WeakRef<Material> material);
+		void RemoveMaterial(WeakRef<Material> material);
+
 		uint32_t GetFramesInFlight() const { return mFramesInFlight; }
 		uint32_t GetFrameIndex() const { return mFrameIndex; }
 
 	private:
-		Renderer() = default;
+		Renderer();
 		void BuildGraph();
+		void UpdateBindlessResources();
 
 		static Renderer* sRenderer;
 
 		struct RenderRequest
 		{
 			Camera Camera;
-			std::vector<RenderCommand> RenderCommands;
+			CommandList Commands;
 		};
 
 		std::mutex mMutex;
+		std::mutex mResourceMutex;
 		std::vector<RenderRequest> mRenderRequests;
 		Ref<RenderGraph> mRenderGraph;
-		uint32_t mFramesInFlight = 2;
-		uint32_t mFrameIndex = 0;
+		uint32_t mFramesInFlight;
+		uint32_t mFrameIndex;
 
 		ResourceBuilder mResourceBuilder;
 
-		ResourceHandle mBindlessTextureSRG;
-		ResourceHandle mBindlessMaterialBuffer;
-		ResourceHandle mBindlessMaterialSRG;
+		ResourceHandle mBindlessTextureSRGHandle;
+		ResourceHandle mBindlessMaterialBufferHandle;
+		ResourceHandle mBindlessMaterialSRGHandle;
 
-		Ref<ResourceRegistry> mGlobalRegistry;
+		std::vector<Ref<ShaderResourceGroup>> mBindlessTextureSRG;
+		std::vector<Ref<ShaderResourceGroup>> mBindlessMaterialSRG;
+		std::vector<Ref<UniformBuffer>> mBindlessMaterialBuffer;
+
+		Ref<Texture2D> mBlackTex;
+		Ref<Texture2D> mWhiteTex;
+		Ref<Texture2D> mDefaultNormalTex;
+		Ref<Material> mDefaultMaterial;
+
+		// Bindless Resources
+		GuidArray<WeakRef<Texture>> mBindlessTextureIndices;
+		GuidArray<GPU::Material> mBindlessMaterialIndices;
+
+		struct BindlessResourceUpdate
+		{
+			std::vector<WeakRef<Texture>> AddTextures;
+			std::vector<WeakRef<Texture>> RemoveTextures;
+
+			std::vector<WeakRef<Material>> AddMaterials;
+			std::vector<WeakRef<Material>> UpdateMaterials;
+			std::vector<WeakRef<Material>> RemoveMaterials;
+		};
+
+		std::vector<BindlessResourceUpdate> mResourceUpdates;
 	};
 }

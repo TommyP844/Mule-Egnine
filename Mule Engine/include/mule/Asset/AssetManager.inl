@@ -26,7 +26,7 @@ namespace Mule
 	}
 
 	template<typename T>
-	inline Ref<T> AssetManager::LoadAsset(const fs::path& filepath)
+	inline Ref<T> AssetManager::Load(const fs::path& filepath)
 	{
 		constexpr AssetType type = T::sType;
 		Ref<IAssetSerializer<T, type>> loader = mLoaders[type];
@@ -45,12 +45,12 @@ namespace Mule
 			asset->mHandle = iter->second;
 		}
 
-		InsertAsset<T>(asset);
+		Insert<T>(asset);
 		return asset;
 	}
 
 	template<typename T, typename Loader, typename ...Args>
-	inline Ref<T> AssetManager::LoadAsset(Args && ...args)
+	inline Ref<T> AssetManager::Load(Args && ...args)
 	{
 		constexpr AssetType type = T::sType;
 		Ref<Loader> loader = mLoaders[type];
@@ -74,7 +74,7 @@ namespace Mule
 	}
 
 	template<typename T>
-	inline void AssetManager::SaveAssetText(AssetHandle handle)
+	inline void AssetManager::Save(AssetHandle handle)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
@@ -86,7 +86,7 @@ namespace Mule
 	}
 
 	template<typename T>
-	inline void AssetManager::SaveAssetText(Ref<T> asset)
+	inline void AssetManager::Save(Ref<T> asset)
 	{
 		constexpr AssetType type = T::sType;
 		SPDLOG_INFO("saving asset asset: [{}, {}]", GetAssetTypeString(type), asset->Name());
@@ -101,7 +101,7 @@ namespace Mule
 	}
 
 	template<typename T>
-	inline void AssetManager::InsertAsset(Ref<T> asset)
+	inline void AssetManager::Insert(Ref<T> asset)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
@@ -109,18 +109,46 @@ namespace Mule
 		mAssetTypes[T::sType].push_back(asset);
 		if(!asset->mFilepath.empty())
 			mLoadedHandles[asset->mFilepath] = asset->Handle();
+		
+		auto iter = mLoadCallbacks.find(typeid(T));
+		if (iter != mLoadCallbacks.end())
+		{
+			Ref<Callback<T>> callback = iter->second;
+			callback->Callback(asset);
+		}
+
 	}
 
 	template<typename T>
-	inline std::future<Ref<T>> AssetManager::LoadAssetAsync(const fs::path& filepath)
+	inline void AssetManager::RegisterLoadCallback(std::function<void(WeakRef<T>)> callback)
+	{
+		auto callbackContainer = MakeRef<Callback<T>>();
+
+		callbackContainer->Callback = callback;
+
+		mLoadCallbacks[typeid(T)] = callbackContainer;
+	}
+
+	template<typename T>
+	inline void AssetManager::RegisterUnloadCallback(std::function<void(WeakRef<T>)> callback)
+	{
+		auto callbackContainer = MakeRef<Callback<T>>();
+
+		callbackContainer->Callback = callback;
+
+		mUnLoadCallbacks[typeid(T)] = callbackContainer;
+	}
+
+	template<typename T>
+	inline std::future<Ref<T>> AssetManager::LoadAsync(const fs::path& filepath)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
-		return std::async(std::launch::async, &AssetManager::LoadAsset<T>, this, filepath);
+		return std::async(std::launch::async, &AssetManager::Load<T>, this, filepath);
 	}
 
 	template<typename T>
-	inline WeakRef<T> Mule::AssetManager::GetAsset(AssetHandle handle)
+	inline WeakRef<T> Mule::AssetManager::Get(AssetHandle handle)
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 

@@ -225,11 +225,20 @@ namespace Mule::Vulkan
 
 #pragma region Logical Device
 
+		VkPhysicalDeviceSynchronization2FeaturesKHR sync2Features{};
+		sync2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+		sync2Features.synchronization2 = VK_TRUE;
+		sync2Features.pNext = nullptr;
+
+		VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
+		timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+		timelineFeatures.timelineSemaphore = VK_TRUE;
+		timelineFeatures.pNext = &sync2Features;
 
 		VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT dynamicRenderingUnusedAttachmentsFeatures{};
 		dynamicRenderingUnusedAttachmentsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
 		dynamicRenderingUnusedAttachmentsFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
-		dynamicRenderingUnusedAttachmentsFeatures.pNext = nullptr;
+		dynamicRenderingUnusedAttachmentsFeatures.pNext = &timelineFeatures;
 
 		VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
 		dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
@@ -309,7 +318,9 @@ namespace Mule::Vulkan
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 			"VK_KHR_depth_stencil_resolve",
-			"VK_EXT_dynamic_rendering_unused_attachments"
+			"VK_EXT_dynamic_rendering_unused_attachments",
+			"VK_KHR_timeline_semaphore",
+			"VK_KHR_synchronization2"
 		};
 
 		VkDeviceCreateInfo deviceCreateInfo{};

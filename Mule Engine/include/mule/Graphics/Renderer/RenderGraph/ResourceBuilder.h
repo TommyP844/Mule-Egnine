@@ -3,62 +3,41 @@
 #include "Ref.h"
 
 #include "Graphics/Renderer/RenderGraph/ResourceHandle.h"
-#include "Graphics/Renderer/RenderGraph/ResourceRegistry.h"
 
 // Resources
-#include "Graphics/API/Framebuffer.h"
 #include "Graphics/API/ShaderResourceBlueprint.h"
+#include "Graphics/Renderer/RenderGraph/ResourceType.h"
 
 #include <unordered_map>
 #include <variant>
 
 namespace Mule
 {
-	enum class ResourceType {
-		UniformBuffer,
-		ShaderResourceGroup,
-		Framebuffer
-	};
-
 	class ResourceBuilder
 	{
 	public:
 		ResourceBuilder();
 		~ResourceBuilder() = default;
 
-		void InitializeRegistryResources(ResourceRegistry& registry);
-		void InitializeGlobalResourceRegistry(ResourceRegistry& registry);
-
-		ResourceHandle CreateResource(const std::string& name, ResourceType type, uint32_t bufferSize);
-		ResourceHandle CreateResource(const std::string& name, const FramebufferDescription& description);
-		ResourceHandle CreateResource(const std::string& name, const std::vector<ShaderResourceDescription>& resources);
-				
-		ResourceHandle CreateGlobalResource(const std::string& name, ResourceType type, uint32_t size);
-		ResourceHandle CreateGlobalResource(const std::string& name, const FramebufferDescription& description);
-		ResourceHandle CreateGlobalResource(const std::string& name, const std::vector<ShaderResourceDescription>& resources);
-		
-
-		ResourceHandle GetGlobalResource(const std::string& name);
-		ResourceHandle GetHandle(const std::string& name) const;
-		void SetFramebufferOutputHandle(ResourceHandle outputHandle);
-		
-	private:
+		ResourceHandle CreateUniformBuffer(const std::string& name, uint32_t bufferSize);
+		ResourceHandle CreateTexture2D(const std::string& name, TextureFormat format, TextureFlags flags);
+		ResourceHandle CreateSRG(const std::string& name, const std::vector<ShaderResourceDescription>& resources);
 
 		struct UniformBufferBlueprint { uint32_t Size; };
-		struct FramebufferBlueprint { FramebufferDescription FBDesc; };
-		struct ShaderResourceGroupBlueprint { std::vector<ShaderResourceDescription> Descriptions; };
+		struct SRGBlueprint { std::vector<ShaderResourceDescription> Descriptions; };
+		struct Texture2DBlueprint { TextureFormat format; TextureFlags flags; ResourceType Type; };
 
-		using ResourceVariant = std::variant<
-			std::monostate,
-			UniformBufferBlueprint,
-			FramebufferBlueprint,
-			ShaderResourceGroupBlueprint
-		>;
+		const std::unordered_map<std::string, UniformBufferBlueprint>& GetUniformBufferBlueprints() const { return mUniformBufferBlueprints; }
+		const std::unordered_map<std::string, SRGBlueprint>& GetSRGBlueprints() const { return mSRGBlueprints; }
+		const std::unordered_map<std::string, Texture2DBlueprint>& GetTextureBlueprints() const { return mTexture2DBlueprints; }
+	private:
 
-		using ResourceBlueprintMap = std::unordered_map<ResourceHandle, std::pair<ResourceType, ResourceVariant>>;
+		template<typename T>
+		using ResourceBlueprintMap = std::unordered_map<std::string, T>;
 
-		ResourceBlueprintMap mResourceBlueprints;
-		ResourceBlueprintMap mGlobalBlueprints;
+		ResourceBlueprintMap<UniformBufferBlueprint> mUniformBufferBlueprints;
+		ResourceBlueprintMap<SRGBlueprint> mSRGBlueprints;
+		ResourceBlueprintMap<Texture2DBlueprint> mTexture2DBlueprints;
 
 		ResourceHandle mOutputFBHandle;
 	};

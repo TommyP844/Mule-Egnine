@@ -29,5 +29,7 @@ namespace Mule
 		AssetHandle AOMap = AssetHandle::Null();
 		AssetHandle EmissiveMap = AssetHandle::Null();
 		AssetHandle OpacityMap = AssetHandle::Null();
+
+		uint32_t GlobalIndex;
 	};
 }

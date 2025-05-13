@@ -38,8 +38,7 @@ namespace Mule::Vulkan
 		VkImageAspectFlags aspectFlags = ((flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 		VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-		if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget
-			&& (flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
+		if ((flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
 		{
 			mIsDepthTexture = true;
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -254,6 +253,103 @@ namespace Mule::Vulkan
 	uint32_t VulkanTexture2D::GetArrayLayers()
 	{
 		return mArrayLayers;
+	}
+
+	void VulkanTexture2D::Resize(uint32_t width, uint32_t height)
+	{
+		mWidth = width;
+		mHeight = height;
+		VulkanContext& context = VulkanContext::Get();
+
+		VulkanImage img = GetVulkanImage();
+		vkFreeMemory(context.GetDevice(), img.Memory, nullptr);
+		vkDestroyImageView(context.GetDevice(), img.ImageView, nullptr);
+		ReleaseViews();
+		vkDestroyImage(context.GetDevice(), img.Image, nullptr);
+
+		VkFormat textureFormat = GetVulkanFormat(GetFormat());
+		VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+		if ((GetFlags() & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
+		{
+			mIsDepthTexture = true;
+			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
+		else if ((GetFlags() & TextureFlags::RenderTarget) == TextureFlags::RenderTarget)
+			usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		if ((GetFlags() & TextureFlags::StorageImage) == TextureFlags::StorageImage)	usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+		bool success = Init(
+			VK_IMAGE_TYPE_2D,
+			textureFormat,
+			mWidth,
+			mHeight,
+			1,
+			mMipLevels,
+			1,
+			usageFlags,
+			GetImageAspect(),
+			VK_IMAGE_VIEW_TYPE_2D
+		);
+
+		auto cmd = context.BeginSingleTimeCommandBuffer();
+
+		bool isRenderTarget = (GetFlags() & TextureFlags::RenderTarget) == TextureFlags::RenderTarget;
+		bool isDepth = (GetFlags() & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment;
+		if (isRenderTarget)
+		{
+			if (isDepth)
+			{
+				context.TransitionImageLayout(
+					cmd,
+					this,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					0, mMipLevels,
+					0, 1);
+
+				SetImageLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+			}
+			else
+			{
+				context.TransitionImageLayout(
+					cmd,
+					this,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					0, mMipLevels,
+					0, 1);
+
+				SetImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			}
+		}
+		else if((GetFlags() & TextureFlags::StorageImage) == TextureFlags::StorageImage)
+		{
+			context.TransitionImageLayout(
+				cmd,
+				this,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_GENERAL,
+				0, mMipLevels,
+				0, 1);
+
+			SetImageLayout(VK_IMAGE_LAYOUT_GENERAL);
+		}
+		else
+		{
+			context.TransitionImageLayout(
+				cmd,
+				this,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				0, mMipLevels,
+				0, 1);
+
+			SetImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		}
+
+		context.EndSingleTimeCommandBuffer(cmd);
 	}
 
 	ImTextureID VulkanTexture2D::GetImGuiID(uint32_t mipLevel, uint32_t arrayLayer) const

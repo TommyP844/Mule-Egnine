@@ -178,7 +178,7 @@ namespace Mule
 			}
 		}
 
-		assetManager->InsertAsset(muleMesh);
+		assetManager->Insert(muleMesh);
 
 		return muleMesh;
 	}
@@ -241,26 +241,26 @@ namespace Mule
 					metallicMap = Texture2D::Create("", roughness, width, height, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 					if (metallicMap)
 					{
-						assetManager->InsertAsset(metallicMap);
+						assetManager->Insert(metallicMap);
 						mat->MetalnessMap = metallicMap->Handle();
 						metallicMap->SetName(CreateAssetName("", info, AssetType::Texture));
 						auto iter = info.Textures.find(metallicMap->Name());
 						if (iter != info.Textures.end())
 						{
-							assetManager->UpdateAssetHandle(metallicMap->Handle(), iter->second);
+							assetManager->UpdateHandle(metallicMap->Handle(), iter->second);
 						}
 					}
 					
 					roughnessMap = Texture2D::Create("", metallic, width, height, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 					if (roughnessMap)
 					{
-						assetManager->InsertAsset(roughnessMap);
+						assetManager->Insert(roughnessMap);
 						mat->RoughnessMap = roughnessMap->Handle();
 						roughnessMap->SetName(CreateAssetName("", info, AssetType::Texture));
 						auto iter = info.Textures.find(roughnessMap->Name());
 						if (iter != info.Textures.end())
 						{
-							assetManager->UpdateAssetHandle(roughnessMap->Handle(), iter->second);
+							assetManager->UpdateHandle(roughnessMap->Handle(), iter->second);
 						}
 					}
 
@@ -282,7 +282,7 @@ namespace Mule
 		mat->AOMap = AOMap ? AOMap->Handle() : AssetHandle::Null();
 		mat->EmissiveMap = emissiveMap ? emissiveMap->Handle() : AssetHandle::Null();
 
-		assetManager->InsertAsset(mat);
+		assetManager->Insert(mat);
 
 		return mat;
 	}
@@ -312,7 +312,7 @@ namespace Mule
 				else
 				{
 					fs::path p = info.Filepath.parent_path() / path.C_Str();
-					tex2d = assetManager->LoadAsset<Texture2D>(p);
+					tex2d = assetManager->Load<Texture2D>(p);
 					if (tex2d)
 						break;
 				}
@@ -324,7 +324,7 @@ namespace Mule
 			auto iter = info.Textures.find(tex2d->Name());
 			if (iter != info.Textures.end())
 			{
-				assetManager->UpdateAssetHandle(tex2d->Handle(), iter->second);
+				assetManager->UpdateHandle(tex2d->Handle(), iter->second);
 			}
 		}
 		return tex2d;
@@ -356,7 +356,7 @@ namespace Mule
 			tex = Texture2D::Create("", buffer, texture->mWidth, texture->mHeight, TextureFormat::RGBA_8U, TextureFlags::GenerateMips | TextureFlags::TransferDst);
 		}
 
-		assetManager->InsertAsset(tex);
+		assetManager->Insert(tex);
 
 		return tex;
 	}
@@ -453,41 +453,41 @@ namespace Mule
 			meshes[mesh->Name()] = mesh->Handle();
 
 			auto materialHandle = mesh->GetDefaultMaterialHandle();
-			auto material = assetManager->GetAsset<Material>(materialHandle);
+			auto material = assetManager->Get<Material>(materialHandle);
 			if (material)
 			{
 				materials[material->Name()] = material->Handle();
-				auto albedoTexture = assetManager->GetAsset<Texture2D>(material->AlbedoMap);
+				auto albedoTexture = assetManager->Get<Texture2D>(material->AlbedoMap);
 				if (albedoTexture)
 				{
 					textures[albedoTexture->Name()] = albedoTexture->Handle();
 				}
 
-				auto normalTexture = assetManager->GetAsset<Texture2D>(material->NormalMap);
+				auto normalTexture = assetManager->Get<Texture2D>(material->NormalMap);
 				if (normalTexture)
 				{
 					textures[normalTexture->Name()] = normalTexture->Handle();
 				}
 
-				auto metallicTexture = assetManager->GetAsset<Texture2D>(material->MetalnessMap);
+				auto metallicTexture = assetManager->Get<Texture2D>(material->MetalnessMap);
 				if (metallicTexture)
 				{
 					textures[metallicTexture->Name()] = metallicTexture->Handle();
 				}
 
-				auto roughnessTexture = assetManager->GetAsset<Texture2D>(material->RoughnessMap);
+				auto roughnessTexture = assetManager->Get<Texture2D>(material->RoughnessMap);
 				if (roughnessTexture)
 				{
 					textures[roughnessTexture->Name()] = roughnessTexture->Handle();
 				}
 
-				auto aoTexture = assetManager->GetAsset<Texture2D>(material->AOMap);
+				auto aoTexture = assetManager->Get<Texture2D>(material->AOMap);
 				if (aoTexture)
 				{
 					textures[aoTexture->Name()] = aoTexture->Handle();
 				}
 
-				auto emissiveTexture = assetManager->GetAsset<Texture2D>(material->EmissiveMap);
+				auto emissiveTexture = assetManager->Get<Texture2D>(material->EmissiveMap);
 				if (emissiveTexture)
 				{
 					textures[emissiveTexture->Name()] = emissiveTexture->Handle();

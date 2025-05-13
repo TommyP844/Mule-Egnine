@@ -27,15 +27,11 @@ namespace Mule
 		
 		SPDLOG_INFO("Application Started");
 #endif
-		
-
 		EngineContextDescription engineDescription{};
 		engineDescription.WindowName = "Mule";
 		engineDescription.ProjectPath = "C:/Development/Mule Projects/Test Project";
 
 		mEngineContext = MakeRef<EngineContext>(engineDescription);
-
-		Renderer::Init();
 	}
 
 	Application::~Application()
@@ -92,7 +88,6 @@ namespace Mule
 
 		while (!mLayerStack.empty()) PopLayer();
 
-		Renderer::Shutdown();
 		mEngineContext = nullptr;
 	}
 

@@ -27,6 +27,7 @@ namespace Mule::Vulkan
 		uint32_t GetDepth() override;
 		uint32_t GetMipLevels() override;
 		uint32_t GetArrayLayers() override;
+		void Resize(uint32_t width, uint32_t height) override;
 
 		ImTextureID GetImGuiID(uint32_t mipLevel = 0, uint32_t arrayLayer = 0) const override;
 		WeakRef<TextureView> GetView(uint32_t mipLevel, uint32_t arrayLayer = 0) const override;
@@ -36,7 +37,5 @@ namespace Mule::Vulkan
 		void WriteMipLevel(uint32_t mipLevel, const Buffer& data) override;
 	private:
 		bool mHasMips;
-
-
 	};
 }

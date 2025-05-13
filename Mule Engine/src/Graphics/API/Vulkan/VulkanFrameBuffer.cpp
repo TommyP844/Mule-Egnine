@@ -34,7 +34,7 @@ namespace Mule::Vulkan
 		for (auto attachmentDescription : mDescription.ColorAttachments)
 		{
 			Ref<VulkanTexture2D> attachment = MakeRef<VulkanTexture2D>(
-				"",
+				attachmentDescription.Name,
 				Buffer(),
 				mWidth,
 				mHeight,
@@ -48,7 +48,7 @@ namespace Mule::Vulkan
 		if (mDescription.DepthAttachment.Format != TextureFormat::NONE)
 		{
 			mDepthAttachment = MakeRef<VulkanTexture2D>(
-				"",
+				"Depth Attachment",
 				Buffer(),
 				mWidth,
 				mHeight,

@@ -21,8 +21,8 @@ ContentBrowserPanel::ContentBrowserPanel()
 void ContentBrowserPanel::OnAttach()
 {
 	auto assetManager = mEngineContext->GetAssetManager();
-	mFolderTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/folder.png");
-	mFileTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/file.png");
+	mFolderTexture = assetManager->Load<Mule::Texture2D>("../Assets/Textures/folder.png");
+	mFileTexture = assetManager->Load<Mule::Texture2D>("../Assets/Textures/file.png");
 	SetContentBrowserPath(mEditorContext->GetAssetsPath());
 	mThumbnailManager = MakeRef<ThumbnailManager>(mEngineContext, mEditorContext);
 	mExcludeExtensions = {
@@ -73,7 +73,7 @@ void ContentBrowserPanel::SetContentBrowserPath(const fs::path& path, const std:
 		file.AssetType = dir.is_directory() ? Mule::AssetType::None : GetAssetTypeFromExt(dir.path()); 
 		if (!dir.is_directory())
 		{
-			auto asset = assetManager->GetAssetByFilepath(dir.path());
+			auto asset = assetManager->GetByFilepath(dir.path());
 			if (asset)
 			{
 				file.Handle = asset->Handle();
@@ -355,9 +355,9 @@ void ContentBrowserPanel::CopyDragDropFile(const ImGuiExtension::DragDropFile& f
 
 	if (file.AssetHandle)
 	{
-		auto asset = assetManager->GetAsset<Mule::IAsset>(file.AssetHandle);
+		auto asset = assetManager->Get<Mule::IAsset>(file.AssetHandle);
 		asset->SetFilePath(newPath);
-		asset = assetManager->GetAsset<Mule::IAsset>(file.AssetHandle);
+		asset = assetManager->Get<Mule::IAsset>(file.AssetHandle);
 		SPDLOG_INFO("Path rename: {}, {}", asset->Handle().ToString(), asset->FilePath().string());
 	}
 }

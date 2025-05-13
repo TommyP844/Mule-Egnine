@@ -30,41 +30,41 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 		if (IsModelExtension(dir.path()))
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
-					assetManager->LoadAsset<Mule::Model>(filePath);
+					assetManager->Load<Mule::Model>(filePath);
 				});
 		}
 		else if (extension == ".cs")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
-				assetManager->LoadAsset<Mule::ScriptClass>(filePath);
+				assetManager->Load<Mule::ScriptClass>(filePath);
 				});
 		}
 		else if (IsTextureExtension(dir.path()))
 		{
-			auto asset = assetManager->GetAssetByFilepath(dir.path());
+			auto asset = assetManager->GetByFilepath(dir.path());
 			if (!asset)
 			{
 				jobSystem->PushJob([assetManager, filePath]() {
-					assetManager->LoadAsset<Mule::Texture2D>(filePath);
+					assetManager->Load<Mule::Texture2D>(filePath);
 					});
 			}
 		}
 		else if (extension == ".envmap")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
-				assetManager->LoadAsset<Mule::EnvironmentMap>(filePath);
+				assetManager->Load<Mule::EnvironmentMap>(filePath);
 				});
 		}
 		else if (extension == ".mat")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
-				assetManager->LoadAsset<Mule::Material>(filePath);
+				assetManager->Load<Mule::Material>(filePath);
 				});
 		}
 		else if (extension == ".scene")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
-				assetManager->LoadAsset<Mule::Scene>(filePath);
+				assetManager->Load<Mule::Scene>(filePath);
 				});
 		}
 	}
@@ -108,7 +108,7 @@ void EditorContext::SetSimulationState(SimulationState state)
 	case SimulationState::Editing:
 		mSimulationScene->OnPlayStop();
 		SetSelectedEntity(Mule::Entity());
-		auto scene = assetManager->GetAsset<Mule::Scene>(mSimulationScene->Handle());
+		auto scene = assetManager->Get<Mule::Scene>(mSimulationScene->Handle());
 		mEngineContext->SetScene(scene);
 		mSimulationScene = nullptr;
 		break;

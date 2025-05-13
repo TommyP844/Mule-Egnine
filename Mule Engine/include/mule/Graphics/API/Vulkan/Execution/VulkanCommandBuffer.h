@@ -27,6 +27,9 @@ namespace Mule::Vulkan
 		void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) override;
 		void EndRendering() override;
 
+		// New API
+		void BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) override;
+		void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 
 		// WARNING, the following commands only work with 2d textures
 		// Texture 2D

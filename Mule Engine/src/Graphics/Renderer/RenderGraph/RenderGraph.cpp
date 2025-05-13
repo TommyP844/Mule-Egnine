@@ -1,5 +1,5 @@
 #include "Graphics/Renderer/RenderGraph/RenderGraph.h"
-#include "Graphics/Renderer/RenderGraph/RenderPasses/RenderPass.h"
+#include "Graphics/Renderer/RenderGraph/RenderPass.h"
 
 #include "Graphics/Renderer/Renderer.h"
 
@@ -8,6 +8,9 @@
 #include "Timer.h"
 
 #include <spdlog/spdlog.h>
+
+#include <unordered_map>
+#include <unordered_set>
 
 namespace Mule
 {
@@ -29,69 +32,172 @@ namespace Mule
 
 		for (auto pass : mPasses)
 		{
-			const std::string& name = pass->GetName();
-			ResourceHandle fenceHandle = registry.AddFence(name + ".Fence");
-			ResourceHandle cmdHandle = registry.AddCommandBuffer(name + ".Cmd");
-
-			pass->SetFenceHandle(fenceHandle);
-			pass->SetCommandBufferHandle(cmdHandle);
-
-			for (uint32_t i = 0; i < registry.GetFramesInFlight(); i++)
-			{
-				pass->SetFrameIndex(i);
-				pass->Setup(registry);
-			}
-
-			// We most likly dont need this because it will we set by the graph before execution
-			pass->SetFrameIndex(0);
+			pass->InitRegistry(registry);
 		}
 	}
 
 	void RenderGraph::Bake()
 	{
-		std::set<std::string> compiledPasses;
+		std::vector<Ref<RenderPass>> passesToCompile = mPasses;
+		mPasses.clear();
+		
+		// List of Edges (A -> B)
+		std::vector<std::pair<uint32_t, uint32_t>> edges;
+		std::unordered_map<uint32_t, std::vector<uint32_t>> graph;
+		std::unordered_map<uint32_t, uint32_t> inDegree;
+		std::unordered_set<uint32_t> nodes;
 
-		std::unordered_map<std::string, uint32_t> passIndices;
-
-		bool foundPass = true;
-		while (!mPassesToCompile.empty())
+		// Build Dependency Graph
+		for (uint32_t i = 0; i < passesToCompile.size() - 1; i++)
 		{
-			assert(foundPass && "RenderGraph Cycle detected");
-			foundPass = false;
-
-			for (auto iter = mPassesToCompile.begin(); iter != mPassesToCompile.end(); iter++)
+			for (uint32_t j = i + 1; j < passesToCompile.size(); j++)
 			{
-				auto pass = *iter;
-				std::vector<std::string> dependencies = pass->GetDependencies();
+				auto passA = passesToCompile[i];
+				auto passB = passesToCompile[j];
 
-				dependencies.erase(
-					std::remove_if(dependencies.begin(), dependencies.end(),
-						[&compiledPasses](const std::string& s) {
-							return compiledPasses.contains(s);
-						}),
-					dependencies.end()
-				);
+				auto depsA = passA->GetResourceUsage();
+				auto depsB = passB->GetResourceUsage();
 
-				if (dependencies.empty())
+
+				for (auto resA : depsA)
 				{
-					mPasses.push_back(pass);
-					passIndices[pass->GetName()] = mPasses.size() - 1;
+					for (auto resB : depsB)
+					{
+						ResourceHandle resAHandle = resA.first;
+						ResourceHandle resBHandle = resB.first;
 
-					compiledPasses.insert(pass->GetName());
+						ResourceAccess resAAccess = resA.second.Access;
+						ResourceAccess resBAccess = resB.second.Access;
 
-					mPassesToCompile.erase(iter);
-					foundPass = true;
-					break;
+						if (resAHandle != resBHandle)
+							continue;
+
+						if (resAAccess == ResourceAccess::Read && resBAccess == ResourceAccess::Write)
+						{
+							edges.push_back({ j, i });
+						}
+						else if (resAAccess == ResourceAccess::Write && resBAccess == ResourceAccess::Read)
+						{
+							edges.push_back({ i, j });
+						}
+					}
 				}
 			}
 		}
 
+		for (const auto& edge : edges) {
+			uint32_t from = edge.first;
+			uint32_t to = edge.second;
+			graph[from].push_back(to);
+			inDegree[to]++;
+			nodes.insert(from);
+			nodes.insert(to);
+		}
+
+		std::queue<uint32_t> q;
+		for (uint32_t node : nodes) {
+			if (inDegree[node] == 0) {
+				q.push(node);
+			}
+		}
+
+		while (!q.empty()) {
+			uint32_t current = q.front();
+			q.pop();
+			mPasses.push_back(passesToCompile[current]);
+
+			for (uint32_t neighbor : graph[current]) {
+				inDegree[neighbor]--;
+				if (inDegree[neighbor] == 0) {
+					q.push(neighbor);
+				}
+			}
+		}
+
+		if (mPasses.size() != nodes.size()) {
+			SPDLOG_ERROR("failed to compiled graph, cycle detected");
+			return;
+		}
+
 		SPDLOG_INFO("RenderGraph Compiled");
+
+		std::unordered_set<ResourceHandle> frameBufferClears;
+
+		for (auto pass : mPasses)
+		{
+			std::vector<BeginRenderingCommandAttachment> colorAttachments;
+			BeginRenderingCommandAttachment depthAttachment;
+
+			// Handle -> binding index
+			std::vector<std::pair<ResourceHandle, uint32_t>> SRGHandles;
+
+			PassType passType = pass->GetPassType();
+			for (const auto& [handle, usage] : pass->GetResourceUsage())
+			{
+				ResourceAccess access = usage.Access;
+
+				if (passType == PassType::Graphics)
+				{
+					if (access == ResourceAccess::Write)
+					{
+						if (handle.Type == ResourceType::RenderTarget)
+						{
+							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::ColorAttachment));
+							colorAttachments.push_back({ handle, true, usage.Index });
+						}
+						else if (handle.Type == ResourceType::DepthAttachment)
+						{
+							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::DepthAttachment));
+							depthAttachment = { handle, true };
+						}
+					}
+					else if (access == ResourceAccess::Read)
+					{
+						if (handle.Type == ResourceType::RenderTarget || handle.Type == ResourceType::DepthAttachment)
+							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::ShaderReadOnly));
+					}
+
+					if (handle.Type == ResourceType::ShaderResourceGroup)
+					{
+						SRGHandles.push_back({ handle, usage.Index });
+					}
+				}				
+			}
+
+			if (passType == PassType::Graphics)
+			{
+				std::sort(colorAttachments.begin(), colorAttachments.end(), [](const BeginRenderingCommandAttachment& lhs, const BeginRenderingCommandAttachment& rhs) {
+					return lhs.index < rhs.index;
+					});
+
+				std::sort(SRGHandles.begin(), SRGHandles.end(), [](const std::pair<ResourceHandle, uint32_t>& lhs, const std::pair<ResourceHandle, uint32_t>& rhs) {
+					return lhs.second < rhs.second;
+					});
+
+				pass->AddPreDrawCommand(BeginRenderingCommand(
+					RegistryVariable::Width,
+					RegistryVariable::Height,
+					colorAttachments,
+					depthAttachment
+				));
+
+				std::vector<ResourceHandle> SRGHandlesSorted;
+				for (auto [handle, index] : SRGHandles)
+					SRGHandlesSorted.push_back(handle);
+
+				pass->AddPreDrawCommand(BindGraphicsPipelineCommand(
+					pass->GetGraphicsPipeline(),
+					SRGHandlesSorted
+					));
+
+				pass->AddPostDrawCommand(EndRenderingCommand());
+			}
+		}
 
 		mIsBaked = true;
 	}
 
-	void RenderGraph::Execute(const std::vector<RenderCommand>& commands, const Camera& camera, uint32_t frameIndex)
+	void RenderGraph::Execute(const CommandList& commands, const Camera& camera, uint32_t frameIndex)
 	{
 		assert(mIsBaked && "Render Graph must be baked before calling Execute");
 
@@ -103,29 +209,48 @@ namespace Mule
 			return;
 		}
 
-		registry->WaitForFences(frameIndex);
+		Ref<TimelineSemaphore> semaphore = registry->GetSemaphore(frameIndex);
+		uint64_t semaphoreValue = semaphore->GetValue();
 
 		if (mPreExecutionCallback)
 			mPreExecutionCallback(camera, frameIndex);
 
-		for (auto pass : mPasses)
+		if (registry->IsResizeRequested(frameIndex))
 		{
-			auto fence = registry->GetResource<Fence>(pass->GetFenceHandle(), frameIndex);
-			auto commandBuffer = registry->GetResource<CommandBuffer>(pass->GetCommandBufferHandle(), frameIndex);
+			GraphicsContext::Get().AwaitIdle();
 
-			fence->Wait();
-			fence->Reset();
+			auto [width, height] = registry->GetResizeDimensions(frameIndex);
+			
+			if(mResizeCallback)
+				mResizeCallback(camera, frameIndex, width, height);
 
-			commandBuffer->Reset();
-			commandBuffer->Begin();
+			registry->SetResizeHandled(frameIndex);
+		}
 
-			//TODO: insert memory barriers
-			pass->SetFrameIndex(frameIndex);
-			pass->Render(commandBuffer, commands, *registry);
+		for (uint32_t i = 0; i < mPasses.size(); i++)
+		{
+			Ref<RenderPass> pass = mPasses[i];
+
+			Ref<CommandBuffer> commandBuffer = pass->Execute(commands, *registry, frameIndex);
+			Ref<Fence> fence = pass->GetFence(*registry, frameIndex);
+
+			if (i == mPasses.size() - 1)
+			{
+				auto renderTarget = registry->GetColorOutput(frameIndex);
+				commandBuffer->TranistionImageLayout(renderTarget, ImageLayout::ShaderReadOnly);
+			}
 
 			commandBuffer->End();
 
-			mQueue->Submit(commandBuffer, {}, {}, fence);
+			mQueue->Submit(commandBuffer, semaphore, semaphoreValue, semaphoreValue + 1, fence);
+			semaphoreValue++;
 		}
+	}
+
+	WeakRef<RenderPass> RenderGraph::CreatePass(const std::string& name, PassType type)
+	{
+		auto renderPass = MakeRef<RenderPass>(name, type);
+		mPasses.push_back(renderPass);
+		return renderPass;
 	}
 }

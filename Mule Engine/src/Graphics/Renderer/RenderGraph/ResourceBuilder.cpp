@@ -6,110 +6,27 @@ namespace Mule
 	{
 	}
 
-	void ResourceBuilder::InitializeRegistryResources(ResourceRegistry& registry)
+	ResourceHandle ResourceBuilder::CreateUniformBuffer(const std::string& name, uint32_t bufferSize)
 	{
-		assert(mOutputFBHandle != ResourceHandle::Null() && "Make sure to call ResourceBuilder::SetFramebufferOutputHandle()");
-		
-		for (auto& [handle, res] : mResourceBlueprints)
-		{
-			switch (res.first)
-			{
-			case ResourceType::UniformBuffer:
-				registry.AddResource<UniformBuffer>(handle, std::get<UniformBufferBlueprint>(res.second).Size);
-				break;
-
-			case ResourceType::ShaderResourceGroup: 
-				registry.AddResource<ShaderResourceGroup>(handle, std::get<ShaderResourceGroupBlueprint>(res.second).Descriptions);
-				break;
-
-			case ResourceType::Framebuffer: 
-				registry.AddResource<Framebuffer>(handle, std::get<FramebufferBlueprint>(res.second).FBDesc);
-				break;
-			}
-		}
-
-		registry.SetOutputFramebufferHandle(mOutputFBHandle);
+		mUniformBufferBlueprints[name] = UniformBufferBlueprint {bufferSize};
+		return ResourceHandle(name, ResourceType::UniformBuffer);
 	}
 
-	void ResourceBuilder::InitializeGlobalResourceRegistry(ResourceRegistry& registry)
+	ResourceHandle ResourceBuilder::CreateTexture2D(const std::string& name, TextureFormat format, TextureFlags flags)
 	{
-		for (auto& [handle, res] : mGlobalBlueprints)
-		{
-			switch (res.first)
-			{
-			case ResourceType::UniformBuffer:
-				registry.AddResource<UniformBuffer>(handle, std::get<UniformBufferBlueprint>(res.second).Size);
-				break;
+		ResourceType type = ResourceType::Texture;
+		if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget)
+			type = ResourceType::RenderTarget;
+		else if ((flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
+			type = ResourceType::DepthAttachment;
 
-			case ResourceType::ShaderResourceGroup:
-				registry.AddResource<ShaderResourceGroup>(handle, std::get<ShaderResourceGroupBlueprint>(res.second).Descriptions);
-				break;
-
-			case ResourceType::Framebuffer:
-				registry.AddResource<Framebuffer>(handle, std::get<FramebufferBlueprint>(res.second).FBDesc);
-				break;
-			}
-		}
+		mTexture2DBlueprints[name] = Texture2DBlueprint {format, flags, type};
+		return ResourceHandle(name, type);
 	}
 
-	ResourceHandle ResourceBuilder::CreateResource(const std::string& name, ResourceType type, uint32_t bufferSize)
+	ResourceHandle ResourceBuilder::CreateSRG(const std::string& name, const std::vector<ShaderResourceDescription>& resources)
 	{
-		assert(type == ResourceType::UniformBuffer && "Invalid resource type");
-
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mResourceBlueprints[handle] = { type, UniformBufferBlueprint {bufferSize} };
-		return handle;
-	}
-
-	ResourceHandle ResourceBuilder::CreateResource(const std::string& name, const FramebufferDescription& description)
-	{
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mResourceBlueprints[handle] = { ResourceType::Framebuffer, FramebufferBlueprint {description} };
-		return handle;
-	}
-
-	ResourceHandle ResourceBuilder::CreateResource(const std::string& name, const std::vector<ShaderResourceDescription>& resources)
-	{
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mResourceBlueprints[handle] = { ResourceType::ShaderResourceGroup, ShaderResourceGroupBlueprint {resources} };
-		return handle;
-	}
-
-	ResourceHandle ResourceBuilder::CreateGlobalResource(const std::string& name, ResourceType type, uint32_t size)
-	{
-		assert(type == ResourceType::UniformBuffer && "Invalid resource type");
-
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mGlobalBlueprints[handle] = { type,  UniformBufferBlueprint { size } };
-		return handle;
-	}
-
-	ResourceHandle ResourceBuilder::CreateGlobalResource(const std::string& name, const FramebufferDescription& description)
-	{
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mGlobalBlueprints[handle] = { ResourceType::Framebuffer,  FramebufferBlueprint { description } };
-		return handle;
-	}
-
-	ResourceHandle ResourceBuilder::CreateGlobalResource(const std::string& name, const std::vector<ShaderResourceDescription>& resources)
-	{
-		ResourceHandle handle = ResourceHandle::Create(name);
-		mGlobalBlueprints[handle] = { ResourceType::ShaderResourceGroup,  ShaderResourceGroupBlueprint { resources } };
-		return handle;
-	}
-	
-	ResourceHandle ResourceBuilder::GetGlobalResource(const std::string& name)
-	{
-		return ResourceHandle::Create(name);
-	}
-
-	ResourceHandle ResourceBuilder::GetHandle(const std::string& name) const
-	{
-		return ResourceHandle::Create(name);
-	}
-
-	void ResourceBuilder::SetFramebufferOutputHandle(ResourceHandle outputHandle)
-	{
-		mOutputFBHandle = outputHandle;
+		mSRGBlueprints[name] = SRGBlueprint {resources};
+		return ResourceHandle(name, ResourceType::ShaderResourceGroup);
 	}
 }

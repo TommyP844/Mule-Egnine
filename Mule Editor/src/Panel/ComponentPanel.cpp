@@ -140,7 +140,7 @@ void ComponentPanel::OnUIRender(float dt)
 			entityModified |= ImGui::DragFloat("##Radiance", &light.Radiance, 1.f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
 			DisplayRow("Environment Map");
-			auto envMap = assetManager->GetAsset<Mule::EnvironmentMap>(light.EnvironmentMap);
+			auto envMap = assetManager->Get<Mule::EnvironmentMap>(light.EnvironmentMap);
 			std::string name = "";
 			if (envMap)
 				name = envMap->Name();
@@ -172,14 +172,14 @@ void ComponentPanel::OnUIRender(float dt)
 
 			ImGui::BeginDisabled();
 			DisplayRow("Mesh");
-			auto meshPtr = assetManager->GetAsset<Mule::Mesh>(mesh.MeshHandle);
+			auto meshPtr = assetManager->Get<Mule::Mesh>(mesh.MeshHandle);
 			if (meshPtr)
 				ImGui::InputText("##Mesh", (char*)meshPtr->Name().data(), meshPtr->Name().size());
 			else
 				ImGui::InputText("##Mesh", (char*)null.data(), null.size());
 
 			DisplayRow("Material");
-			auto materialPtr = assetManager->GetAsset<Mule::Material>(mesh.MaterialHandle);
+			auto materialPtr = assetManager->Get<Mule::Material>(mesh.MaterialHandle);
 			if (materialPtr)
 				ImGui::InputText("##Material", (char*)materialPtr->Name().data(), materialPtr->Name().size());
 			else
@@ -342,7 +342,7 @@ void ComponentPanel::OnUIRender(float dt)
 			{
 				if (ddf.AssetType == Mule::AssetType::Script)
 				{
-					auto scriptClass = assetManager->GetAsset<Mule::ScriptClass>(ddf.AssetHandle);
+					auto scriptClass = assetManager->Get<Mule::ScriptClass>(ddf.AssetHandle);
 
 					fs::path p = scriptClass->Name();
 					std::string scriptClassName = p.filename().replace_extension().string();

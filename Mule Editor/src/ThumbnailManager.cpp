@@ -3,7 +3,7 @@
 ThumbnailManager::ThumbnailManager(WeakRef<Mule::EngineContext> context, WeakRef<EditorContext> editorContext)
 {
 	auto assetManager = context->GetAssetManager();
-	mLoadingImage = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/Loading.png");
+	mLoadingImage = assetManager->Load<Mule::Texture2D>("../Assets/Textures/Loading.png");
 }
 
 ThumbnailManager::~ThumbnailManager()

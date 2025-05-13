@@ -159,7 +159,7 @@ void EditorLayer::OnUIRender(float dt)
 				auto scene = mEngineContext->GetScene();
 				if (scene)
 				{
-					assetManager->SaveAssetText<Mule::Scene>(scene->Handle());
+					assetManager->Save<Mule::Scene>(scene->Handle());
 					scene->ClearModified();
 				}
 			}
@@ -258,14 +258,14 @@ void EditorLayer::OnUIRender(float dt)
 		auto serviceManager = mEngineContext->GetServiceManager();
 		Ref<Mule::Scene> scene = MakeRef<Mule::Scene>(serviceManager);
 		scene->SetFilePath(filepath);
-		assetManager->InsertAsset(scene);
+		assetManager->Insert(scene);
 		mEngineContext->SetScene(scene);
 		});
 
 	NewItemPopup(mNewMaterialPopup, "Material", ".mat", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		Ref<Mule::Material> material = MakeRef<Mule::Material>();
 		material->SetFilePath(filepath);
-		assetManager->InsertAsset(material);
+		assetManager->Insert(material);
 		mMaterialEditorPanel.Open();
 		mMaterialEditorPanel.SetMaterial(material->Handle());
 		});

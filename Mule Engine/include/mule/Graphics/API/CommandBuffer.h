@@ -26,6 +26,12 @@ namespace Mule
 		uint32_t DstMipLevel = 0;
 	};
 
+	struct BeginRenderingAttachment
+	{
+		Ref<Texture2D> Attachment = nullptr;
+		bool ClearOnLoad = false;
+	};
+
 	class CommandBuffer
 	{
 	public:
@@ -43,6 +49,9 @@ namespace Mule
 		virtual void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) = 0;
 		virtual void EndRendering() = 0;
 
+		// New API
+		virtual void BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) = 0;
+		virtual void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		
 		// Texture
 		virtual void TranistionImageLayout(WeakRef<Texture> texture, ImageLayout newLayout) = 0;

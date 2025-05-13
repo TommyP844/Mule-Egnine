@@ -85,9 +85,9 @@ namespace Mule
         buffer.Release();
 
 		auto assetManager = mServiceManager->Get<AssetManager>();
-		assetManager->InsertAsset(cubeMap);
-		assetManager->InsertAsset(diffuseIBLMap);
-		assetManager->InsertAsset(prefilterIBLMap);
+		assetManager->Insert(cubeMap);
+		assetManager->Insert(diffuseIBLMap);
+		assetManager->Insert(prefilterIBLMap);
 
         return MakeRef<EnvironmentMap>(filepath, cubeMap->Handle(), diffuseIBLMap->Handle(), prefilterIBLMap->Handle());
 
@@ -97,9 +97,9 @@ namespace Mule
     {
 		auto assetManager = mServiceManager->Get<AssetManager>();
 
-		auto cubeMap = assetManager->GetAsset<Texture>(asset->GetCubeMapHandle());
-		auto diffuseMap = assetManager->GetAsset<Texture>(asset->GetDiffuseIBLMap());
-		auto preFilterMap = assetManager->GetAsset<Texture>(asset->GetPreFilterMap());
+		auto cubeMap = assetManager->Get<Texture>(asset->GetCubeMapHandle());
+		auto diffuseMap = assetManager->Get<Texture>(asset->GetDiffuseIBLMap());
+		auto preFilterMap = assetManager->Get<Texture>(asset->GetPreFilterMap());
 
 		Buffer cubeMapData = cubeMap->ReadTextureData();
 		Buffer diffuseMapData = diffuseMap->ReadTextureData();

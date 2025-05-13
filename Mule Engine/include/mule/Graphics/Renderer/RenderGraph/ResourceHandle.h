@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ResourceType.h"
+
 #include <string>
 #include <random>
 
@@ -9,10 +11,12 @@ namespace Mule
 	{
 		std::string Name;
 		uint64_t Handle;
+		ResourceType Type;
 
-		ResourceHandle(const std::string& name, uint64_t handle)
+		ResourceHandle(const std::string& name, ResourceType type)
 			:
-			Name(name)
+			Name(name),
+			Type(type)
 		{
 			Handle = std::hash<std::string>{}(name);
 		}
@@ -24,23 +28,18 @@ namespace Mule
 		{
 		}
 
-		static ResourceHandle Null()
-		{
-			return ResourceHandle{ "Null", 0 };
-		}
-
-		static ResourceHandle Create(const std::string& name)
-		{
-			std::random_device rd;
-			std::uniform_int_distribution<uint64_t> dist(1, UINT64_MAX);
-			uint64_t handle = dist(rd);
-
-			return ResourceHandle{ name, handle };
-		}
-
 		bool operator==(const ResourceHandle& rhs) const
 		{
 			return Handle == rhs.Handle;
+		}
+
+		bool operator!=(const ResourceHandle& rhs) const
+		{
+			return Handle != rhs.Handle;
+		}
+
+		operator bool() const {
+			return Handle != 0;
 		}
 	};
 }

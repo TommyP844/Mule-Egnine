@@ -2,29 +2,86 @@
 
 namespace Mule
 {
-	ResourceRegistry::ResourceRegistry(uint32_t framesInFlight, ResourceRegistryFlags flags)
+	ResourceRegistry::ResourceRegistry(uint32_t framesInFlight, const ResourceBuilder& builder)
 		:
-		mFramesInFlight(framesInFlight),
-		mFlags(flags)
+		mFramesInFlight(framesInFlight)
 	{
-		if (flags == ResourceRegistryFlags::CreateCommandAllocator)
+		mResizeRequests.resize(mFramesInFlight);
+
+		InFlightResource commandAllocator(mFramesInFlight);
+		InFlightResource timelineSemaphore(mFramesInFlight);
+
+		for (uint32_t i = 0; i < mFramesInFlight; i++)
 		{
-			mCommandAllocatorHandle = ResourceHandle::Create("CommandAllocator");
+			commandAllocator.Resources[i] = CommandAllocator::Create();
+			timelineSemaphore.Resources[i] = TimelineSemaphore::Create();
+			mResizeRequests[i].Handled = false;
+			mResizeRequests[i].Width = 800;
+			mResizeRequests[i].Height = 600;
+		}
 
-			InFlightResource inFlightResource;
+		mCommandAllocatorHandle = ResourceHandle("CommandAllocator", ResourceType::CommandAllocator);
+		mTimelineSemaphoreHandle = ResourceHandle("TimelineSemaphore", ResourceType::TimelineSemaphore);
 
+		mResources[mCommandAllocatorHandle] = commandAllocator;
+		mResources[mTimelineSemaphoreHandle] = timelineSemaphore;
+
+
+		for (const auto& [name, UBBlueprint] : builder.GetUniformBufferBlueprints())
+		{
+			InFlightResource UBIFR(mFramesInFlight);
 			for (uint32_t i = 0; i < mFramesInFlight; i++)
 			{
-				inFlightResource.Resources.push_back(CommandAllocator::Create());
+				UBIFR.Resources[i] = UniformBuffer::Create(UBBlueprint.Size);
 			}
 
-			mResources[mCommandAllocatorHandle] = inFlightResource;
+			ResourceHandle handle = ResourceHandle(name, ResourceType::UniformBuffer);
+			mResources[handle] = UBIFR;
+			mResourceHandles.push_back(handle);
+		}
+
+		for (const auto& [name, TextureBlueprints] : builder.GetTextureBlueprints())
+		{
+			InFlightResource TextureIFR(mFramesInFlight);
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				TextureIFR.Resources[i] = Texture2D::Create(name, {}, 800, 600, TextureBlueprints.format, TextureBlueprints.flags);
+			}
+
+			ResourceHandle handle = ResourceHandle(name, TextureBlueprints.Type);
+			mResources[handle] = TextureIFR;
+			mResourceHandles.push_back(handle);
+		}
+
+		for (const auto& [name, SRGBlueprint] : builder.GetSRGBlueprints())
+		{
+			InFlightResource SRGIFR(mFramesInFlight);
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				SRGIFR.Resources[i] = ShaderResourceGroup::Create(SRGBlueprint.Descriptions);
+			}
+
+			ResourceHandle handle = ResourceHandle(name, ResourceType::ShaderResourceGroup);
+			mResources[handle] = SRGIFR;
+			mResourceHandles.push_back(handle);
+		}
+
+	}
+
+	ResourceRegistry::~ResourceRegistry()
+	{
+		for (const auto& handle : mResourceHandles)
+		{
+			if (handle.Type == ResourceType::CommandBuffer)
+			{
+				mResources.erase(handle);
+			}
 		}
 	}
 
 	ResourceHandle ResourceRegistry::AddFence(const std::string& name)
 	{
-		ResourceHandle handle = ResourceHandle::Create(name);
+		ResourceHandle handle = ResourceHandle(name, ResourceType::Fence);
 
 		InFlightResource inFlightResource;
 
@@ -35,33 +92,45 @@ namespace Mule
 
 		mResources[handle] = inFlightResource;
 		mFences.push_back(inFlightResource);
+		mResourceHandles.push_back(handle);
 
 		return handle;
 	}
 
 	ResourceHandle ResourceRegistry::AddCommandBuffer(const std::string& name)
 	{
-		assert(mFlags == ResourceRegistryFlags::CreateCommandAllocator && "ResoureRegistry was not created with CreateCommandBufferFlag");
-
-		ResourceHandle handle = ResourceHandle::Create(name);
-
-		InFlightResource inFlightResource;
+		InFlightResource commandBuffer(mFramesInFlight);
 
 		for (uint32_t i = 0; i < mFramesInFlight; i++)
 		{
-			Ref<CommandAllocator> allocator = GetResource<CommandAllocator>(mCommandAllocatorHandle, i);
-			inFlightResource.Resources.push_back(allocator->CreateCommandBuffer());
+			auto commandAllocator = GetResource<CommandAllocator>(mCommandAllocatorHandle, i);
+			commandBuffer.Resources[i] = commandAllocator->CreateCommandBuffer();
 		}
 
-		mResources[handle] = inFlightResource;
+		ResourceHandle handle = ResourceHandle(name, ResourceType::CommandBuffer);
+
+		mResources[handle] = commandBuffer;
+		mResourceHandles.push_back(handle);
 
 		return handle;
 	}
 
 	Ref<Texture2D> ResourceRegistry::GetColorOutput(uint32_t frameIndex) const
 	{
-		Ref<Framebuffer> framebuffer = GetResource<Framebuffer>(mFramebufferOutputHandle, frameIndex);
-		return framebuffer->GetColorAttachment(0);
+		if (mOutputHandle)
+		{
+			auto image = GetResource<Texture2D>(mOutputHandle, frameIndex);
+			return image;
+		}
+
+		return nullptr;
+	}
+
+	void ResourceRegistry::SetOutputHandle(ResourceHandle outputHandle)
+	{
+		assert(outputHandle.Type == ResourceType::RenderTarget || outputHandle.Type != ResourceType::DepthAttachment && "Output must be a texture 2d");
+
+		mOutputHandle = outputHandle;
 	}
 
 	void ResourceRegistry::CopyRegistryResources(ResourceRegistry& registry)
@@ -69,6 +138,7 @@ namespace Mule
 		for (auto& [handle, res] : registry.mResources)
 		{
 			mResources[handle] = res;
+			mResourceHandles.push_back(handle);
 		}
 	}
 
@@ -80,4 +150,47 @@ namespace Mule
 			fence->Wait();
 		}
 	}
+
+	void ResourceRegistry::Resize(uint32_t width, uint32_t height)
+	{
+		for (uint32_t i = 0; i < mFramesInFlight; i++)
+		{
+			mResizeRequests[i].Handled = false;
+			mResizeRequests[i].ResizeWidth = width;
+			mResizeRequests[i].ResizeHeight = height;
+		}
+	}
+
+	bool ResourceRegistry::IsResizeRequested(uint32_t frameIndex)
+	{
+		return !mResizeRequests[frameIndex].Handled;
+	}
+
+	void ResourceRegistry::SetResizeHandled(uint32_t frameIndex)
+	{
+		mResizeRequests[frameIndex].Handled = true;
+		mResizeRequests[frameIndex].Width = mResizeRequests[frameIndex].ResizeWidth;
+		mResizeRequests[frameIndex].Height = mResizeRequests[frameIndex].ResizeHeight;
+	}
+
+	std::pair<uint32_t, uint32_t> ResourceRegistry::GetResizeDimensions(uint32_t frameIndex)
+	{
+		return { mResizeRequests[frameIndex].ResizeWidth, mResizeRequests[frameIndex].ResizeHeight };
+	}
+
+	Ref<TimelineSemaphore> ResourceRegistry::GetSemaphore(uint32_t frameIndex) const
+	{
+		return GetResource<TimelineSemaphore>(mTimelineSemaphoreHandle, frameIndex);
+	}
+	
+	uint32_t ResourceRegistry::GetWidth(uint32_t frameIndex) const
+	{
+		return mResizeRequests[frameIndex].Width;
+	}
+
+	uint32_t ResourceRegistry::GetHeight(uint32_t frameIndex) const
+	{
+		return mResizeRequests[frameIndex].Height;
+	}
+
 }

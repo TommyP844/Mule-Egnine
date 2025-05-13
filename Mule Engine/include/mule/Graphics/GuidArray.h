@@ -79,13 +79,13 @@ namespace Mule
 			mIndices.erase(iter);
 		}
 
-		const T& Query(AssetHandle handle)
+		const T& Query(AssetHandle handle) const
 		{
 			uint32_t index = QueryIndex(handle);
 			return mArray[index];
 		}
 
-		const T& Query(uint32_t index)
+		const T& Query(uint32_t index) const
 		{
 			return mArray[index];
 		}

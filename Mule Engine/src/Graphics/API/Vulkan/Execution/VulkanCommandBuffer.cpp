@@ -42,7 +42,6 @@ namespace Mule::Vulkan
 		vkAllocateCommandBuffers(device, &allocInfo, &mCommandBuffer);
 	}
 
-	//TODO: remove vkDeviceWaitIdle and use a fence
 	VulkanCommandBuffer::~VulkanCommandBuffer()
 	{
 		VulkanContext& context = VulkanContext::Get();
@@ -364,6 +363,103 @@ namespace Mule::Vulkan
 		vkCmdEndRenderingKHR(mCommandBuffer);
 	}
 
+	void VulkanCommandBuffer::BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment)
+	{
+		VkRect2D rect{};
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = width;
+		rect.extent.height = height;
+
+		std::vector<VkRenderingAttachmentInfo> vkColorAttachments;
+		VkRenderingAttachmentInfo depthAttachmentInfo{};
+
+		for (auto attachment : colorAttachments)
+		{
+			WeakRef<VulkanTexture2D> texture = attachment.Attachment;
+			VkImageView view = texture->GetVulkanImage().ImageView;
+
+
+			VkRenderingAttachmentInfo colorAttachment{};
+			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			colorAttachment.imageView = view;
+			colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.loadOp = attachment.ClearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.clearValue.color.float32[0] = 0.f;
+			colorAttachment.clearValue.color.float32[1] = 0.f;
+			colorAttachment.clearValue.color.float32[2] = 0.f;
+			colorAttachment.clearValue.color.float32[3] = 0.f;
+			colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+			vkColorAttachments.push_back(colorAttachment);
+		}
+
+		if (depthAttachment.Attachment)
+		{
+			WeakRef<VulkanTexture2D> vkDepthAttachment = depthAttachment.Attachment;
+
+			depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			depthAttachmentInfo.imageView = vkDepthAttachment->GetVulkanImage().ImageView;
+			depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			depthAttachmentInfo.loadOp = depthAttachment.ClearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+			depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachmentInfo.clearValue.depthStencil.depth = 1.f;
+			depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+		}
+
+		VkRenderingInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		info.renderArea = rect;
+		info.layerCount = 1;
+		info.colorAttachmentCount = vkColorAttachments.size();
+		info.pColorAttachments = vkColorAttachments.data();
+		info.pDepthAttachment = depthAttachment.Attachment ? &depthAttachmentInfo : nullptr;
+		info.pStencilAttachment = nullptr;
+		info.pNext = nullptr;
+		info.viewMask = 0;
+		info.flags = 0;
+
+		vkCmdBeginRenderingKHR(mCommandBuffer, &info);
+
+		VkViewport viewport{};
+		viewport.x = 0;
+		viewport.y = height;
+		viewport.width = width;
+		viewport.height = -((float)height);
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+
+		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
+	}
+
+	void VulkanCommandBuffer::BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups)
+	{
+		WeakRef<VulkanGraphicsPipeline> vulkanPipeline = pipeline;
+
+		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->GetPipeline());
+
+		if (groups.size() > 0)
+		{
+			std::vector<VkDescriptorSet> sets(groups.size());
+			for (uint32_t i = 0; i < groups.size(); i++)
+			{
+				WeakRef<VulkanDescriptorSet> descriptorSet = groups[i];
+				sets[i] = descriptorSet->GetDescriptorSet();
+			}
+			vkCmdBindDescriptorSets(
+				mCommandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetPipelineLayout(),
+				0,
+				sets.size(),
+				sets.data(),
+				0,
+				nullptr
+			);
+		}
+	}
+
 	// TODO: this only supports 2d textures, no arrays, cubes, or 3d images
 	void VulkanCommandBuffer::TranistionImageLayout(WeakRef<Texture> texture, ImageLayout newLayout)
 	{
@@ -565,7 +661,27 @@ namespace Mule::Vulkan
 			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // We will write as a color attachment
 
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // This is a color image
-			}
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL && newVkLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;                  // General layout could have been used in various stages
+			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                      // Preparing for a transfer operation
+
+			barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT; // General layout allows many accesses
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;          // We are going to write to it with a transfer
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Assuming it's a color image
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newVkLayout == VK_IMAGE_LAYOUT_GENERAL)
+		{
+			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                      // Transfer writes must finish first
+			dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;                  // General layout can be used for anything
+
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;           // Wait for writes from the transfer
+			barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT; // General layout allows all types of access
+
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Assuming it's a color image
+		}
 		else
 		{
 			SPDLOG_ERROR("Invalid layout transition");

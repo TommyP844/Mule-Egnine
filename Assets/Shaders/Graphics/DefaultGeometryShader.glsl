@@ -54,8 +54,9 @@ layout(location = 2) in mat3 TBN;
 layout(location = 5) in vec3 normal;
 
 layout(location = 0) out vec4 Albedo;
-layout(location = 1) out vec4 Normal;
-layout(location = 2) out vec4 PBRFactors; // Metallic, Roughness, AO, Emissive
+layout(location = 1) out vec4 Position;
+layout(location = 2) out vec4 OutNormal;
+layout(location = 3) out vec4 PBRFactors; // Metallic, Roughness, AO, Emissive
 
 struct Material 
 {
@@ -93,17 +94,16 @@ void main()
 
 	vec2 scaledUV = uv * material.TextureScale;
 
-	Albedo = vec4(1);//vec4(material.AlbedoColor.rgb * texture(textures[material.AlbedoIndex], scaledUV).rgb, 0);
+	// Albedo
+	Albedo = vec4(material.AlbedoColor.rgb * texture(textures[material.AlbedoIndex], scaledUV).rgb, 1);
 
-	if(material.NormalIndex == UINT32_MAX)
-	{
-		Normal = vec4(normalize(normal), 0);
-	}
-	else
-	{
-		vec3 normalTS = texture(textures[material.NormalIndex], scaledUV).xyz * 2.0 - 1.0;
-		Normal = vec4(normalize(TBN * normalTS), 0);
-	}
+	// Normal
+	vec3 normalTS = texture(textures[material.NormalIndex], scaledUV).xyz * 2.0 - 1.0;
+	OutNormal = vec4(normalize(TBN * normalTS), 1);
+
+	// World Position
+	Position = vec4(FragPos, 1);
+
 	// Metallic Factor
     PBRFactors.r = texture(textures[material.MetalnessIndex], scaledUV).r * material.MetalnessFactor;
 

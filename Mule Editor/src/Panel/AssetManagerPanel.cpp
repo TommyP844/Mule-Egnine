@@ -39,7 +39,7 @@ void AssetManagerPanel::OnUIRender(float dt)
 		if (ImGui::InputText("##SearchAsset", searchBuffer, 256, ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			Mule::AssetHandle handle = std::stoull(searchBuffer);
-			searchedAsset = assetManager->GetAsset<Mule::IAsset>(handle);
+			searchedAsset = assetManager->Get<Mule::IAsset>(handle);
 		}
 
 		static char nameBuffer[256] = { 0 };

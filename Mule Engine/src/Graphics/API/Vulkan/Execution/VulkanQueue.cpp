@@ -5,6 +5,7 @@
 #include "Graphics/API/Vulkan/Execution/VulkanCommandBuffer.h"
 #include "Graphics/API/Vulkan/Syncronization/VulkanFence.h"
 #include "Graphics/API/Vulkan/Syncronization/VulkanSemaphore.h"
+#include "Graphics/API/Vulkan/Syncronization/VulkanTimelineSemaphore.h"
 
 namespace Mule::Vulkan
 {
@@ -62,5 +63,94 @@ namespace Mule::Vulkan
         };
 
         vkQueueSubmit(mQueue, 1, &info, vkFence);
+    }
+
+    void VulkanQueue::Submit(Ref<CommandBuffer> commandBuffer, Ref<TimelineSemaphore> semaphore, uint64_t waitValue, uint64_t signalValue, Ref<Fence> fence)
+    {
+        WeakRef<VulkanTimelineSemaphore> timelineSemaphore = semaphore;
+        WeakRef<VulkanCommandBuffer> vulkanCommandBuffer = commandBuffer;
+
+        VkCommandBufferSubmitInfo commandBufferInfo{};
+        commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferInfo.pNext = nullptr;
+        commandBufferInfo.commandBuffer = vulkanCommandBuffer->GetHandle();
+        commandBufferInfo.deviceMask = 0;
+
+        VkSemaphoreSubmitInfo semaphoreSignalInfo{};
+        semaphoreSignalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        semaphoreSignalInfo.semaphore = timelineSemaphore->GetSemaphore();
+        semaphoreSignalInfo.value = signalValue;
+        semaphoreSignalInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        semaphoreSignalInfo.deviceIndex = 0;
+
+        VkSemaphoreSubmitInfo semaphoreWaitInfo{};
+        semaphoreWaitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        semaphoreWaitInfo.semaphore = timelineSemaphore->GetSemaphore();
+        semaphoreWaitInfo.value = waitValue;
+        semaphoreWaitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        semaphoreWaitInfo.deviceIndex = 0;
+        
+        VkSubmitInfo2 submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo.waitSemaphoreInfoCount = 1;
+        submitInfo.pWaitSemaphoreInfos = &semaphoreWaitInfo;
+        submitInfo.signalSemaphoreInfoCount = 1;
+        submitInfo.pSignalSemaphoreInfos = &semaphoreSignalInfo;
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pCommandBufferInfos = &commandBufferInfo;
+        
+        VkFence vkFence = VK_NULL_HANDLE;
+        if (fence)
+        {
+            Ref<VulkanFence> vulkanFence = fence;
+            vkFence = vulkanFence->GetHandle();
+        }
+        
+        vkQueueSubmit2KHR(mQueue, 1, &submitInfo, vkFence);
+    }
+
+    void VulkanQueue::Submit(Ref<CommandBuffer> commandBuffer, Ref<TimelineSemaphore> waitSemaphore, uint64_t waitValue, Ref<TimelineSemaphore> signalSemaphore, uint64_t signalValue, Ref<Fence> fence)
+    {
+        WeakRef<VulkanTimelineSemaphore> waitTimelineSemaphore = waitSemaphore;
+        WeakRef<VulkanTimelineSemaphore> signalTimelineSemaphore = signalSemaphore;
+        WeakRef<VulkanCommandBuffer> vulkanCommandBuffer = commandBuffer;
+
+        VkCommandBufferSubmitInfo commandBufferInfo{};
+        commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferInfo.pNext = nullptr;
+        commandBufferInfo.commandBuffer = vulkanCommandBuffer->GetHandle();
+        commandBufferInfo.deviceMask = 0;
+
+        VkSemaphoreSubmitInfo semaphoreSignalInfo{};
+        semaphoreSignalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        semaphoreSignalInfo.semaphore = signalTimelineSemaphore->GetSemaphore();
+        semaphoreSignalInfo.value = signalValue;
+        semaphoreSignalInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        semaphoreSignalInfo.deviceIndex = 0;
+
+        VkSemaphoreSubmitInfo semaphoreWaitInfo{};
+        semaphoreWaitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        semaphoreWaitInfo.semaphore = waitTimelineSemaphore->GetSemaphore();
+        semaphoreWaitInfo.value = waitValue;
+        semaphoreWaitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        semaphoreWaitInfo.deviceIndex = 0;
+
+        VkSubmitInfo2 submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo.waitSemaphoreInfoCount = 1;
+        submitInfo.pWaitSemaphoreInfos = &semaphoreWaitInfo;
+        submitInfo.signalSemaphoreInfoCount = 1;
+        submitInfo.pSignalSemaphoreInfos = &semaphoreSignalInfo;
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pCommandBufferInfos = &commandBufferInfo;
+
+        VkFence vkFence = VK_NULL_HANDLE;
+        if (fence)
+        {
+            Ref<VulkanFence> vulkanFence = fence;
+            vkFence = vulkanFence->GetHandle();
+        }
+
+        vkQueueSubmit2(mQueue, 1, &submitInfo, vkFence);
     }
 }

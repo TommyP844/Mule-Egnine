@@ -7,7 +7,7 @@
 void MaterialEditorPanel::OnAttach()
 {
 	auto assetManager = mEngineContext->GetAssetManager();
-	mBlackTexture = assetManager->LoadAsset<Mule::Texture2D>("../Assets/Textures/Black.png");
+	mBlackTexture = assetManager->Load<Mule::Texture2D>("../Assets/Textures/Black.png");
 }
 
 void MaterialEditorPanel::OnUIRender(float dt)
@@ -34,7 +34,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			{
 				if (ImGui::Button("Save"))
 				{
-					assetManager->SaveAssetText<Mule::Material>(mMaterial->Handle());
+					assetManager->Save<Mule::Material>(mMaterial->Handle());
 				}
 			}
 
@@ -66,7 +66,7 @@ void MaterialEditorPanel::OnUIRender(float dt)
 
 			ImGui::Text("Albedo Color");
 			ImGui::SameLine(paramOffset);
-			modified |= ImGui::ColorEdit4("##AlbedoColor", &mMaterial->AlbedoColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+			modified |= ImGui::ColorEdit3("##AlbedoColor", &mMaterial->AlbedoColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
 
 			ImGui::Text("Metalness Factor");
 			ImGui::SameLine(paramOffset);
@@ -98,12 +98,12 @@ void MaterialEditorPanel::OnUIRender(float dt)
 			modified |= DisplayTexture("Emissive", mMaterial->EmissiveMap);
 			modified |= DisplayTexture("Opacity", mMaterial->OpacityMap);
 
-			/*
+			
 			if (modified)
 			{
-				mEngineContext->GetSceneRenderer()->UpdateMaterial(mMaterial);
+				Mule::Renderer::Get().UpdateMaterial(mMaterial);
 			}
-			*/
+			
 		}
 	}
 	ImGui::End();
@@ -116,14 +116,14 @@ void MaterialEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 void MaterialEditorPanel::SetMaterial(Mule::AssetHandle materialHandle)
 {
 	auto assetManager = mEngineContext->GetAssetManager();
-	mMaterial = assetManager->GetAsset<Mule::Material>(materialHandle);
+	mMaterial = assetManager->Get<Mule::Material>(materialHandle);
 }
 
 bool MaterialEditorPanel::DisplayTexture(const char* name, Mule::AssetHandle& textureHandle)
 {
 	auto assetManager = mEngineContext->GetAssetManager();
 	bool modified = false;
-	WeakRef<Mule::Texture2D> texture = assetManager->GetAsset<Mule::Texture2D>(textureHandle);
+	WeakRef<Mule::Texture2D> texture = assetManager->Get<Mule::Texture2D>(textureHandle);
 
 	ImGui::PushID(name);
 
