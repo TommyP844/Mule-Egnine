@@ -1,6 +1,7 @@
 #include "Graphics/API/Vulkan/Syncronization/VulkanTimelineSemaphore.h"
 
 #include "Graphics/API/Vulkan/VulkanContext.h"
+#include <spdlog/spdlog.h>
 
 namespace Mule::Vulkan
 {
@@ -29,8 +30,15 @@ namespace Mule::Vulkan
 	uint64_t VulkanTimelineSemaphore::GetValue() const
 	{
 		VulkanContext& context = VulkanContext::Get();
+
 		uint64_t value = 0;
-		vkGetSemaphoreCounterValueKHR(context.GetDevice(), mSemaphore, &value);
+		VkResult result = vkGetSemaphoreCounterValueKHR(context.GetDevice(), mSemaphore, &value);
+		if (result != VK_SUCCESS)
+		{
+			SPDLOG_ERROR("Failed to get Timeline Semaphore Value");
+			return 0;
+		}
+
 		return value;
 	}
 }

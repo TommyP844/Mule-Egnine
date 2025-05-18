@@ -51,6 +51,7 @@ workspace "Mule"
     defines
     {
         "GLM_ENABLE_EXPERIMENTAL",
+        "GLM_FORCE_DEPTH_ZERO_TO_ONE",
         "YAML_CPP_STATIC_DEFINE",
         "VK_USE_PLATFORM_WIN32_KHR", --TODO add to windows filter
         "GLFW_EXPOSE_NATIVE_WIN32", --TODO add to windows filter

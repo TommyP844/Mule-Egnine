@@ -20,6 +20,7 @@ namespace Mule::Vulkan
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
 
+		ImGui_ImplVulkan_RemoveTexture((VkDescriptorSet)mImGuiID);
 		vkDestroyImageView(device, mView, nullptr);
 	}
 }

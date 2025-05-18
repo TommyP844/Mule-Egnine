@@ -11,6 +11,7 @@ namespace Mule
 		TimelineSemaphore,
 		CommandAllocator,
 		RenderTarget,
-		DepthAttachment
+		DepthAttachment,
+		Sampler
 	};
 }

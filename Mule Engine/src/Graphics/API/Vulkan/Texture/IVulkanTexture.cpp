@@ -123,7 +123,6 @@ namespace Mule::Vulkan
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
 
-		// TODO: eventually make these generated on the fly
 		mTextureViews.resize(arrayLayers);
 
 		for (uint32_t layer = 0; layer < arrayLayers; layer++)
@@ -136,7 +135,7 @@ namespace Mule::Vulkan
 				viewInfo.pNext = nullptr;
 				viewInfo.flags = 0;
 				viewInfo.image = mVulkanImage.Image;
-				viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+				viewInfo.viewType = viewType;
 				viewInfo.format = format;
 				viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 				viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -244,6 +243,8 @@ namespace Mule::Vulkan
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
+
+		ReleaseViews();
 
 		vkDestroyImageView(device, mVulkanImage.ImageView, nullptr);
 		vkDestroyImage(device, mVulkanImage.Image, nullptr);

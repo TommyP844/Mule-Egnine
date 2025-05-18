@@ -32,6 +32,11 @@ namespace Mule
 		mPostDrawCommandList.AddCommand(command);
 	}
 
+	void RenderPass::AddDependency(const std::string& passDependency)
+	{
+		mDependencies.push_back(passDependency);
+	}
+
 	Ref<CommandBuffer> RenderPass::Execute(const CommandList& commandList, const ResourceRegistry& registry, uint32_t frameIndex)
 	{
 		Ref<CommandBuffer> cmd = registry.GetResource<CommandBuffer>(mCommandBufferHandle, frameIndex);
@@ -47,13 +52,7 @@ namespace Mule
 
 		if (mExecutionCallback)
 		{
-			for (const auto& command : commandList.GetCommands())
-			{
-				if (mCommandTypes.contains(command.GetType()))
-				{
-					mExecutionCallback(cmd, command, registry, frameIndex);
-				}
-			}
+			mExecutionCallback(cmd, commandList, registry, frameIndex);
 		}
 
 		CommandExecutor::Execute(cmd, mPostDrawCommandList, registry, frameIndex);
@@ -77,7 +76,7 @@ namespace Mule
 		mCommandTypes.insert(type);
 	}
 
-	void RenderPass::SetExecutionCallback(std::function<void(Ref<CommandBuffer>, const RenderCommand&, const ResourceRegistry&, uint32_t)> callback)
+	void RenderPass::SetExecutionCallback(std::function<void(Ref<CommandBuffer>, const CommandList&, const ResourceRegistry&, uint32_t)> callback)
 	{
 		mExecutionCallback = callback;
 	}

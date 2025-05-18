@@ -7,7 +7,8 @@ namespace Mule::CommandExecutor
 	void ExecuteBeginRenderingCommand(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex);
 	void ExecuteEndRenderingCommand(Ref<CommandBuffer> cmd);
 	void ExecuteBindGraphicsPipeline(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex);
-	
+	void ExecuteBindComputePipeline(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex);
+	void ExecuteClearRenderTarget(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex);
 
 	void Execute(Ref<CommandBuffer> cmd, const CommandList& commandList, const ResourceRegistry& registry, uint32_t frameIndex)
 	{
@@ -35,6 +36,14 @@ namespace Mule::CommandExecutor
 				ExecuteBindGraphicsPipeline(cmd, command, registry, frameIndex);
 				break;
 
+			case RenderCommandType::BindComputePipeline:
+				ExecuteBindComputePipeline(cmd, command, registry, frameIndex);
+				break;
+
+			case RenderCommandType::ClearRenderTarget:
+				ExecuteClearRenderTarget(cmd, command, registry, frameIndex);
+				break;
+
 			default:
 				assert(false && "Invalid Command");
 				break;
@@ -51,7 +60,7 @@ namespace Mule::CommandExecutor
 	void ExecuteTransitionLayoutCommand(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex)
 	{
 		const TransitionLayoutCommand& transitionCommand = command.GetCommand<TransitionLayoutCommand>();
-		auto texture = registry.GetResource<Texture2D>(transitionCommand.TextureHandle, frameIndex);
+		auto texture = registry.GetResource<Texture>(transitionCommand.TextureHandle, frameIndex);
 		cmd->TranistionImageLayout(texture, transitionCommand.NewLayout);
 	}
 	
@@ -67,20 +76,18 @@ namespace Mule::CommandExecutor
 			const BeginRenderingCommandAttachment& attachment = beginCommand.ColorAttachments[i];
 
 			colorAttachments[i] = {
-				registry.GetResource<Texture2D>(attachment.AttachmentHandle, frameIndex),
+				registry.GetResource<Texture>(attachment.AttachmentHandle, frameIndex),
 				attachment.ClearOnLoad
 			};
 		}
 
 		if (beginCommand.DepthAttachment.AttachmentHandle)
 		{
-			depthAttachment.Attachment = registry.GetResource<Texture2D>(beginCommand.DepthAttachment.AttachmentHandle, frameIndex);
+			depthAttachment.Attachment = registry.GetResource<Texture>(beginCommand.DepthAttachment.AttachmentHandle, frameIndex);
 			depthAttachment.ClearOnLoad = beginCommand.DepthAttachment.ClearOnLoad;
 		}
 
 		cmd->BeginRendering(
-			registry.GetVariable<uint32_t>(beginCommand.Width),
-			registry.GetVariable<uint32_t>(beginCommand.Height),
 			colorAttachments,
 			depthAttachment
 		);
@@ -103,5 +110,27 @@ namespace Mule::CommandExecutor
 		}
 
 		cmd->BindPipeline(bindPipeline.Pipeline, groups);
+	}
+
+	void ExecuteBindComputePipeline(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex)
+	{
+		const BindComputePipelineCommand& bindPipeline = command.GetCommand<BindComputePipelineCommand>();
+
+		std::vector<WeakRef<ShaderResourceGroup>> groups(bindPipeline.ShaderResourceGroups.size());
+
+		for (uint32_t i = 0; i < groups.size(); i++)
+		{
+			groups[i] = registry.GetResource<ShaderResourceGroup>(bindPipeline.ShaderResourceGroups[i], frameIndex);
+		}
+
+		cmd->BindComputePipeline(bindPipeline.Pipeline, groups);
+	}
+
+	void ExecuteClearRenderTarget(Ref<CommandBuffer> cmd, const RenderCommand& command, const ResourceRegistry& registry, uint32_t frameIndex)
+	{
+		const auto& clearCommand = command.GetCommand<ClearRenderTargetCommand>();
+		auto renderTarget = registry.GetResource<Texture>(clearCommand.ClearTarget, frameIndex);
+
+		cmd->ClearTexture(renderTarget);
 	}
 }

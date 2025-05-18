@@ -15,6 +15,7 @@
 #include "Graphics/API/CommandAllocator.h"
 #include "Graphics/API/CommandBuffer.h"
 #include "Graphics/API/TimelineSemaphore.h"
+#include "Graphics/API/Texture2DArray.h"
 
 #include <vector>
 #include <variant>
@@ -47,10 +48,11 @@ namespace Mule
 		template<class T>
 		Ref<T> GetResource(ResourceHandle handle, uint32_t frameIndex) const;
 
-		Ref<Texture2D> GetColorOutput(uint32_t frameIndex) const;
+		WeakRef<TextureView> GetColorOutput() const;
+		ResourceHandle GetColorOutputHandle() const { return mOutputHandle; }
 		uint32_t GetFramesInFlight() const { return mFramesInFlight; }
 
-		void SetOutputHandle(ResourceHandle outputHandle);
+		void SetOutputHandle(ResourceHandle outputHandle, uint32_t layer = 0);
 		void CopyRegistryResources(ResourceRegistry& registry);
 		void WaitForFences(uint32_t frameIndex);
 
@@ -64,6 +66,8 @@ namespace Mule
 		uint32_t GetWidth(uint32_t frameIndex) const;
 		uint32_t GetHeight(uint32_t frameIndex) const;
 
+		void SetFrameIndex(uint32_t frameIndex) { mFrameIndex = frameIndex; }
+
 		const std::vector<ResourceHandle>& GetResourceHandles() const { return mResourceHandles; }
 
 		template<typename T>
@@ -71,25 +75,27 @@ namespace Mule
 
 	private:
 		uint32_t mFramesInFlight;
+		uint32_t mFrameIndex;
 
 		// Outputs
 		uint32_t mAttachmentIndex = 0;
 		bool mOutputIsDepth = false;
 
 		ResourceHandle mOutputHandle;
+		uint32_t mOutputHandleLayer;
 		ResourceHandle mCommandAllocatorHandle;
 		ResourceHandle mTimelineSemaphoreHandle;
 
 		using ResourceVariant = std::variant<
 			Ref<Texture>,
-			Ref<Texture2D>,
 			Ref<UniformBuffer>,
 			Ref<Framebuffer>,
 			Ref<ShaderResourceGroup>,
 			Ref<Fence>,
 			Ref<CommandAllocator>,
 			Ref<CommandBuffer>,
-			Ref<TimelineSemaphore>
+			Ref<TimelineSemaphore>,
+			Ref<Sampler>
 			>;
 
 		struct InFlightResource

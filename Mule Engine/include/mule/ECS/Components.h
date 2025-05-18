@@ -113,6 +113,7 @@ namespace Mule
 		bool Active = true;
 		float Radiance = 1.f;
 		float Angle = 45.f;
+		float FallOff = 5.f;
 		glm::vec3 Color = glm::vec3(1.f);
 	};
 

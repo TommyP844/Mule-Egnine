@@ -51,7 +51,6 @@ namespace Mule
 		{
 		case Mule::RegistryVariable::Width: return mResizeRequests[frameIndex].Width;
 		case Mule::RegistryVariable::Height: return mResizeRequests[frameIndex].Height;
-			break;
 		case Mule::RegistryVariable::MAX:
 		default:
 			assert(false && "Invalid registry variable");

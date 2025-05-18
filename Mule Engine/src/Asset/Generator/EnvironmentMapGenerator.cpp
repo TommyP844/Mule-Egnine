@@ -18,10 +18,10 @@ namespace Mule
 
 		auto assetManager = mServiceManager->Get<AssetManager>();
 
-		auto shaderFactory = mServiceManager->Get<ShaderFactory>();
-		auto hdrToCubemapShader = shaderFactory->GetOrCreateComputePipeline("HDRToCubemap");
-		auto diffuseIBLShader = shaderFactory->GetOrCreateComputePipeline("DiffuseIBL");
-		auto prefilterIBLShader = shaderFactory->GetOrCreateComputePipeline("PrefilterIBL");
+		auto shaderFactory = ShaderFactory::Get();
+		auto hdrToCubemapShader = shaderFactory.GetOrCreateComputePipeline("HDRToCubemap");
+		auto diffuseIBLShader = shaderFactory.GetOrCreateComputePipeline("DiffuseIBL");
+		auto prefilterIBLShader = shaderFactory.GetOrCreateComputePipeline("PrefilterIBL");
 
 		Ref<ShaderResourceGroup> hdrToCubemapSRG = ShaderResourceGroup::Create(hdrToCubemapShader->GetBlueprintIndex(0));
 		Ref<ShaderResourceGroup> diffuseIBLSRG = ShaderResourceGroup::Create(diffuseIBLShader->GetBlueprintIndex(0));
@@ -39,12 +39,12 @@ namespace Mule
 		cubeMap->TransitionImageLayoutImmediate(ImageLayout::General);
 
 		auto hdrImage = assetManager->Get<Texture>(hdrImageHandle);
-		hdrToCubemapSRG->Update(0, DescriptorType::Texture, hdrImage);
-		hdrToCubemapSRG->Update(1, DescriptorType::StorageImage, (WeakRef<Texture>)cubeMap);
+		hdrToCubemapSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, hdrImage);
+		hdrToCubemapSRG->Update(1, DescriptorType::StorageImage, ImageLayout::General, (WeakRef<Texture>)cubeMap);
 
 		commandBuffer->Begin();
 		commandBuffer->BindComputePipeline(hdrToCubemapShader, { hdrToCubemapSRG });
-		commandBuffer->Execute(size / 32, size / 32, 6);
+		commandBuffer->Execute((size + 32) / 32, (size + 32) / 32, 6);
 		commandBuffer->TranistionImageLayout(cubeMap, ImageLayout::ShaderReadOnly);
 		commandBuffer->End();
 
@@ -58,13 +58,13 @@ namespace Mule
 		Ref<TextureCube> diffuseIBL = TextureCube::Create("Diffuse IBL", {}, size, TextureFormat::RGBA_16F, TextureFlags::TransferSrc | TextureFlags::TransferDst | TextureFlags::StorageImage);
 		diffuseIBL->TransitionImageLayoutImmediate(ImageLayout::General);
 		
-		diffuseIBLSRG->Update(0, DescriptorType::Texture, (WeakRef<Texture>)cubeMap);
-		diffuseIBLSRG->Update(1, DescriptorType::StorageImage, (WeakRef<Texture>)diffuseIBL);
+		diffuseIBLSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)cubeMap);
+		diffuseIBLSRG->Update(1, DescriptorType::StorageImage, ImageLayout::General, (WeakRef<Texture>)diffuseIBL);
 
 		commandBuffer->Reset();
 		commandBuffer->Begin();
 		commandBuffer->BindComputePipeline(diffuseIBLShader, { diffuseIBLSRG });
-		commandBuffer->Execute(size / 32, size / 32, 6);
+		commandBuffer->Execute((size + 32) / 32, (size + 32) / 32, 6);
 		commandBuffer->TranistionImageLayout(diffuseIBL, ImageLayout::ShaderReadOnly);
 		commandBuffer->End();
 
@@ -89,12 +89,12 @@ namespace Mule
 
 			auto view = prefilterMap->GetMipView(i);
 
-			prefilterIBLSRG->Update(0, DescriptorType::Texture, (WeakRef<Texture>)cubeMap);
+			prefilterIBLSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)cubeMap);
 			prefilterIBLSRG->Update(1, DescriptorType::StorageImage, ImageLayout::General, view);
 
 			commandBuffer->BindComputePipeline(prefilterIBLShader, { prefilterIBLSRG });
 			commandBuffer->SetPushConstants(prefilterIBLShader, &roughness, sizeof(roughness));
-			commandBuffer->Execute(size / 32, size / 32, 6);
+			commandBuffer->Execute((size + 32) / 32, (size + 32) / 32, 6);
 
 			if (i == mipLevels - 1)
 			{

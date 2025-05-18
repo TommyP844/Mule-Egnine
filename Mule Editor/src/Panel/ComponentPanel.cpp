@@ -217,6 +217,9 @@ void ComponentPanel::OnUIRender(float dt)
 			DisplayRow("Angle");
 			entityModified |= ImGui::DragFloat("##Angle", &light.Angle, 1.f, 0.f, 360.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
+			DisplayRow("Fall Off");
+			entityModified |= ImGui::DragFloat("##FallOff", &light.FallOff, 0.01f, 0.f, 180.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+
 			DisplayRow("Color");
 			entityModified |= ImGui::ColorEdit3("##Color", &light.Color[0], ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
 			});

@@ -12,6 +12,9 @@
 #include "Scripting/ScriptContext.h"
 
 #include "Graphics/Renderer/Renderer.h"
+#include "Graphics/EnvironmentMap.h"
+
+#include "Engine Context/EngineAssets.h"
 
 #include <entt/entt.hpp>
 
@@ -362,6 +365,9 @@ namespace Mule
 			auto mesh = assetManager->Get<Mesh>(meshComponent.MeshHandle);
 			auto material = assetManager->Get<Material>(meshComponent.MaterialHandle);
 
+			if (!mesh)
+				continue;
+
 			DrawCommand drawCommand{
 				mesh,
 				material,
@@ -369,6 +375,115 @@ namespace Mule
 			};
 
 			mCommandList.AddCommand(drawCommand);
+		}
+
+		for (auto entity : mRegistry.view<DirectionalLightComponent>())
+		{
+			const auto& directionalLightComponent = GetComponent<DirectionalLightComponent>(entity);
+			const auto& transformComponent = GetComponent<TransformComponent>(entity);
+
+			// TODO: doesnt current take parents rotation into account
+			glm::quat orientation = glm::quat(glm::radians(transformComponent.Rotation));
+			const glm::vec3& baseDirection = glm::vec3(0.f, -1.f, 0.f);
+			glm::vec3 direction = orientation * baseDirection;
+
+			if (!directionalLightComponent.Active)
+				continue;
+
+			DrawDirectionalLightCommand directionalLightCommand{
+				direction,
+				directionalLightComponent.Color,
+				directionalLightComponent.Intensity
+			};
+
+			mCommandList.AddCommand(directionalLightCommand);
+		}
+
+		for (auto entity : mRegistry.view<PointLightComponent>())
+		{
+			const auto& pointLightComponent = GetComponent<PointLightComponent>(entity);
+			const auto& transformComponent = GetComponent<TransformComponent>(entity);
+
+			// TODO: doesnt currently take parents position into account
+			glm::vec3 position = transformComponent.Translation;
+
+			if (!pointLightComponent.Active)
+				continue;
+
+			DrawPointLightCommand pointLightCommand {
+				position,
+				pointLightComponent.Color,
+				pointLightComponent.Radiance
+			};
+
+			mCommandList.AddCommand(pointLightCommand);
+		}
+
+		for (auto entity : mRegistry.view<SpotLightComponent>())
+		{
+			const auto& spotLightComponent = GetComponent<SpotLightComponent>(entity);
+			const auto& transformComponent = GetComponent<TransformComponent>(entity);
+
+			// TODO: doesnt currently take parents position into account
+			glm::vec3 position = transformComponent.Translation;
+
+			// TODO: doesnt current take parents rotation into account
+			glm::quat orientation = glm::quat(glm::radians(transformComponent.Rotation));
+			const glm::vec3& baseDirection = glm::vec3(0.f, -1.f, 0.f);
+			glm::vec3 direction = orientation * baseDirection;
+
+			if (!spotLightComponent.Active)
+				continue;
+
+			DrawSpotLightCommand spotLightCommand {
+				position,
+				direction,
+				spotLightComponent.Color,
+				spotLightComponent.Radiance,
+				glm::radians(spotLightComponent.Angle) * 0.5f,
+				glm::radians(spotLightComponent.FallOff)
+			};
+
+			mCommandList.AddCommand(spotLightCommand);
+		}
+
+		for (auto entity : mRegistry.view<EnvironmentMapComponent>())
+		{
+			const auto& envMapComponent = GetComponent<EnvironmentMapComponent>(entity);
+
+			if (!envMapComponent.Active)
+				continue;
+
+			auto cubeMesh = assetManager->Get<Mesh>(MULE_CUBE_MESH_HANDLE);
+
+			if (!cubeMesh)
+				continue;
+
+			auto environmentMap = assetManager->Get<EnvironmentMap>(envMapComponent.EnvironmentMap);
+
+			if (!environmentMap)
+				continue;
+
+			auto skybox = assetManager->Get<TextureCube>(environmentMap->GetCubeMapHandle());
+			auto diffuseIBL = assetManager->Get<TextureCube>(environmentMap->GetDiffuseIBLMap());
+			auto prefilterIBL = assetManager->Get<TextureCube>(environmentMap->GetPreFilterMap());
+			auto brdfLut = assetManager->Get<Texture2D>(MULE_BDRF_LUT_TEXTURE_HANDLE);
+
+			if (!skybox || !diffuseIBL || !prefilterIBL || !brdfLut)
+				continue;
+
+			DrawSkyboxCommand skyboxCommand {
+				cubeMesh,
+				skybox,
+				diffuseIBL,
+				prefilterIBL,
+				brdfLut
+			};
+
+			mCommandList.AddCommand(skyboxCommand);
+
+			// We only take one sky box command for now
+			break;
 		}
 	}
 

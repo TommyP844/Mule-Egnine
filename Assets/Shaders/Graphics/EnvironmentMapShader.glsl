@@ -9,27 +9,34 @@ layout(location = 4) in vec3 color;
 
 layout(location = 0) out vec3 pos;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 view;
-    mat4 proj;
-} ubo;
+struct CameraData
+{
+    mat4 ViewProj;
+    mat4 View;
+	mat4 Proj;
+	vec3 Pos;
+	vec3 ViewDir;
+};
+
+layout(set = 0, binding = 0) uniform UniformBufferObject {
+    CameraData Camera;
+};
 
 
 void main()
 {
 	pos = position;
-	gl_Position = ubo.proj * mat4(mat3(ubo.view)) * vec4(position, 1.0);
+	gl_Position = Camera.Proj * mat4(mat3(Camera.View)) * vec4(position, 1.0);
 	gl_Position.z = gl_Position.w; // Set depth to the far plane
 }
 
 #FRAGMENT
 #version 460 core
-#extension GL_EXT_nonuniform_qualifier : enable
 
 layout(location = 0) in vec3 pos;
 layout(location = 0) out vec4 fragColor;
 
-layout(binding = 1) uniform samplerCube cubeMap;
+layout(set = 1, binding = 0) uniform samplerCube cubeMap;
 
 void main()
 {

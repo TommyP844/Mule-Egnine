@@ -34,8 +34,17 @@ namespace Mule
 		{
 			pass->InitRegistry(registry);
 		}
+
+		if (mSetupCallback)
+		{
+			for (uint32_t i = 0; i < registry.GetFramesInFlight(); i++)
+			{
+				mSetupCallback(registry, i);
+			}
+		}
 	}
 
+	// TODO: currently were clearing render targets every time there written to, we only want to do this once when its first written to
 	void RenderGraph::Bake()
 	{
 		std::vector<Ref<RenderPass>> passesToCompile = mPasses;
@@ -46,6 +55,15 @@ namespace Mule
 		std::unordered_map<uint32_t, std::vector<uint32_t>> graph;
 		std::unordered_map<uint32_t, uint32_t> inDegree;
 		std::unordered_set<uint32_t> nodes;
+		std::unordered_map<std::string, uint32_t> namedIndices;
+
+		for (uint32_t i = 0; i < passesToCompile.size(); i++) {
+			nodes.insert(i);
+			if (inDegree.find(i) == inDegree.end())
+				inDegree[i] = 0;
+
+			namedIndices[passesToCompile[i]->GetName()] = i;
+		}
 
 		// Build Dependency Graph
 		for (uint32_t i = 0; i < passesToCompile.size() - 1; i++)
@@ -82,6 +100,18 @@ namespace Mule
 						}
 					}
 				}
+			}
+		}
+
+		for (auto pass : passesToCompile)
+		{
+			uint32_t to = namedIndices[pass->GetName()];
+			for (auto dep : pass->GetDependencies())
+			{
+				assert(namedIndices.find(dep) != namedIndices.end() && "Dependency does not exist");
+				uint32_t from = namedIndices[dep];
+
+				edges.push_back({ from, to });
 			}
 		}
 
@@ -123,6 +153,8 @@ namespace Mule
 
 		std::unordered_set<ResourceHandle> frameBufferClears;
 
+		std::unordered_set<ResourceHandle> clearedRenderTargets;
+
 		for (auto pass : mPasses)
 		{
 			std::vector<BeginRenderingCommandAttachment> colorAttachments;
@@ -143,26 +175,67 @@ namespace Mule
 						if (handle.Type == ResourceType::RenderTarget)
 						{
 							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::ColorAttachment));
-							colorAttachments.push_back({ handle, true, usage.Index });
+
+							bool clear = false;
+							if (!clearedRenderTargets.contains(handle))
+							{
+								clear = true;
+								clearedRenderTargets.insert(handle);
+							}
+
+							colorAttachments.push_back({ handle, clear, usage.Index });
 						}
 						else if (handle.Type == ResourceType::DepthAttachment)
 						{
 							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::DepthAttachment));
-							depthAttachment = { handle, true };
+
+							bool clear = false;
+							if (!clearedRenderTargets.contains(handle))
+							{
+								clear = true;
+								clearedRenderTargets.insert(handle);
+							}
+
+							depthAttachment = { handle, clear };
 						}
-					}
-					else if (access == ResourceAccess::Read)
+					}					
+				}
+				else if (passType == PassType::Compute)
+				{
+					if (access == ResourceAccess::Write)
 					{
 						if (handle.Type == ResourceType::RenderTarget || handle.Type == ResourceType::DepthAttachment)
-							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::ShaderReadOnly));
-					}
+						{
+							pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::General));
 
-					if (handle.Type == ResourceType::ShaderResourceGroup)
-					{
-						SRGHandles.push_back({ handle, usage.Index });
+							if (!clearedRenderTargets.contains(handle))
+							{
+								pass->AddPreDrawCommand(ClearRenderTargetCommand(handle));
+								clearedRenderTargets.insert(handle);
+							}
+						}
 					}
-				}				
+				}
+
+				if (handle.Type == ResourceType::ShaderResourceGroup)
+				{
+					SRGHandles.push_back({ handle, usage.Index });
+				}
+
+				if (access == ResourceAccess::Read)
+				{
+					if (handle.Type == ResourceType::RenderTarget || handle.Type == ResourceType::DepthAttachment)
+						pass->AddPreDrawCommand(TransitionLayoutCommand(handle, ImageLayout::ShaderReadOnly));
+				}
 			}
+
+			std::sort(SRGHandles.begin(), SRGHandles.end(), [](const std::pair<ResourceHandle, uint32_t>& lhs, const std::pair<ResourceHandle, uint32_t>& rhs) {
+				return lhs.second < rhs.second;
+				});
+
+			std::vector<ResourceHandle> SRGHandlesSorted;
+			for (auto [handle, index] : SRGHandles)
+				SRGHandlesSorted.push_back(handle);
 
 			if (passType == PassType::Graphics)
 			{
@@ -170,27 +243,24 @@ namespace Mule
 					return lhs.index < rhs.index;
 					});
 
-				std::sort(SRGHandles.begin(), SRGHandles.end(), [](const std::pair<ResourceHandle, uint32_t>& lhs, const std::pair<ResourceHandle, uint32_t>& rhs) {
-					return lhs.second < rhs.second;
-					});
-
 				pass->AddPreDrawCommand(BeginRenderingCommand(
-					RegistryVariable::Width,
-					RegistryVariable::Height,
 					colorAttachments,
 					depthAttachment
 				));
 
-				std::vector<ResourceHandle> SRGHandlesSorted;
-				for (auto [handle, index] : SRGHandles)
-					SRGHandlesSorted.push_back(handle);
-
 				pass->AddPreDrawCommand(BindGraphicsPipelineCommand(
 					pass->GetGraphicsPipeline(),
 					SRGHandlesSorted
-					));
+				));
 
 				pass->AddPostDrawCommand(EndRenderingCommand());
+			}
+			else if (passType == PassType::Compute)
+			{
+				pass->AddPreDrawCommand(BindComputePipelineCommand(
+					pass->GetComputePipeline(),
+					SRGHandlesSorted
+				));
 			}
 		}
 
@@ -209,23 +279,26 @@ namespace Mule
 			return;
 		}
 
+		//registry->SetFrameIndex(frameIndex);
+		
+
 		Ref<TimelineSemaphore> semaphore = registry->GetSemaphore(frameIndex);
 		uint64_t semaphoreValue = semaphore->GetValue();
 
-		if (mPreExecutionCallback)
-			mPreExecutionCallback(camera, frameIndex);
-
 		if (registry->IsResizeRequested(frameIndex))
 		{
-			GraphicsContext::Get().AwaitIdle();
+			registry->WaitForFences(frameIndex);
 
 			auto [width, height] = registry->GetResizeDimensions(frameIndex);
-			
-			if(mResizeCallback)
+
+			if (mResizeCallback)
 				mResizeCallback(camera, frameIndex, width, height);
 
 			registry->SetResizeHandled(frameIndex);
 		}
+
+		if (mPreExecutionCallback)
+			mPreExecutionCallback(camera, commands, frameIndex);
 
 		for (uint32_t i = 0; i < mPasses.size(); i++)
 		{
@@ -236,13 +309,14 @@ namespace Mule
 
 			if (i == mPasses.size() - 1)
 			{
-				auto renderTarget = registry->GetColorOutput(frameIndex);
+				auto renderTargetHandle = registry->GetColorOutputHandle();
+				auto renderTarget = registry->GetResource<Texture>(renderTargetHandle, frameIndex);
 				commandBuffer->TranistionImageLayout(renderTarget, ImageLayout::ShaderReadOnly);
 			}
 
 			commandBuffer->End();
 
-			mQueue->Submit(commandBuffer, semaphore, semaphoreValue, semaphoreValue + 1, fence);
+			mQueue->Submit(commandBuffer, semaphore, semaphoreValue, semaphoreValue + 1u, fence);
 			semaphoreValue++;
 		}
 	}

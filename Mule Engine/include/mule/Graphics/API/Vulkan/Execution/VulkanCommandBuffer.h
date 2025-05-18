@@ -25,10 +25,11 @@ namespace Mule::Vulkan
 		void EndSwapchainRendering() override;
 		void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 		void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) override;
+		void ClearTexture(WeakRef<Texture2D> texture) override;
 		void EndRendering() override;
 
 		// New API
-		void BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) override;
+		void BeginRendering(const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) override;
 		void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) override;
 
 		// WARNING, the following commands only work with 2d textures
@@ -50,6 +51,8 @@ namespace Mule::Vulkan
 		void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount = 1) override;
 		void BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount) override;
 		
+		void SetViewport(uint32_t x, uint32_t width, uint32_t y, uint32_t height) override;
+		void SetScissor(uint32_t x, uint32_t width, uint32_t y, uint32_t height) override;
 
 		VkCommandBuffer GetHandle() const { return mCommandBuffer; }
 

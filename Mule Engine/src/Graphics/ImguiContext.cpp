@@ -298,6 +298,8 @@ namespace Mule
 		mGraphicsQueue->Submit(frameData.CommandBuffer, waitSemaphores, { frameData.Semaphore }, frameData.Fence);
 
 		ImGui::UpdatePlatformWindows();
+
+		frameData.Fence->Wait();
 	}
 
 	void ImGuiContext::Resize(uint32_t width, uint32_t height)

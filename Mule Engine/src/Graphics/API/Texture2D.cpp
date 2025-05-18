@@ -13,10 +13,10 @@ namespace Mule
 		GraphicsAPI API = GraphicsContext::Get().GetAPI();
 		switch (API)
 		{
-		case GraphicsAPI::None:
-
-			break;
 		case GraphicsAPI::Vulkan: return Ref<Vulkan::VulkanTexture2D>(new Vulkan::VulkanTexture2D(name, data, width, height, format, flags));
+		case GraphicsAPI::None:
+			assert(false && "Invalid API");
+			break;
 		}
 	}
 

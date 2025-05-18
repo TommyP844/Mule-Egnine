@@ -24,7 +24,8 @@ public:
     {
     }
 
-    WeakRef(std::nullptr_t) :
+    WeakRef(std::nullptr_t) 
+        :
         mPtr(nullptr)
     {
     }

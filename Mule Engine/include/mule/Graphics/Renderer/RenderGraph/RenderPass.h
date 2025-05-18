@@ -46,6 +46,7 @@ namespace Mule
 
 		void AddPreDrawCommand(const RenderCommand& command);
 		void AddPostDrawCommand(const RenderCommand& command);
+		void AddDependency(const std::string& passDependency);
 
 		PassType GetPassType() const { return mPassType; }
 		const std::string& GetName() const { return mName; }
@@ -53,15 +54,17 @@ namespace Mule
 		Ref<Fence> GetFence(const ResourceRegistry& registry, uint32_t frameIndex);
 		WeakRef<GraphicsPipeline> GetGraphicsPipeline() const { return mGraphicsPipeline; }
 		WeakRef<ComputePipeline> GetComputePipeline() const { return mComputePipeline; }
+		const std::vector<std::string>& GetDependencies() const { return mDependencies; }
 
 		Ref<CommandBuffer> Execute(const CommandList& commandList, const ResourceRegistry& registry, uint32_t frameIndex);
 
 		void AddResource(ResourceHandle handle, ResourceAccess access, uint32_t index = 0);
 		void AddCommandType(RenderCommandType type);
 
-		void SetExecutionCallback(std::function<void(Ref<CommandBuffer>, const RenderCommand&, const ResourceRegistry&, uint32_t)> callback);
+		void SetExecutionCallback(std::function<void(Ref<CommandBuffer>, const CommandList&, const ResourceRegistry&, uint32_t)> callback);
 		void SetPipeline(WeakRef<GraphicsPipeline> pipeline);
 		void SetPipeline(WeakRef<ComputePipeline> pipeline);
+
 
 	private:
 		const std::string mName;
@@ -72,7 +75,7 @@ namespace Mule
 		std::unordered_set<RenderCommandType> mCommandTypes;
 		PassType mPassType;
 
-		std::function<void(Ref<CommandBuffer>, const RenderCommand&, const ResourceRegistry&, uint32_t)> mExecutionCallback;
+		std::function<void(Ref<CommandBuffer>, const CommandList&, const ResourceRegistry&, uint32_t)> mExecutionCallback;
 
 		ResourceHandle mFenceHandle;
 		ResourceHandle mCommandBufferHandle;
@@ -82,5 +85,7 @@ namespace Mule
 
 		WeakRef<ComputePipeline> mComputePipeline;
 		WeakRef<GraphicsPipeline> mGraphicsPipeline;
+
+		std::vector<std::string> mDependencies;
 	};
 }

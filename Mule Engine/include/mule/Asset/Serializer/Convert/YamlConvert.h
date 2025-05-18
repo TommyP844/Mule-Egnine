@@ -352,6 +352,32 @@ namespace YAML {
     };
 
     template<>
+    struct convert<Mule::SpotLightComponent> {
+        static Node encode(const Mule::SpotLightComponent& light) {
+            Node node;
+
+            node["Active"] = light.Active;
+            node["Color"] = light.Color;
+            node["Radiance"] = light.Radiance;
+            node["Angle"] = light.Angle;
+            node["FallOff"] = light.FallOff;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::SpotLightComponent& light) {
+
+            light.Active = node["Active"].as<bool>();
+            light.Color = node["Color"].as<glm::vec3>();
+            light.Radiance = node["Radiance"].as<float>();
+            light.Angle = node["Angle"].as<float>();
+            light.FallOff = node["FallOff"].as<float>();
+
+            return true;
+        }
+    };
+
+    template<>
     struct convert<Mule::ScriptComponent> {
         static Node encode(const Mule::ScriptComponent& script) {
             Node node; 

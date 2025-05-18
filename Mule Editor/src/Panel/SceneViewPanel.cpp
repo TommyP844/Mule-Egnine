@@ -153,10 +153,10 @@ void SceneViewPanel::OnUIRender(float dt)
 			
 			WeakRef<Mule::Camera> editorCamera = &mEditorContext->GetEditorCamera();
 			scene->OnEditorRender(editorCamera);
-			WeakRef<Mule::Texture2D> texture = editorCamera->GetColorOutput();
-			if (texture)
+			WeakRef<Mule::TextureView> view = editorCamera->GetColorOutput();
+			if (view)
 			{
-				texId = texture->GetImGuiID();
+				texId = view->GetImGuiID();
 			}
 		}
 

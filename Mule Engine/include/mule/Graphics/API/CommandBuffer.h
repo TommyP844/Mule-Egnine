@@ -47,10 +47,11 @@ namespace Mule
 		virtual void EndSwapchainRendering() = 0;
 		virtual void BeginRendering(WeakRef<Framebuffer> framebuffer, WeakRef<GraphicsPipeline> shader, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		virtual void ClearFrameBuffer(WeakRef<Framebuffer> framebuffer) = 0;
+		virtual void ClearTexture(WeakRef<Texture2D> texture) = 0;
 		virtual void EndRendering() = 0;
 
 		// New API
-		virtual void BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) = 0;
+		virtual void BeginRendering(const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment) = 0;
 		virtual void BindPipeline(WeakRef<GraphicsPipeline> pipeline, const std::vector<WeakRef<ShaderResourceGroup>>& groups = {}) = 0;
 		
 		// Texture
@@ -70,6 +71,9 @@ namespace Mule
 		virtual void BindMesh(WeakRef<Mesh> mesh) = 0;
 		virtual void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount = 1) = 0;
 		virtual void BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount) = 0;
+
+		virtual void SetViewport(uint32_t x, uint32_t width, uint32_t y, uint32_t height) = 0;
+		virtual void SetScissor(uint32_t x, uint32_t width, uint32_t y, uint32_t height) = 0;
 
 	protected:
 		CommandBuffer() = default;

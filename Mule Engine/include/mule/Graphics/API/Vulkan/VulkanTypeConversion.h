@@ -34,6 +34,21 @@ namespace Mule::Vulkan
 		}
 	}
 
+	constexpr VkCompareOp GetCompareOp(DepthFunc func)
+	{
+		switch (func)
+		{
+		case Mule::DepthFunc::Less: return VK_COMPARE_OP_LESS;
+		case Mule::DepthFunc::LessEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
+		case Mule::DepthFunc::Equal: return VK_COMPARE_OP_EQUAL;
+		case Mule::DepthFunc::Greater: return VK_COMPARE_OP_GREATER;
+		case Mule::DepthFunc::GraterEqual: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		default:
+			assert(false && "Invalid DepthFunc");
+			break;
+		}
+	}
+
 	constexpr VkCullModeFlags GetCullMode(CullMode mode)
 	{
 		switch (mode)
@@ -148,6 +163,55 @@ namespace Mule::Vulkan
 		case Mule::DescriptorType::StorageImage: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		default:
 			assert(false && "Invalid vulkan descriptor type");
+			break;
+		}
+	}
+
+	constexpr VkFilter GetFilter(SamplerFilterMode mode)
+	{
+		switch (mode)
+		{
+		case Mule::SamplerFilterMode::Linear: return VK_FILTER_LINEAR;
+		case Mule::SamplerFilterMode::Nearest: return VK_FILTER_NEAREST;
+		default:
+			assert(false && "Invalid vulkan filter");
+			break;
+		}
+	}
+
+	constexpr VkSamplerMipmapMode GetMipMapMode(MipMapMode mode)
+	{
+		switch (mode)
+		{
+		case Mule::MipMapMode::Linear: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case Mule::MipMapMode::Nearest: return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		default:
+			assert(false && "Invalid vulkan mipmap mode");
+			break;
+		}
+	}
+
+	constexpr VkSamplerAddressMode GetAddressMode(SamplerAddressMode mode)
+	{
+		switch (mode)
+		{
+		case Mule::SamplerAddressMode::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		case Mule::SamplerAddressMode::ClampToEdge: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		default:
+			assert(false && "Invalid vulkan sampler address mode");
+			break;
+		}
+	}
+
+	constexpr VkBorderColor GetBorderColor(SamplerBorderColor color)
+	{
+		switch (color)
+		{
+		case SamplerBorderColor::None: return VK_BORDER_COLOR_MAX_ENUM;
+		case SamplerBorderColor::White: return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		case SamplerBorderColor::Black: return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+		default:
+			assert(false && "Invalid vulkan border color");
 			break;
 		}
 	}

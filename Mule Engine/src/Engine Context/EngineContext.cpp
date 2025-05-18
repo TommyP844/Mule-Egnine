@@ -71,12 +71,12 @@ namespace Mule
 		mServiceManager->Unload<JobSystem>();
 		mServiceManager->Unload<ScriptContext>();
 		mServiceManager->Unload<AssetManager>();
+		Renderer::Shutdown();
 		mServiceManager->Unload<ImGuiContext>();
 
 		mServiceManager.Release();
 
 		ShaderFactory::Shutdown();
-		Renderer::Shutdown();
 		GraphicsContext::Shutdown();
 	}
 

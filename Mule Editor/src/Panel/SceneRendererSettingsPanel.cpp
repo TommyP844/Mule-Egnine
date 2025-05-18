@@ -67,6 +67,15 @@ void SceneRendererSettingsPanel::DisplayRegistry(Ref<Mule::ResourceRegistry> reg
 {
 	for (const Mule::ResourceHandle& handle : registry->GetResourceHandles())
 	{
+
+		if (mType == Mule::ResourceType::RenderTarget)
+		{
+			if (handle.Type == Mule::ResourceType::DepthAttachment)
+			{
+				DisplayRenderTargets(handle, registry->GetResource<Mule::Texture>(handle, 0), registry);
+			}
+		}
+
 		if (handle.Type != mType)
 			continue;
 
@@ -74,7 +83,7 @@ void SceneRendererSettingsPanel::DisplayRegistry(Ref<Mule::ResourceRegistry> reg
 		{
 		case Mule::ResourceType::DepthAttachment:
 		case Mule::ResourceType::RenderTarget:
-			DisplayRenderTargets(handle, registry->GetResource<Mule::Texture2D>(handle, 0), registry);
+			DisplayRenderTargets(handle, registry->GetResource<Mule::Texture>(handle, 0), registry);
 			break;
 
 		case Mule::ResourceType::ShaderResourceGroup:
@@ -88,18 +97,38 @@ void SceneRendererSettingsPanel::DisplayRegistry(Ref<Mule::ResourceRegistry> reg
 	}
 }
 
-void SceneRendererSettingsPanel::DisplayRenderTargets(const Mule::ResourceHandle& handle, Ref<Mule::Texture2D> renderTarget, Ref<Mule::ResourceRegistry> registry)
+void SceneRendererSettingsPanel::DisplayRenderTargets(const Mule::ResourceHandle& handle, Ref<Mule::Texture> renderTarget, Ref<Mule::ResourceRegistry> registry)
 {
 	const std::string& name = handle.Name;
 	if (ImGui::TreeNode(name.c_str()))
 	{
 		std::string name = handle.Name;
 		std::string formatName = Mule::GetTextureFormatName(renderTarget->GetFormat());
-		ImGui::Text("Size: %i x %i, Format: %s", renderTarget->GetWidth(), renderTarget->GetHeight(), formatName.c_str());
-		ImGui::SameLine();
-		if (ImGui::Button("View"))
+		if (renderTarget->GetArrayLayers() > 1)
 		{
-			registry->SetOutputHandle(handle);
+			ImGui::Text("Size: %i x %i, Layers: %i, Format: %s", renderTarget->GetWidth(), renderTarget->GetHeight(), renderTarget->GetArrayLayers(), formatName.c_str());
+
+			for (uint32_t i = 0; i < renderTarget->GetArrayLayers(); i++)
+			{
+				ImGui::PushID(i);
+				ImGui::Text("View Layer: %i", i);
+				ImGui::SameLine();
+				if (ImGui::Button("View"))
+				{
+					registry->SetOutputHandle(handle, i);
+				}
+				ImGui::PopID();
+			}
+		}
+		else
+		{
+			ImGui::Text("Size: %i x %i, Format: %s", renderTarget->GetWidth(), renderTarget->GetHeight(), formatName.c_str());
+
+			ImGui::SameLine();
+			if (ImGui::Button("View"))
+			{
+				registry->SetOutputHandle(handle);
+			}
 		}
 		ImGui::TreePop();
 	}

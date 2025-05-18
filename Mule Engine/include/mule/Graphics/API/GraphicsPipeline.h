@@ -26,6 +26,7 @@ namespace Mule
 		bool EnableDepthWrite = true;
 		float LineWidth = 1.f;
 		bool EnableBlending = false;
+		DepthFunc DepthFunc = DepthFunc::Less;
 	};
 
 	class GraphicsPipeline

@@ -101,7 +101,10 @@ namespace Mule::Vulkan
 		};
 
 		std::vector<const char*> enabledExtensions = {
-			"VK_EXT_debug_utils"
+			"VK_EXT_debug_utils",
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+			VK_KHR_SURFACE_EXTENSION_NAME,
+			VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 		};
 
 		uint32_t glfwExtensionCount = 0;
@@ -320,7 +323,7 @@ namespace Mule::Vulkan
 			"VK_KHR_depth_stencil_resolve",
 			"VK_EXT_dynamic_rendering_unused_attachments",
 			"VK_KHR_timeline_semaphore",
-			"VK_KHR_synchronization2"
+			"VK_KHR_synchronization2",
 		};
 
 		VkDeviceCreateInfo deviceCreateInfo{};
@@ -435,7 +438,7 @@ namespace Mule::Vulkan
 		samplerCreateInfo.anisotropyEnable = VK_TRUE;
 		samplerCreateInfo.maxAnisotropy = 8.f;
 		samplerCreateInfo.compareEnable = VK_FALSE;
-		// samplerCreateInfo.compareOp;
+		//samplerCreateInfo.compareOp = VK_COMPARE_OP_LESS;
 		samplerCreateInfo.minLod = 0.f;
 		samplerCreateInfo.maxLod = 1.f;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_MAX_ENUM;

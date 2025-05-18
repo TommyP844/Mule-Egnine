@@ -16,7 +16,7 @@ public:
 private:
 	Mule::ResourceType mType;
 	void DisplayRegistry(Ref<Mule::ResourceRegistry> registry);
-	void DisplayRenderTargets(const Mule::ResourceHandle& handle, Ref<Mule::Texture2D> renderTarget, Ref<Mule::ResourceRegistry> registry);
+	void DisplayRenderTargets(const Mule::ResourceHandle& handle, Ref<Mule::Texture> renderTarget, Ref<Mule::ResourceRegistry> registry);
 	void DisplayUniformBuffers(const Mule::ResourceHandle& handle, Ref<Mule::UniformBuffer> uniformBuffer);
 	void DisplayShaderResourceGroups(const Mule::ResourceHandle& handle, Ref<Mule::ShaderResourceGroup> srg);
 

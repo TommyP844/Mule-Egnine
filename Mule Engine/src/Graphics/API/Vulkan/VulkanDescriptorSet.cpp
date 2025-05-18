@@ -4,6 +4,7 @@
 #include "Graphics/API/Vulkan/VulkanDescriptorSetLayout.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanUniformBuffer.h"
 #include "Graphics/API/Vulkan/Texture/VulkanTextureCube.h"
+#include "Graphics/API/Vulkan/Texture/VulkanSampler.h"
 
 #include "Graphics/API/Vulkan/VulkanTypeConversion.h"
 
@@ -47,16 +48,24 @@ namespace Mule::Vulkan
 		vkFreeDescriptorSets(device, mDescriptorPool, 1, &mDescriptorSet);
 	}
 
-	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, WeakRef<Texture> texture, uint32_t arrayIndex)
+	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, ImageLayout layout, WeakRef<Texture> texture, uint32_t arrayIndex, Ref<Sampler> sampler)
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
 		WeakRef<VulkanTextureCube> vkImage = texture;
 
+		VkSampler vkSampler = context.GetLinearSampler();
+
+		if (sampler)
+		{
+			Ref<VulkanSampler> vulkanSampler = sampler;
+			vkSampler = vulkanSampler->GetSampler();
+		}
+
 		VkDescriptorImageInfo imageInfo{};
-		imageInfo.sampler = context.GetLinearSampler();
+		imageInfo.sampler = vkSampler;
 		imageInfo.imageView = vkImage->GetVulkanImage().ImageView;
-		imageInfo.imageLayout = vkImage->GetVulkanImage().Layout;
+		imageInfo.imageLayout = GetImageLayout(layout);
 
 		VkWriteDescriptorSet write{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -68,20 +77,27 @@ namespace Mule::Vulkan
 		write.descriptorType = GetDescriptorType(type);
 		write.pImageInfo = &imageInfo;
 		write.pBufferInfo = nullptr;
-		write.pTexelBufferView = nullptr;		
+		write.pTexelBufferView = nullptr;
 
 		vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 	}
 
-	// TODO: Texture view needs an image layout
-	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, ImageLayout layout, WeakRef<TextureView> texture, uint32_t arrayIndex)
+	void VulkanDescriptorSet::Update(uint32_t binding, DescriptorType type, ImageLayout layout, WeakRef<TextureView> texture, uint32_t arrayIndex, Ref<Sampler> sampler)
 	{
 		VulkanContext& context = VulkanContext::Get();
 		VkDevice device = context.GetDevice();
 		WeakRef<VulkanTextureView> vkImage = texture;
 
+		VkSampler vkSampler = context.GetLinearSampler();
+
+		if (sampler)
+		{
+			Ref<VulkanSampler> vulkanSampler = sampler;
+			vkSampler = vulkanSampler->GetSampler();
+		}
+
 		VkDescriptorImageInfo imageInfo{};
-		imageInfo.sampler = context.GetLinearSampler();
+		imageInfo.sampler = vkSampler;
 		imageInfo.imageView = vkImage->GetView();
 		imageInfo.imageLayout = GetImageLayout(layout);
 

@@ -6,6 +6,12 @@ namespace Mule
 	{
 	}
 
+	ResourceHandle ResourceBuilder::CreateSampler(const std::string& name, const SamplerDescription& description)
+	{
+		mSamplerBlueprints[name] = SamplerBlueprint{ description };
+		return ResourceHandle(name, ResourceType::Sampler);
+	}
+
 	ResourceHandle ResourceBuilder::CreateUniformBuffer(const std::string& name, uint32_t bufferSize)
 	{
 		mUniformBufferBlueprints[name] = UniformBufferBlueprint {bufferSize};
@@ -21,6 +27,18 @@ namespace Mule
 			type = ResourceType::DepthAttachment;
 
 		mTexture2DBlueprints[name] = Texture2DBlueprint {format, flags, type};
+		return ResourceHandle(name, type);
+	}
+
+	ResourceHandle ResourceBuilder::CreateTexture2DArray(const std::string& name, uint32_t layers, TextureFormat format, TextureFlags flags)
+	{
+		ResourceType type = ResourceType::Texture;
+		if ((flags & TextureFlags::RenderTarget) == TextureFlags::RenderTarget)
+			type = ResourceType::RenderTarget;
+		else if ((flags & TextureFlags::DepthAttachment) == TextureFlags::DepthAttachment)
+			type = ResourceType::DepthAttachment;
+
+		mTexture2DArrayBlueprints[name] = Texture2DArrayBlueprint{ layers, format, flags, type };
 		return ResourceHandle(name, type);
 	}
 

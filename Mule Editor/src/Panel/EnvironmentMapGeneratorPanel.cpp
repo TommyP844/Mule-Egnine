@@ -190,7 +190,7 @@ void EnvironmentMapGeneratorPanel::Generate()
 	auto assetManager = mEngineContext->GetAssetManager();
 	
 	// TODO: check for file extension
-	mSavePath /= (mAssetName + std::string(".yml"));
+	mSavePath /= (mAssetName + std::string(".envmap"));
 	Ref<Mule::EnvironmentMap> envMap = nullptr;
 	switch (mGeneratorType)
 	{

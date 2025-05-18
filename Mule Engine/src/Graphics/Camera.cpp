@@ -2,8 +2,12 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
-#include "Graphics/Renderer/Renderer.h"
+#include <algorithm>
+
+#include <array>
 
 namespace Mule
 {
@@ -142,9 +146,118 @@ namespace Mule
 		UpdateView();
 	}
 
-	Ref<Texture2D> Camera::GetColorOutput() const
+	Camera::CascadeSplits Camera::GenerateLightSpaceCascades(uint32_t count, const glm::vec3& direction) const
 	{
-		uint32_t frameIndex = Renderer::Get().GetFrameIndex();
-		return mResourceRegistry->GetColorOutput(frameIndex);
+		const float cascadeSplitLambda = 0.95;
+
+		CascadeSplits cascadeData;
+		cascadeData.LightSpaceMatrices.resize(count);
+		cascadeData.SplitDistances.resize(count);
+		cascadeData.Count = count;
+
+		std::vector<float> cascadeSplits(count);
+		
+		float nearClip = mNearPlane;
+		float farClip = mFarPlane;
+		float clipRange = farClip - nearClip;
+
+		float minZ = nearClip;
+		float maxZ = nearClip + clipRange;
+
+		float range = maxZ - minZ;
+		float ratio = maxZ / minZ;
+
+		// Calculate split depths based on view camera frustum
+		// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+		for (uint32_t i = 0; i < count; i++) {
+			float p = (i + 1) / static_cast<float>(count);
+			float log = minZ * std::pow(ratio, p);
+			float uniform = minZ + range * p;
+			float d = cascadeSplitLambda * (log - uniform) + uniform;
+			cascadeSplits[i] = (d - nearClip) / clipRange;
+		}
+
+		// Calculate orthographic projection matrix for each cascade
+		float lastSplitDist = 0.0;
+		for (uint32_t i = 0; i < count; i++) {
+			float splitDist = cascadeSplits[i];
+
+			glm::vec3 frustumCorners[8] = {
+				glm::vec3(-1.0f,  1.0f, 0.0f),
+				glm::vec3(1.0f,  1.0f, 0.0f),
+				glm::vec3(1.0f, -1.0f, 0.0f),
+				glm::vec3(-1.0f, -1.0f, 0.0f),
+				glm::vec3(-1.0f,  1.0f,  1.0f),
+				glm::vec3(1.0f,  1.0f,  1.0f),
+				glm::vec3(1.0f, -1.0f,  1.0f),
+				glm::vec3(-1.0f, -1.0f,  1.0f),
+			};
+
+			// Project frustum corners into world space
+			glm::mat4 invCam = glm::inverse(mProj * mView);
+			for (uint32_t j = 0; j < 8; j++) {
+				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
+				frustumCorners[j] = invCorner / invCorner.w;
+			}
+
+			for (uint32_t j = 0; j < 4; j++) {
+				glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
+				frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
+				frustumCorners[j] = frustumCorners[j] + (dist * lastSplitDist);
+			}
+
+			// Get frustum center
+			glm::vec3 frustumCenter = glm::vec3(0.0f);
+			for (uint32_t j = 0; j < 8; j++) {
+				frustumCenter += frustumCorners[j];
+			}
+			frustumCenter /= 8.0f;
+
+			float radius = 0.0f;
+			for (uint32_t j = 0; j < 8; j++) {
+				float distance = glm::length(frustumCorners[j] - frustumCenter);
+				radius = glm::max(radius, distance);
+			}
+			radius = std::ceil(radius * 16.0f) / 16.0f;
+
+			glm::vec3 maxExtents = glm::vec3(radius);
+			glm::vec3 minExtents = -maxExtents;
+
+			glm::vec3 lightDir = glm::normalize(direction);
+			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+			glm::mat4 lightViewProj = lightOrthoMatrix * lightViewMatrix;
+
+			// 2. Transform origin (0, 0, 0) to light space to find texel alignment
+			glm::vec4 shadowOrigin = lightViewProj * glm::vec4(0.0f);
+			shadowOrigin *= (float)2048.f / 2.0f;
+			
+			// 3. Round to nearest texel
+			glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+			
+			// 4. Compute offset and apply it back
+			glm::vec4 offset = (roundedOrigin - shadowOrigin) * 2.0f / (float)2048.f;
+			offset.z = 0.0f;
+			offset.w = 0.0f;
+			
+			glm::mat4 texelSnapOffset = glm::translate(glm::mat4(1.0f), glm::vec3(offset));
+			
+			// 5. Apply to final matrix
+			lightViewProj = texelSnapOffset * lightViewProj;
+
+			// Store the final matrix
+			cascadeData.LightSpaceMatrices[i] = lightViewProj;
+			cascadeData.SplitDistances[i] = (mNearPlane + splitDist * clipRange) * -1.0f;
+			
+			lastSplitDist = cascadeSplits[i];
+		}
+
+		return cascadeData;
+	}
+
+	WeakRef<TextureView> Camera::GetColorOutput() const
+	{
+		return mResourceRegistry->GetColorOutput();
 	}
 }

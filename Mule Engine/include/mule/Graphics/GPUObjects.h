@@ -8,6 +8,7 @@ namespace Mule::GPU
 	{
 		alignas(16) glm::mat4 ViewProjection;
 		alignas(16) glm::mat4 View;
+		alignas(16) glm::mat4 Proj;
 		alignas(16) glm::vec3 Position;
 		alignas(16) glm::vec3 ViewDirection;
 	};
@@ -43,10 +44,32 @@ namespace Mule::GPU
 		alignas(16) glm::vec3 Position;
 	};
 
-	struct LightData
+	struct PointLightArray
 	{
-		DirectionalLight DirectionalLight;
-		PointLight PointLights[1024];
-		alignas(4) uint32_t NumPointLights = 0;
+		alignas(4) uint32_t Count;
+		PointLight Lights[1000];
+	};
+
+	struct SpotLight
+	{
+		alignas(4) float Intensity;
+		alignas(16) glm::vec3 Color = glm::vec3(0.f);
+		alignas(16) glm::vec3 Position;
+		alignas(16) glm::vec3 Direction;
+		alignas(4) float HalfAngle;
+		alignas(4) float FallOff;
+	};
+
+	struct SpotLightArray
+	{
+		alignas(4) uint32_t Count;
+		SpotLight Lights[800];
+	};
+
+	struct CascadedShadowLightMatrices
+	{
+		alignas(16) glm::mat4 LightSpaceMatrices[10];
+		alignas(16) glm::vec4 CascadeSplits[10];
+		alignas(4) uint32_t CascadeCount;
 	};
 }

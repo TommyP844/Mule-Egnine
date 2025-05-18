@@ -358,18 +358,73 @@ namespace Mule::Vulkan
 		}
 	}
 
+	void VulkanCommandBuffer::ClearTexture(WeakRef<Texture2D> texture)
+	{		
+		WeakRef<VulkanTexture2D> vulkanTexture = texture;
+
+		if (vulkanTexture->GetIsDepthTexture())
+		{
+			VkImageSubresourceRange range = {};
+			range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = vulkanTexture->GetArrayLayers();
+
+			VkClearDepthStencilValue clearColor;
+			clearColor.depth = 1.f;
+
+			VkImageLayout oldLayout = vulkanTexture->GetVulkanImage().Layout;
+			TranistionImageLayout(texture, ImageLayout::TransferDst);
+
+			vkCmdClearDepthStencilImage(
+				mCommandBuffer,
+				vulkanTexture->GetVulkanImage().Image,
+				vulkanTexture->GetVulkanImage().Layout,
+				&clearColor,
+				1,
+				&range
+			);
+
+			TranistionImageLayout(texture, GetImageLayout(oldLayout));
+		}
+		else
+		{
+			VkImageSubresourceRange range = {};
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = vulkanTexture->GetArrayLayers();
+
+			VkClearColorValue clearColor = { {0.0f, 0.0f, 0.0f, 1.0f} };
+
+			VkImageLayout oldLayout = vulkanTexture->GetVulkanImage().Layout;
+			TranistionImageLayout(texture, ImageLayout::TransferDst);
+
+			vkCmdClearColorImage(
+				mCommandBuffer,
+				vulkanTexture->GetVulkanImage().Image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				&clearColor,
+				1,
+				&range
+			);
+
+			TranistionImageLayout(texture, GetImageLayout(oldLayout));
+		}
+	}
+
 	void VulkanCommandBuffer::EndRendering()
 	{
 		vkCmdEndRenderingKHR(mCommandBuffer);
 	}
 
-	void VulkanCommandBuffer::BeginRendering(uint32_t width, uint32_t height, const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment)
+	void VulkanCommandBuffer::BeginRendering(const std::vector<BeginRenderingAttachment>& colorAttachments, BeginRenderingAttachment depthAttachment)
 	{
-		VkRect2D rect{};
-		rect.offset.x = 0;
-		rect.offset.y = 0;
-		rect.extent.width = width;
-		rect.extent.height = height;
+		uint32_t layerCount = 1;
+		uint32_t width = 0;
+		uint32_t height = 0;
 
 		std::vector<VkRenderingAttachmentInfo> vkColorAttachments;
 		VkRenderingAttachmentInfo depthAttachmentInfo{};
@@ -378,7 +433,6 @@ namespace Mule::Vulkan
 		{
 			WeakRef<VulkanTexture2D> texture = attachment.Attachment;
 			VkImageView view = texture->GetVulkanImage().ImageView;
-
 
 			VkRenderingAttachmentInfo colorAttachment{};
 			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -392,6 +446,11 @@ namespace Mule::Vulkan
 			colorAttachment.clearValue.color.float32[3] = 0.f;
 			colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
 			vkColorAttachments.push_back(colorAttachment);
+
+			layerCount = texture->GetArrayLayers();
+
+			width = texture->GetWidth();
+			height = texture->GetHeight();
 		}
 
 		if (depthAttachment.Attachment)
@@ -405,12 +464,22 @@ namespace Mule::Vulkan
 			depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			depthAttachmentInfo.clearValue.depthStencil.depth = 1.f;
 			depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+
+			layerCount = vkDepthAttachment->GetArrayLayers();
+			width = vkDepthAttachment->GetWidth();
+			height = vkDepthAttachment->GetHeight();
 		}
+
+		VkRect2D rect{};
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = width;
+		rect.extent.height = height;
 
 		VkRenderingInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 		info.renderArea = rect;
-		info.layerCount = 1;
+		info.layerCount = layerCount;
 		info.colorAttachmentCount = vkColorAttachments.size();
 		info.pColorAttachments = vkColorAttachments.data();
 		info.pDepthAttachment = depthAttachment.Attachment ? &depthAttachmentInfo : nullptr;
@@ -460,7 +529,7 @@ namespace Mule::Vulkan
 		}
 	}
 
-	// TODO: this only supports 2d textures, no arrays, cubes, or 3d images
+	// TODO: this only supports 2d textures, no  cubes, or 3d images
 	void VulkanCommandBuffer::TranistionImageLayout(WeakRef<Texture> texture, ImageLayout newLayout)
 	{
 		WeakRef<VulkanTexture2D> vulkanTexture = texture;
@@ -814,5 +883,35 @@ namespace Mule::Vulkan
 	{
 		BindMesh(mesh);
 		DrawMesh(mesh, instanceCount);
+	}
+	
+	void VulkanCommandBuffer::SetViewport(uint32_t x, uint32_t width, uint32_t y, uint32_t height)
+	{
+		VkRect2D rect{};
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = width;
+		rect.extent.height = height;
+
+		VkViewport viewport{};
+		viewport.x = 0;
+		viewport.y = height;
+		viewport.width = width;
+		viewport.height = -((float)height);
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+
+		vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
+	}
+
+	void VulkanCommandBuffer::SetScissor(uint32_t x, uint32_t width, uint32_t y, uint32_t height)
+	{
+		VkRect2D rect{};
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = width;
+		rect.extent.height = height;
+
+		vkCmdSetScissor(mCommandBuffer, 0, 1, &rect);
 	}
 }

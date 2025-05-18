@@ -43,6 +43,7 @@ namespace Mule
 		Renderer();
 		void BuildGraph();
 		void UpdateBindlessResources();
+		bool BindlessResourcesNeedUpdate();
 
 		static Renderer* sRenderer;
 

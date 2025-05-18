@@ -49,8 +49,17 @@ namespace Mule
 
 		void SetResourceRegistry(Ref<ResourceRegistry> registry) { mResourceRegistry = registry; }
 		Ref<ResourceRegistry> GetRegistry() const { return mResourceRegistry; }
-		
-		Ref<Texture2D> GetColorOutput() const;
+
+		struct CascadeSplits
+		{
+			std::vector<glm::mat4> LightSpaceMatrices;
+			std::vector<float> SplitDistances;
+			uint32_t Count;
+		};
+
+		CascadeSplits GenerateLightSpaceCascades(uint32_t count, const glm::vec3& direction) const;
+
+		WeakRef<TextureView> GetColorOutput() const;
 
 	private:
 		glm::mat4 mView, mProj, mVP;

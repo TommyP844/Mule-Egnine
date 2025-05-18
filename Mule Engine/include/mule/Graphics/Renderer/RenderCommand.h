@@ -26,7 +26,13 @@ namespace Mule
 		TransitionLayout,
 		BeginRendering,
 		EndRendering,
-		BindGraphicsPipeline
+		BindGraphicsPipeline,
+		BindComputePipeline,
+		DrawDirectionalLight,
+		DrawPointLight,
+		DrawSpotLight,
+		DrawSkyBox,
+		ClearRenderTarget
 	};
 
 	struct BaseCommand
@@ -112,16 +118,13 @@ namespace Mule
 	struct BeginRenderingCommand : BaseCommand
 	{
 		BeginRenderingCommand() : BaseCommand(RenderCommandType::BeginRendering) {}
-		BeginRenderingCommand(RegistryVariable width, RegistryVariable height, const std::vector<BeginRenderingCommandAttachment>& colorAttachments, BeginRenderingCommandAttachment depthAttachment)
+		BeginRenderingCommand(const std::vector<BeginRenderingCommandAttachment>& colorAttachments, BeginRenderingCommandAttachment depthAttachment)
 			:
 			BaseCommand(RenderCommandType::BeginRendering),
-			Width(width),
-			Height(height),
 			ColorAttachments(colorAttachments),
 			DepthAttachment(depthAttachment)
 		{}
 
-		RegistryVariable Width, Height;
 		std::vector<BeginRenderingCommandAttachment> ColorAttachments;
 		BeginRenderingCommandAttachment DepthAttachment;
 	};
@@ -145,6 +148,108 @@ namespace Mule
 		std::vector<ResourceHandle> ShaderResourceGroups;
 	};
 
+	struct BindComputePipelineCommand : BaseCommand
+	{
+		BindComputePipelineCommand() : BaseCommand(RenderCommandType::BindComputePipeline) {}
+		BindComputePipelineCommand(WeakRef<ComputePipeline> pipeline, const std::vector<ResourceHandle>& shaderResourceGroups) 
+			: 
+			BaseCommand(RenderCommandType::BindComputePipeline),
+			Pipeline(pipeline),
+			ShaderResourceGroups(shaderResourceGroups)
+		{}
+
+		WeakRef<ComputePipeline> Pipeline;
+		std::vector<ResourceHandle> ShaderResourceGroups;
+	};
+
+
+	struct DrawDirectionalLightCommand : BaseCommand
+	{
+		DrawDirectionalLightCommand() : BaseCommand(RenderCommandType::DrawDirectionalLight) {}
+		DrawDirectionalLightCommand(const glm::vec3& direction, const glm::vec3& color, float intensity)
+			:
+			BaseCommand(RenderCommandType::DrawDirectionalLight),
+			Direction(direction),
+			Color(color),
+			Intensity(intensity)
+		{}
+
+		glm::vec3 Direction;
+		glm::vec3 Color;
+		float Intensity;
+	};
+
+	struct DrawPointLightCommand : BaseCommand
+	{
+		DrawPointLightCommand() : BaseCommand(RenderCommandType::DrawPointLight) {}
+		DrawPointLightCommand(const glm::vec3& position, const glm::vec3& color, float intensity)
+			:
+			BaseCommand(RenderCommandType::DrawPointLight),
+			Position(position),
+			Color(color),
+			Intensity(intensity)
+
+		{}
+
+		glm::vec3 Position;
+		glm::vec3 Color;
+		float Intensity;
+	};
+
+	struct DrawSpotLightCommand : BaseCommand
+	{
+		DrawSpotLightCommand() : BaseCommand(RenderCommandType::DrawSpotLight) {}
+		DrawSpotLightCommand(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& color, float intensity, float halfAngle, float fallOff)
+			:
+			BaseCommand(RenderCommandType::DrawSpotLight),
+			Position(position),
+			Direction(direction),
+			Color(color),
+			Intensity(intensity),
+			HalfAngle(halfAngle),
+			FallOff(fallOff)
+		{}
+
+		glm::vec3 Position;
+		glm::vec3 Direction;
+		glm::vec3 Color;
+		float Intensity;
+		float HalfAngle;
+		float FallOff;
+	};
+
+	struct DrawSkyboxCommand : BaseCommand
+	{
+		DrawSkyboxCommand() : BaseCommand(RenderCommandType::DrawSkyBox) {}
+		DrawSkyboxCommand(WeakRef<Mesh> mesh, WeakRef<TextureCube> skyBox, WeakRef<TextureCube> diffuseIBL, WeakRef<TextureCube> prefilterIBL, WeakRef<Texture2D> brdf)
+			:
+			BaseCommand(RenderCommandType::DrawSkyBox),
+			CubeMesh(mesh),
+			SkyBox(skyBox),
+			DiffuseIBL(diffuseIBL),
+			PreFilterIBL(prefilterIBL),
+			BRDF(brdf)
+		{}
+
+		WeakRef<Mesh> CubeMesh;
+		WeakRef<TextureCube> SkyBox;
+		WeakRef<TextureCube> DiffuseIBL;
+		WeakRef<TextureCube> PreFilterIBL;
+		WeakRef<Texture2D> BRDF;
+	};
+
+	struct ClearRenderTargetCommand : BaseCommand
+	{
+		ClearRenderTargetCommand() : BaseCommand(RenderCommandType::ClearRenderTarget) {}
+		ClearRenderTargetCommand(ResourceHandle target)
+			: 
+			BaseCommand(RenderCommandType::ClearRenderTarget),
+			ClearTarget(target)
+		{}
+
+		ResourceHandle ClearTarget;
+	};
+
 	class RenderCommand
 	{
 	public:
@@ -158,6 +263,12 @@ namespace Mule
 		RenderCommand(const BeginRenderingCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const EndRenderingCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const BindGraphicsPipelineCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const BindComputePipelineCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawDirectionalLightCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawPointLightCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawSpotLightCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawSkyboxCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const ClearRenderTargetCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 
 		template<typename T>
 		const T& GetCommand() const
@@ -182,6 +293,12 @@ namespace Mule
 			TransitionLayoutCommand,
 			BeginRenderingCommand,
 			EndRenderingCommand,
-			BindGraphicsPipelineCommand> mCommand;
+			BindGraphicsPipelineCommand,
+			BindComputePipelineCommand,
+			DrawDirectionalLightCommand,
+			DrawSpotLightCommand,
+			DrawPointLightCommand,
+			DrawSkyboxCommand,
+			ClearRenderTargetCommand> mCommand;
 	};
 }

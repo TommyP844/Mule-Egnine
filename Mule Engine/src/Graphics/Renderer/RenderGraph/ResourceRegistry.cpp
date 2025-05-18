@@ -4,7 +4,9 @@ namespace Mule
 {
 	ResourceRegistry::ResourceRegistry(uint32_t framesInFlight, const ResourceBuilder& builder)
 		:
-		mFramesInFlight(framesInFlight)
+		mFramesInFlight(framesInFlight),
+		mFrameIndex(0),
+		mOutputHandleLayer(0)
 	{
 		mResizeRequests.resize(mFramesInFlight);
 
@@ -26,6 +28,20 @@ namespace Mule
 		mResources[mCommandAllocatorHandle] = commandAllocator;
 		mResources[mTimelineSemaphoreHandle] = timelineSemaphore;
 
+		for (const auto& [name, samplerBlueprint] : builder.GetSamplerBlueprints())
+		{
+			Ref<Sampler> sampler = Sampler::Create(samplerBlueprint.Description);
+			InFlightResource SamplerResource(mFramesInFlight);
+
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				SamplerResource.Resources[i] = sampler;
+			}
+
+			ResourceHandle handle = ResourceHandle(name, ResourceType::Sampler);
+			mResources[handle] = SamplerResource;
+			mResourceHandles.push_back(handle);
+		}
 
 		for (const auto& [name, UBBlueprint] : builder.GetUniformBufferBlueprints())
 		{
@@ -45,7 +61,20 @@ namespace Mule
 			InFlightResource TextureIFR(mFramesInFlight);
 			for (uint32_t i = 0; i < mFramesInFlight; i++)
 			{
-				TextureIFR.Resources[i] = Texture2D::Create(name, {}, 800, 600, TextureBlueprints.format, TextureBlueprints.flags);
+				TextureIFR.Resources[i] = (Ref<Texture>)Texture2D::Create(name, {}, 800, 600, TextureBlueprints.format, TextureBlueprints.flags);
+			}
+
+			ResourceHandle handle = ResourceHandle(name, TextureBlueprints.Type);
+			mResources[handle] = TextureIFR;
+			mResourceHandles.push_back(handle);
+		}
+
+		for (const auto& [name, TextureBlueprints] : builder.GetTexture2DArrayBlueprints())
+		{
+			InFlightResource TextureIFR(mFramesInFlight);
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				TextureIFR.Resources[i] = (Ref<Texture>)Texture2DArray::Create(name, {}, 800, 600, TextureBlueprints.Layers, TextureBlueprints.Format, TextureBlueprints.Flags);
 			}
 
 			ResourceHandle handle = ResourceHandle(name, TextureBlueprints.Type);
@@ -115,22 +144,23 @@ namespace Mule
 		return handle;
 	}
 
-	Ref<Texture2D> ResourceRegistry::GetColorOutput(uint32_t frameIndex) const
+	WeakRef<TextureView> ResourceRegistry::GetColorOutput() const
 	{
 		if (mOutputHandle)
 		{
-			auto image = GetResource<Texture2D>(mOutputHandle, frameIndex);
-			return image;
+			auto image = GetResource<Texture>(mOutputHandle, mFrameIndex);
+			return image->GetView(0, mOutputHandleLayer);
 		}
 
 		return nullptr;
 	}
 
-	void ResourceRegistry::SetOutputHandle(ResourceHandle outputHandle)
+	void ResourceRegistry::SetOutputHandle(ResourceHandle outputHandle, uint32_t layer)
 	{
-		assert(outputHandle.Type == ResourceType::RenderTarget || outputHandle.Type != ResourceType::DepthAttachment && "Output must be a texture 2d");
+		assert(outputHandle.Type != ResourceType::RenderTarget || outputHandle.Type != ResourceType::DepthAttachment && "Output must be a texture 2d");
 
 		mOutputHandle = outputHandle;
+		mOutputHandleLayer = layer;
 	}
 
 	void ResourceRegistry::CopyRegistryResources(ResourceRegistry& registry)

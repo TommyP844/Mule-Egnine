@@ -110,12 +110,48 @@ namespace Mule
 		Point
 	};
 
+	enum class DepthFunc {
+		Less,
+		LessEqual,
+		Equal,
+		Greater,
+		GraterEqual
+	};
+
 	enum class ShaderResourceType
 	{
 		UniformBuffer,
 		Sampler,
 		StorageImage
 	};
+
+	enum class SamplerFilterMode
+	{
+		Linear,
+		Nearest
+	};
+
+	enum class SamplerAddressMode
+	{
+		Repeat,
+		ClampToEdge
+	};
+
+	enum class MipMapMode
+	{
+		Linear,
+		Nearest
+	};
+
+	enum class SamplerBorderColor
+	{
+		None,
+		White,
+		Black
+	};
+
+	MULE_ENUM_OPERATORS(TextureFlags);
+	MULE_ENUM_OPERATORS(ShaderStage);
 	
 	static std::string GetTextureFormatName(TextureFormat format)
 	{
@@ -161,9 +197,6 @@ namespace Mule
 		}
 		return 0;
 	}
-
-	MULE_ENUM_OPERATORS(TextureFlags);
-	MULE_ENUM_OPERATORS(ShaderStage);
 
 	static std::string ToString(TextureFormat format)
 	{
