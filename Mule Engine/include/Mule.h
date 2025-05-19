@@ -65,3 +65,10 @@
 
 // Generators
 #include "Asset/Generator/EnvironmentMapGenerator.h"
+
+// UI
+#include "Graphics/UI/UIMeasurement.h"
+#include "Graphics/UI/UIPanel.h"
+#include "Graphics/UI/UIRect.h"
+#include "Graphics/UI/UIStyle.h"
+#include "Graphics/UI/UITransform.h"

@@ -37,6 +37,9 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mPrimitiveObjectPanel.SetContext(mEditorState, context);
 	mPerformancePanel.SetContext(mEditorState, context);
 	mEnvironmentMapGeneratorPanel.SetContext(mEditorState, context);
+	mUIEditorPanel.SetContext(mEditorState, context);
+	mUIElementEditorPanel.SetContext(mEditorState, context);
+	mUIStyleEditorPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -49,11 +52,15 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mPrimitiveObjectPanel.OnAttach();
 	mPerformancePanel.OnAttach();
 	mEnvironmentMapGeneratorPanel.OnAttach();
+	mUIEditorPanel.OnAttach();
+	mUIElementEditorPanel.OnAttach();
+	mUIStyleEditorPanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
 	mTextureViewerPanel.Close();
 	mEnvironmentMapGeneratorPanel.Close();
+	mUIElementEditorPanel.Close();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -180,6 +187,14 @@ void EditorLayer::OnUIRender(float dt)
 			{
 				mNewScriptPopup = true;
 			}
+			if (ImGui::BeginMenu("UI"))
+			{
+				if (ImGui::MenuItem("Style"))
+				{
+					mNewUIStylePopup = true;
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Panels"))
@@ -187,11 +202,18 @@ void EditorLayer::OnUIRender(float dt)
 			ImGui::MenuItem("Asset Manager", "", mAssetManagerPanel.OpenPtr());
 			ImGui::MenuItem("Content Browser", "", mContentBrowserPanel.OpenPtr());
 			ImGui::MenuItem("Components", "", mComponentPanel.OpenPtr());
-			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
 			ImGui::MenuItem("Performance", "", mPerformancePanel.OpenPtr());
 			ImGui::MenuItem("Scene Hierarchy", "", mSceneHierarchyPanel.OpenPtr());
 			ImGui::MenuItem("Scene View", "", mSceneViewPanel.OpenPtr());
 			ImGui::MenuItem("Texture Viewer", "", mTextureViewerPanel.OpenPtr());
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Editors"))
+		{
+			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
+			ImGui::MenuItem("UI Element Editor", "", mUIElementEditorPanel.OpenPtr());
+			ImGui::MenuItem("UI Panel Editor", "", mUIEditorPanel.OpenPtr());
+			ImGui::MenuItem("UI Style Editor", "", mUIStyleEditorPanel.OpenPtr());
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Tools"))
@@ -237,6 +259,9 @@ void EditorLayer::OnUIRender(float dt)
 		mPrimitiveObjectPanel.OnEditorEvent(event);
 		mPerformancePanel.OnEditorEvent(event);
 		mEnvironmentMapGeneratorPanel.OnEditorEvent(event);
+		mUIEditorPanel.OnEditorEvent(event);
+		mUIElementEditorPanel.OnEditorEvent(event);
+		mUIStyleEditorPanel.OnEditorEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -253,6 +278,9 @@ void EditorLayer::OnUIRender(float dt)
 	mPrimitiveObjectPanel.OnUIRender(dt);
 	mPerformancePanel.OnUIRender(dt);
 	mEnvironmentMapGeneratorPanel.OnUIRender(dt);
+	mUIEditorPanel.OnUIRender(dt);
+	mUIElementEditorPanel.OnUIRender(dt);
+	mUIStyleEditorPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		auto serviceManager = mEngineContext->GetServiceManager();
@@ -273,6 +301,16 @@ void EditorLayer::OnUIRender(float dt)
 	NewItemPopup(mNewScriptPopup, "Script", ".cs", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		mEditorState->GetScriptEditorContext()->CreateScriptFile(filepath);
 		// TODO: notify Script context and reload dll
+		});
+
+	NewItemPopup(mNewUIStylePopup, "UI Style", ".mstyle", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
+		auto style = MakeRef<Mule::UIStyle>("");
+		style->SetFilePath(filepath);
+		assetManager->Insert(style);
+		mUIStyleEditorPanel.Open();
+		mUIStyleEditorPanel.SetStyle(style);
+
+		// TODO: check if current style exists and is modified then prompt the user before opening
 		});
 }
 

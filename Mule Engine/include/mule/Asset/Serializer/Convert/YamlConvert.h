@@ -95,6 +95,72 @@ namespace YAML {
         }
     };
 
+    // Serializer for glm::ivec2
+    template<>
+    struct convert<glm::ivec2> {
+        static Node encode(const glm::ivec2& vec) {
+            Node node;
+            node.push_back(vec.x);
+            node.push_back(vec.y);
+            return node;
+        }
+
+        static bool decode(const Node& node, glm::ivec2& vec) {
+            if (!node.IsSequence() || node.size() != 2)
+                return false;
+
+            vec.x = node[0].as<int>();
+            vec.y = node[1].as<int>();
+            return true;
+        }
+    };
+
+    // Serializer for glm::ivec3
+    template<>
+    struct convert<glm::ivec3> {
+        static Node encode(const glm::ivec3& vec) {
+            Node node;
+            node.push_back(vec.x);
+            node.push_back(vec.y);
+            node.push_back(vec.z);
+            return node;
+        }
+
+        static bool decode(const Node& node, glm::ivec3& vec) {
+            if (!node.IsSequence() || node.size() != 3)
+                return false;
+
+            vec.x = node[0].as<int>();
+            vec.y = node[1].as<int>();
+            vec.z = node[2].as<int>();
+            return true;
+        }
+    };
+
+    // Serializer for glm::ivec4
+    template<>
+    struct convert<glm::ivec4> {
+        static Node encode(const glm::ivec4& vec) {
+            Node node;
+            node.push_back(vec.x);
+            node.push_back(vec.y);
+            node.push_back(vec.z);
+            node.push_back(vec.w);
+            return node;
+        }
+
+        static bool decode(const Node& node, glm::ivec4& vec) {
+            if (!node.IsSequence() || node.size() != 4)
+                return false;
+
+            vec.x = node[0].as<int>();
+            vec.y = node[1].as<int>();
+            vec.z = node[2].as<int>();
+            vec.w = node[3].as<int>();
+            return true;
+        }
+    };
+
     // Serializer for glm::quat
     template<>
     struct convert<glm::quat> {

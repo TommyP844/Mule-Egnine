@@ -15,6 +15,9 @@
 #include "Panel/PrimitiveObjectPanel.h"
 #include "Panel/PerformancePanel.h"
 #include "Panel/EnvironmentMapGeneratorPanel.h"
+#include "Panel/UI/UIEditorPanel.h"
+#include "Panel/UI/UIElementEditorPanel.h"
+#include "Panel/UI/UIStyleEditorPanel.h"
 
 
 // STD
@@ -48,6 +51,10 @@ private:
 	PrimitiveObjectPanel mPrimitiveObjectPanel;
 	PerformancePanel mPerformancePanel;
 	EnvironmentMapGeneratorPanel mEnvironmentMapGeneratorPanel;
+	UIEditorPanel mUIEditorPanel;
+	UIElementEditorPanel mUIElementEditorPanel;
+	UIStyleEditorPanel mUIStyleEditorPanel;
+
 
 	bool mShowDemoWindow = false;
 
@@ -55,5 +62,6 @@ private:
 	bool mNewScenePopup = false;
 	bool mNewMaterialPopup = false;
 	bool mNewScriptPopup = false;
+	bool mNewUIStylePopup = false;
 
 };

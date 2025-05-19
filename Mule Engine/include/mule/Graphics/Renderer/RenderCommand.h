@@ -32,7 +32,8 @@ namespace Mule
 		DrawPointLight,
 		DrawSpotLight,
 		DrawSkyBox,
-		ClearRenderTarget
+		ClearRenderTarget,
+		DrawScreenSpaceQuad
 	};
 
 	struct BaseCommand
@@ -250,6 +251,24 @@ namespace Mule
 		ResourceHandle ClearTarget;
 	};
 
+	struct DrawScreenSpaceQuadCommand : BaseCommand
+	{
+		DrawScreenSpaceQuadCommand() : BaseCommand(RenderCommandType::DrawScreenSpaceQuad) {}
+		DrawScreenSpaceQuadCommand(const glm::vec2& Position, const glm::vec2& Size, const glm::vec4& Color, bool HasBorder, const glm::vec4& BorderColor, float BorderThickness)
+			: Position(Position), Size(Size), Color(Color), HasBorder(HasBorder), BorderColor(BorderColor), BorderThickness(BorderThickness)
+		{
+		}
+
+		glm::vec2 Position;
+		glm::vec2 Size;
+		glm::vec4 Color;
+		bool HasBorder;
+		glm::vec4 BorderColor;
+		float BorderThickness;
+
+		
+	};
+
 	class RenderCommand
 	{
 	public:
@@ -269,6 +288,7 @@ namespace Mule
 		RenderCommand(const DrawSpotLightCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const DrawSkyboxCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const ClearRenderTargetCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawScreenSpaceQuadCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 
 		template<typename T>
 		const T& GetCommand() const
@@ -299,6 +319,7 @@ namespace Mule
 			DrawSpotLightCommand,
 			DrawPointLightCommand,
 			DrawSkyboxCommand,
-			ClearRenderTargetCommand> mCommand;
+			ClearRenderTargetCommand,
+			DrawScreenSpaceQuadCommand> mCommand;
 	};
 }

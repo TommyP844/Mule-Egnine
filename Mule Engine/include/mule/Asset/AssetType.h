@@ -17,6 +17,11 @@ namespace Mule
 
 		Script,
 
+		// UI
+		UIStyle,
+		UIPanel,
+		UIElement,
+
 		None
 	};
 

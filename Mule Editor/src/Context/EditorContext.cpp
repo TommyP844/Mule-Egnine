@@ -67,6 +67,12 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 				assetManager->Load<Mule::Scene>(filePath);
 				});
 		}
+		else if (extension == ".mstyle")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->Load<Mule::UIStyle>(filePath);
+				});
+		}
 	}
 }
 
