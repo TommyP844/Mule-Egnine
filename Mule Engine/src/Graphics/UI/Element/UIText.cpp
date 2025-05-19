@@ -22,12 +22,12 @@ namespace Mule
 
 		UIRect rect = mTransform.CalculateRect(parentRect, std::nullopt);
 
-		glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor);
+		//glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor);
 
 		DrawScreenSpaceQuadCommand command(
 			{ rect.X, rect.Y },				// Screen space position	(pixels)
 			{ rect.Width, rect.Height },	// Size						(pixels)
-			backgroundColor,				// Background Color
+			glm::vec4(1.f, 0.f, 0.f, 1.f),				// Background Color
 			false,							// Has Border				(TODO: get from Style)
 			glm::vec4(0.f),					// Border Color				(TODO: Get from Style)
 			0.f								// Border Thickness			(TODO: Get from Style)

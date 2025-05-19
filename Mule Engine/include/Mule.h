@@ -72,3 +72,7 @@
 #include "Graphics/UI/UIRect.h"
 #include "Graphics/UI/UIStyle.h"
 #include "Graphics/UI/UITransform.h"
+#include "Graphics/UI/UIScene.h"
+
+// UI Elements
+#include "Graphics/UI/Element/UIText.h"

@@ -85,25 +85,31 @@ namespace Mule
 
 	void UITransform::SetLeft(const UIMeasurement& left)
 	{
+		mLeft = left;
 	}
 
 	void UITransform::SetRight(const UIMeasurement& right)
 	{
+		mRight = right;
 	}
 
 	void UITransform::SetTop(const UIMeasurement& top)
 	{
+		mTop = top;
 	}
 
 	void UITransform::SetBottom(const UIMeasurement& bottom)
 	{
+		mBottom = bottom;
 	}
 
 	void UITransform::SetWidth(const UIMeasurement& width)
 	{
+		mWidth = width;
 	}
 
 	void UITransform::SetHeight(const UIMeasurement& height)
 	{
+		mHeight = height;
 	}
 }

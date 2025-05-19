@@ -16,4 +16,12 @@ public:
 	void OnEngineEvent(Ref<Mule::Event> event) override;
 
 private:
+	WeakRef<Mule::Texture2D> mBlackTexture;
+	Ref<Mule::UIScene> mUIScene;
+
+	void DisplayElementPanel();
+	void DisplayCanvasPanel();
+	void DisplayInspectorPanel();
+
+	void DisplayElementSelection(Mule::UIElementType type);
 };

@@ -21,6 +21,7 @@ namespace Mule
 		UIStyle,
 		UIPanel,
 		UIElement,
+		UIScene,
 
 		None
 	};

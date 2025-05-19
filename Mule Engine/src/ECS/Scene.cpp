@@ -295,12 +295,12 @@ namespace Mule
 
 	void Scene::OnRender()
 	{
+		mCommandList.Flush();
+
 		Ref<Camera> camera = GetMainCamera();
 		RecordRuntimeDrawCommands();
 		
 		Renderer::Get().Submit(*camera, mCommandList);
-
-		mCommandList.Flush();
 	}
 
 	Ref<Camera> Scene::GetMainCamera() const

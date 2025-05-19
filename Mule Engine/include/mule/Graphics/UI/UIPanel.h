@@ -16,6 +16,8 @@ namespace Mule
 
 		void Render(CommandList& commandList, const UIRect& windowRect);
 
+		const std::string& GetName() const { return mName; }
+
 	private:
 		std::string mName;
 		bool mVisible;

@@ -86,7 +86,11 @@ namespace Mule
 		void OnEditorRender(WeakRef<Camera> editorCamera);
 		void OnRender();
 
+		void RecordRuntimeDrawCommands();
+		void RecordEditorDrawCommands();
 
+		CommandList& GetCommandList() { return mCommandList; }
+		const CommandList& GetCommandList() const { return mCommandList; }
 
 		void SetModified() { mModified = true; }
 		void ClearModified() { mModified = false; }
@@ -113,10 +117,7 @@ namespace Mule
 
 		// Component Sinks
 		void OnCameraComponentConstruct(entt::registry& registry, entt::entity id);
-
-		// Command Lists
-		void RecordRuntimeDrawCommands();
-		void RecordEditorDrawCommands();
+				
 	};
 
 }

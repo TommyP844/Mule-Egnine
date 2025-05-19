@@ -10,6 +10,27 @@
 
 namespace Mule
 {
+	enum class UIElementType
+	{
+		UIText,
+		UIButton,
+
+		MAX_UI_ELEMENT_TYPE
+	};
+
+	constexpr std::string GetUIElementNameFromType(UIElementType type)
+	{
+		switch (type)
+		{
+		case Mule::UIElementType::UIText: return "UIText";
+		case Mule::UIElementType::UIButton: return "UIButton";
+		case Mule::UIElementType::MAX_UI_ELEMENT_TYPE:
+		default:
+			assert("Invalid UIElementType");
+			break;
+		}
+	}
+
 	class UIElement
 	{
 	public:
@@ -29,6 +50,7 @@ namespace Mule
 		Ref<UIStyle> GetStyle() const { return mStyle; }
 
 		const UITransform& GetTransform() const { return mTransform; }
+		UITransform& GetTransform() { return mTransform; }
 		
 		bool IsVisible() const { return mVisible; }
 
