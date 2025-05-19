@@ -14,6 +14,9 @@ void UIEditorPanel::OnAttach()
 	mBlackTexture = assetManager->Get<Mule::Texture2D>(MULE_BLACK_TEXTURE_HANDLE);
 
 	mUIScene = MakeRef<Mule::UIScene>();
+	mUIEditorCamera = MakeRef<Mule::Camera>();
+	auto registry = Mule::Renderer::Get().CreateResourceRegistry();
+	mUIEditorCamera->SetResourceRegistry(registry);
 }
 
 void UIEditorPanel::OnUIRender(float dt)
@@ -87,28 +90,32 @@ void UIEditorPanel::DisplayCanvasPanel()
 	ImVec2 region = ImGui::GetContentRegionAvail();
 	ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 
-	auto& editorCamera = mEditorContext->GetEditorCamera();
-	if (editorCamera.GetRegistry())
+	if (region.x != mViewportSize.x || region.y != mViewportSize.y)
 	{
-		Mule::UIRect windowRect(cursorPos.x, cursorPos.y, region.x, region.y);
-		auto scene = mEngineContext->GetScene();
-		if (scene)
-		{
-			scene->RecordRuntimeDrawCommands();
-			auto& commandList = scene->GetCommandList();
-			mUIScene->Render(commandList, windowRect);
-			Mule::Renderer::Get().Submit(editorCamera, commandList);
-			
-			texId = editorCamera.GetColorOutput()->GetImGuiID();
-		}
-		else
-		{
-			Mule::CommandList commandList;
-			mUIScene->Render(commandList, windowRect);
-			Mule::Renderer::Get().Submit(editorCamera, commandList);
+		mViewportSize = region;
+		mUIEditorCamera->GetRegistry()->Resize(region.x, region.y);
+		mUIEditorCamera->SetAspectRatio(region.x / region.y);
+	}
 
-			texId = editorCamera.GetColorOutput()->GetImGuiID();
-		}
+	Mule::UIRect windowRect(0, 0, region.x, region.y);
+	auto scene = mEngineContext->GetScene();
+	if (scene)
+	{
+		scene->RecordRuntimeDrawCommands();
+		auto& commandList = scene->GetCommandList();
+		mUIScene->Render(commandList, windowRect);
+		Mule::Renderer::Get().Submit(*mUIEditorCamera, commandList);
+		commandList.Flush();
+		
+		texId = mUIEditorCamera->GetColorOutput()->GetImGuiID();
+	}
+	else
+	{
+		Mule::CommandList commandList;
+		mUIScene->Render(commandList, windowRect);
+		Mule::Renderer::Get().Submit(*mUIEditorCamera, commandList);
+
+		texId = mUIEditorCamera->GetColorOutput()->GetImGuiID();
 	}
 
 	ImGui::Image(texId, region);

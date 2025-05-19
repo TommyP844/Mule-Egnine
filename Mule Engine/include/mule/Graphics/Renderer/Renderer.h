@@ -27,6 +27,10 @@ namespace Mule
 		Ref<ResourceRegistry> CreateResourceRegistry();
 		void Submit(const Camera& camera, const CommandList& commandList);
 
+		void SetQuadMesh(WeakRef<Mesh> quadMesh) { mQuadMesh = quadMesh; }
+		void SetDefaultCubeMap(WeakRef<TextureCube> cubeMap) { mDefaultCubeMap = cubeMap; }
+		void SetDefaultTexture(WeakRef<Texture2D> texture) { mDefaultTexture = texture; }
+
 		void Render();
 
 		void AddTexture(WeakRef<Texture> texture);
@@ -74,6 +78,10 @@ namespace Mule
 		Ref<Texture2D> mWhiteTex;
 		Ref<Texture2D> mDefaultNormalTex;
 		Ref<Material> mDefaultMaterial;
+
+		WeakRef<Mesh> mQuadMesh;
+		WeakRef<TextureCube> mDefaultCubeMap;
+		WeakRef<Texture2D> mDefaultTexture;
 
 		// Bindless Resources
 		GuidArray<WeakRef<Texture>> mBindlessTextureIndices;

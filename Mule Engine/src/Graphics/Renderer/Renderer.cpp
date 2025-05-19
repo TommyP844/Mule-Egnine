@@ -133,6 +133,17 @@ namespace Mule
 			shadowDepthPipeline.EnableDepthWrite = true;
 			shadowDepthPipeline.DepthFunc = DepthFunc::LessEqual;
 			shaderFactory.RegisterGraphicsPipeline("ShadowDepth", shadowDepthPipeline);
+
+
+			GraphicsPipelineDescription UIPipelineDescription{};
+			UIPipelineDescription.Filepath = "../Assets/Shaders/Graphics/UIShader.glsl";
+			UIPipelineDescription.FilleMode = FillMode::Solid;
+			UIPipelineDescription.CullMode = CullMode::None;
+			UIPipelineDescription.VertexLayout = defaultVertexLayout;
+			UIPipelineDescription.DepthFormat = TextureFormat::NONE;
+			UIPipelineDescription.EnableDepthTest = false;
+			UIPipelineDescription.EnableDepthWrite = false;
+			shaderFactory.RegisterGraphicsPipeline("UIPipeline", UIPipelineDescription);
 		}
 
 		// Compute Pipelines
@@ -452,6 +463,44 @@ namespace Mule
 				}
 				});
 		}
+
+		// UI Pass
+		{
+			WeakRef<GraphicsPipeline> uiPipeline = ShaderFactory::Get().GetOrCreateGraphicsPipeline("UIPipeline");
+			auto uiPass = mRenderGraph->CreatePass("UI", PassType::Graphics);
+			uiPass->AddResource(mainOutput, ResourceAccess::Write, 0);
+			uiPass->AddResource(mBindlessTextureSRGHandle, ResourceAccess::Read, 0);
+			uiPass->SetPipeline(uiPipeline);
+			uiPass->AddDependency("Skybox");
+			uiPass->SetExecutionCallback([=](Ref<CommandBuffer> cmd, const CommandList& commandList, const ResourceRegistry& registry, uint32_t frameIndex) {
+
+				WeakRef<Texture2D> outputImage = registry.GetResource<Texture>(mainOutput, frameIndex);
+
+				for (auto command : commandList.GetCommands())
+				{
+					if (command.GetType() == RenderCommandType::DrawScreenSpaceQuad)
+					{
+						const auto& drawQuadCommand = command.GetCommand<DrawScreenSpaceQuadCommand>();
+						
+						struct UIConstants
+						{
+							glm::vec2 ScreenPos;
+							glm::vec2 ScreenSize;
+							glm::vec2 ViewportSize;
+
+						} constants;
+
+						constants.ScreenPos = drawQuadCommand.Position;
+						constants.ScreenSize = glm::vec2(drawQuadCommand.Size.x, -drawQuadCommand.Size.y);
+						constants.ViewportSize = { outputImage->GetWidth(), outputImage->GetHeight() };
+
+						cmd->SetPushConstants(uiPipeline, ShaderStage::Vertex, &constants, sizeof(constants));
+						cmd->BindAndDrawMesh(mQuadMesh, 1);
+					}
+
+				}
+				});
+		}
 				
 		mRenderGraph->Bake();
 
@@ -461,6 +510,7 @@ namespace Mule
 			auto registry = camera.GetRegistry();
 			
 			auto skyboxSRG = registry->GetResource<ShaderResourceGroup>(skyboxEnvironmentMapShaderResourceGroup, frameIndex);
+			auto lightpassIBLSRG = registry->GetResource<ShaderResourceGroup>(lihgtingPassIBLSRG, frameIndex);
 
 			auto cameraUB = registry->GetResource<UniformBuffer>(cameraBuffer, frameIndex);
 			
@@ -487,6 +537,12 @@ namespace Mule
 			auto spotLightUB = registry->GetResource<UniformBuffer>(spotLightBuffer, frameIndex);
 
 			glm::vec3 directionalLightDirection;
+
+			skyboxSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)mDefaultCubeMap);
+			lightpassIBLSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)mDefaultCubeMap);
+			lightpassIBLSRG->Update(1, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)mDefaultCubeMap);
+			lightpassIBLSRG->Update(2, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)mDefaultTexture);
+
 			for (const auto& command : commandList.GetCommands())
 			{
 				switch (command.GetType())
@@ -530,7 +586,6 @@ namespace Mule
 					const auto& skyBoxCommand = command.GetCommand<DrawSkyboxCommand>();
 					skyboxSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)skyBoxCommand.SkyBox);
 
-					auto lightpassIBLSRG = registry->GetResource<ShaderResourceGroup>(lihgtingPassIBLSRG, frameIndex);
 					lightpassIBLSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)skyBoxCommand.DiffuseIBL);
 					lightpassIBLSRG->Update(1, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)skyBoxCommand.PreFilterIBL);
 					lightpassIBLSRG->Update(2, DescriptorType::Texture, ImageLayout::ShaderReadOnly, (WeakRef<Texture>)skyBoxCommand.BRDF);

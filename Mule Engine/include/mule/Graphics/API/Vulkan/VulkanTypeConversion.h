@@ -27,7 +27,7 @@ namespace Mule::Vulkan
 		case TextureFormat::RGBA_32U:	return VK_FORMAT_R32G32B32A32_UINT;
 		case TextureFormat::R_64UI:	return VK_FORMAT_R64_UINT;
 		case TextureFormat::RGB_32F:		return VK_FORMAT_R32G32B32_SFLOAT;
-		case Mule::TextureFormat::NONE: 
+		case Mule::TextureFormat::NONE:		return VK_FORMAT_UNDEFINED;
 		default:
 			assert(false && "Invalid texture format for vulkan");
 			break;

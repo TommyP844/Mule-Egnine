@@ -151,10 +151,12 @@ namespace Mule
 		auto blackTexture = Texture2D::Create("Black Image", blackImage, 2, 2, TextureFormat::RGBA_8U, TextureFlags::TransferDst);
 		blackTexture->SetHandle(MULE_BLACK_TEXTURE_HANDLE);
 		assetManager->Insert(blackTexture);
+		Renderer::Get().SetDefaultTexture(blackTexture);
 
 		auto blackTextureCube = TextureCube::Create("Black Texture Cube", blackImage, 2, TextureFormat::RGBA_8U, TextureFlags::TransferDst);
 		blackTextureCube->SetHandle(MULE_BLACK_TEXTURE_CUBE_HANDLE);
 		assetManager->Insert(blackTextureCube);
+		Renderer::Get().SetDefaultCubeMap(blackTextureCube);
 
 		auto whiteTexture = Texture2D::Create("White Image", whiteImage, 2, 2, TextureFormat::RGBA_8U, TextureFlags::TransferDst);
 		whiteTexture->SetHandle(MULE_WHITE_TEXTURE_HANDLE);
@@ -193,6 +195,7 @@ namespace Mule
 			auto model = assetManager->Load<Model>("../Assets/Meshes/Primitives/Plane.obj");
 			auto mesh = model->GetRootNode().GetChildren()[0].GetMeshes()[0];
 			assetManager->UpdateHandle(mesh->Handle(), MULE_PLANE_MESH_HANDLE);
+			Renderer::Get().SetQuadMesh(mesh);
 			});
 
 		// Torus

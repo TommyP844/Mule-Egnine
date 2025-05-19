@@ -255,7 +255,9 @@ namespace Mule
 	{
 		DrawScreenSpaceQuadCommand() : BaseCommand(RenderCommandType::DrawScreenSpaceQuad) {}
 		DrawScreenSpaceQuadCommand(const glm::vec2& Position, const glm::vec2& Size, const glm::vec4& Color, bool HasBorder, const glm::vec4& BorderColor, float BorderThickness)
-			: Position(Position), Size(Size), Color(Color), HasBorder(HasBorder), BorderColor(BorderColor), BorderThickness(BorderThickness)
+			:
+			BaseCommand(RenderCommandType::DrawScreenSpaceQuad),
+			Position(Position), Size(Size), Color(Color), HasBorder(HasBorder), BorderColor(BorderColor), BorderThickness(BorderThickness)
 		{
 		}
 

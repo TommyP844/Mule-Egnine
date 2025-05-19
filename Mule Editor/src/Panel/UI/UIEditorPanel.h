@@ -18,6 +18,8 @@ public:
 private:
 	WeakRef<Mule::Texture2D> mBlackTexture;
 	Ref<Mule::UIScene> mUIScene;
+	Ref<Mule::Camera> mUIEditorCamera;
+	ImVec2 mViewportSize;
 
 	void DisplayElementPanel();
 	void DisplayCanvasPanel();
