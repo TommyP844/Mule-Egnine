@@ -20,10 +20,12 @@ private:
 	Ref<Mule::UIScene> mUIScene;
 	Ref<Mule::Camera> mUIEditorCamera;
 	ImVec2 mViewportSize;
+	WeakRef<Mule::UIElement> mSelectedElement;
 
 	void DisplayElementPanel();
 	void DisplayCanvasPanel();
 	void DisplayInspectorPanel();
 
 	void DisplayElementSelection(Mule::UIElementType type);
+	void DisplayUIMeasurement(const char* label, Mule::UIMeasurement& measurement, float parentSize);
 };

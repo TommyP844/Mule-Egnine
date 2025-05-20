@@ -21,6 +21,9 @@ namespace Mule
 		const std::vector<Ref<UIElement>>& GetUIElements() const { return mElements; }
 		const std::vector<Ref<UIPanel>>& GetUIPanels() const { return mPanels; }
 
+		void Update(const UIRect& windowRect);
+		WeakRef<UIElement> HitTest(float screenX, float screenY);
+
 	private:
 		std::vector<Ref<UIElement>> mElements;
 		std::vector<Ref<UIPanel>> mPanels;

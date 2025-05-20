@@ -20,9 +20,8 @@ namespace Mule
 		if (!mVisible)
 			return;
 
-		UIRect rect = mTransform.CalculateRect(parentRect, std::nullopt);
-
 		//glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor);
+		const UIRect& rect = GetScreenRect();
 
 		DrawScreenSpaceQuadCommand command(
 			{ rect.X, rect.Y },				// Screen space position	(pixels)

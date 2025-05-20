@@ -34,4 +34,34 @@ namespace Mule
 			mChildren.erase(it);
 		}
 	}
+
+	void UIElement::Update(const UIRect& parentRect)
+	{
+		if (!mVisible)
+			return;
+
+		if (mIsDirty)
+		{
+			mScreenRect = mTransform.CalculateRect(parentRect, std::nullopt);
+		}
+
+		for (auto child : mChildren)
+			child->Update(parentRect);
+	}
+
+	WeakRef<UIElement> UIElement::HitTest(float screenX, float screenY)
+	{
+		if (screenX >= mScreenRect.X && screenX <= (mScreenRect.X + mScreenRect.Width)
+			&& screenY >= mScreenRect.Y && screenY <= (mScreenRect.Y + mScreenRect.Height))
+			return this;
+
+		for (auto child : mChildren)
+		{
+			auto element = child->HitTest(screenX, screenY);
+			if (element)
+				return element;
+		}
+
+		return nullptr;
+	}
 }

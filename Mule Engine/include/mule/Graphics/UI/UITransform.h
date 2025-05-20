@@ -22,7 +22,12 @@ namespace Mule
 		void SetTop(const UIMeasurement& top);
 		void SetBottom(const UIMeasurement& bottom);
 		void SetWidth(const UIMeasurement& width);
-		void SetHeight(const UIMeasurement& height);	
+		void SetHeight(const UIMeasurement& height);
+
+		std::optional<UIMeasurement>& GetLeft() { return mLeft; }
+		std::optional<UIMeasurement>& GetTop() { return mTop; }
+		std::optional<UIMeasurement>& GetWidth() { return mWidth; }
+		std::optional<UIMeasurement>& GetHeight() { return mHeight; }
 
 	private:
 		std::optional<UIMeasurement> mLeft;

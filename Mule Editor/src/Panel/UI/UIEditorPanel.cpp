@@ -31,11 +31,10 @@ void UIEditorPanel::OnUIRender(float dt)
 			ImGui::End();
 			return;
 		}
-
 		float width = ImGui::GetContentRegionAvail().x;
 		float elementPanelWidth = 200.f;
 		float inspectorPanelWidth = 200.f;
-		float canvasWidth = width - elementPanelWidth - inspectorPanelWidth;
+		float canvasWidth = width - elementPanelWidth - 3.f * ImGui::GetStyle().FramePadding.x;
 
 		if (ImGui::BeginChild("Elements", { elementPanelWidth, 0.f }, ImGuiChildFlags_Border))
 		{
@@ -53,16 +52,14 @@ void UIEditorPanel::OnUIRender(float dt)
 		}
 		ImGui::EndChild();
 
-		ImGui::SameLine();
-
-		if (ImGui::BeginChild("Inspector", { inspectorPanelWidth, 0.f }, ImGuiChildFlags_Border))
-		{
-			ImGui::SeparatorText("Inspector");
-			DisplayInspectorPanel();
-		}
-		ImGui::EndChild();
 	}
+	ImGui::End();
 
+	if (ImGui::Begin("UI Inspector"))
+	{
+		ImGui::SeparatorText("Inspector");
+		DisplayInspectorPanel();
+	}
 	ImGui::End();
 }
 
@@ -90,6 +87,9 @@ void UIEditorPanel::DisplayCanvasPanel()
 	ImVec2 region = ImGui::GetContentRegionAvail();
 	ImVec2 cursorPos = ImGui::GetCursorScreenPos();
 
+	Mule::UIRect windowRect(0, 0, region.x, region.y);
+	mUIScene->Update(windowRect);
+
 	if (region.x != mViewportSize.x || region.y != mViewportSize.y)
 	{
 		mViewportSize = region;
@@ -97,7 +97,6 @@ void UIEditorPanel::DisplayCanvasPanel()
 		mUIEditorCamera->SetAspectRatio(region.x / region.y);
 	}
 
-	Mule::UIRect windowRect(0, 0, region.x, region.y);
 	auto scene = mEngineContext->GetScene();
 	if (scene)
 	{
@@ -131,7 +130,12 @@ void UIEditorPanel::DisplayCanvasPanel()
 			Ref<Mule::UIText> text = MakeRef<Mule::UIText>("UI Text");
 			text->GetTransform().SetLeft(Mule::UIMeasurement(mousePos.x, Mule::UIUnitType::Pixels));
 			text->GetTransform().SetTop(Mule::UIMeasurement(mousePos.y, Mule::UIUnitType::Pixels));
+			text->GetTransform().SetWidth(Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels));
+			text->GetTransform().SetHeight(Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels));
+
 			mUIScene->AddUIElement(text);
+			mSelectedElement = text;
+			return; // We need to call UIScene update before continuing to displaying the selected element
 		}
 			break;
 		case Mule::UIElementType::UIButton:
@@ -143,23 +147,20 @@ void UIEditorPanel::DisplayCanvasPanel()
 		}
 	}
 
-	// TODO: draw grid lines
-	for (auto element : mUIScene->GetUIElements())
+	if (mSelectedElement)
 	{
-		Mule::UIRect windowRect(cursorPos.x, cursorPos.y, region.x, region.y);
-		Mule::UIRect uiRect = element->GetTransform().CalculateRect(windowRect, Mule::UIRect(0.f, 0.f, 25.f, 25.f));
-		ImVec2 pos = { uiRect.X, uiRect.Y };
+		Mule::UIRect uiRect = mSelectedElement->GetScreenRect();
+		ImVec2 pos = ImVec2(uiRect.X, uiRect.Y) + cursorPos;
 		ImVec2 size = { uiRect.Width, uiRect.Height };
-		
-		// TODO: make name unique
-		if (ImGuiExtension::DragBox(element->GetName(), pos, size))
+
+		if (ImGuiExtension::DragBox(mSelectedElement->GetName(), pos, size))
 		{
-			float relativeLeft = (pos.x - windowRect.X);
-			float relativeTop = (pos.y - windowRect.Y);
+			float relativeLeft = pos.x - cursorPos.x;
+			float relativeTop = pos.y - cursorPos.y;
 			float relativeWidth = size.x;
 			float relativeHeight = size.y;
 
-			Mule::UITransform& transform = element->GetTransform();
+			Mule::UITransform& transform = mSelectedElement->GetTransform();
 
 			transform.SetLeft(Mule::UIMeasurement(relativeLeft, Mule::UIUnitType::Pixels));
 			transform.SetTop(Mule::UIMeasurement(relativeTop, Mule::UIUnitType::Pixels));
@@ -167,10 +168,55 @@ void UIEditorPanel::DisplayCanvasPanel()
 			transform.SetHeight(Mule::UIMeasurement(relativeHeight, Mule::UIUnitType::Pixels));
 		}
 	}
+
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+	{
+		ImVec2 mousePos = ImGui::GetMousePos() - cursorPos;
+		auto element = mUIScene->HitTest(mousePos.x, mousePos.y);
+		if (element)
+		{
+			mSelectedElement = element;
+		}
+	}
 }
 
 void UIEditorPanel::DisplayInspectorPanel()
 {
+	if (!mSelectedElement)
+		return;
+
+	std::string name = mSelectedElement->GetName();
+	static char namebuffer[256] = { 0 };
+	memcpy(namebuffer, name.data(), name.size());
+
+	ImGui::Text("Name");
+	ImGui::SameLine();
+	if (ImGui::InputText("##name", namebuffer, 256))
+		mSelectedElement->SetName(namebuffer);
+
+	Mule::UITransform& transform = mSelectedElement->GetTransform();
+
+	auto& left = transform.GetLeft();
+	auto& top = transform.GetTop();
+	auto& width = transform.GetWidth();
+	auto& height = transform.GetHeight();
+
+	ImGui::SeparatorText("Location");
+
+	float parentWidth = mViewportSize.x;
+	float parentHeight = mViewportSize.y;
+
+	auto parent = mSelectedElement->GetParent();
+	if (parent)
+	{
+		parentWidth = parent->GetScreenRect().Width;
+		parentHeight = parent->GetScreenRect().Height;
+	}
+
+	if (top) DisplayUIMeasurement("Top", *top, parentHeight);
+	if (left) DisplayUIMeasurement("Left", *left, parentWidth);
+	if (width) DisplayUIMeasurement("Width", *width, parentWidth);
+	if (height) DisplayUIMeasurement("Height", *height, parentHeight);
 }
 
 void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)
@@ -182,4 +228,37 @@ void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)
 	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_UI_ELEMENT_TYPE, type, [name]() {
 		ImGui::Text(name.c_str());
 		});
+}
+
+void UIEditorPanel::DisplayUIMeasurement(const char* label, Mule::UIMeasurement& measurement, float parentSize)
+{
+	ImGui::PushID(label);
+	ImGui::Text(label);
+	ImGui::SameLine(75.f);
+	ImGui::PushItemWidth(100.f);
+	ImGui::DragFloat("##MeasurementValue", &measurement.Value, 1.f, 0.f, 0.f, "%.1f");
+	ImGui::SameLine();
+
+	const char* options[] = {
+		"px",
+		"%"
+	};
+
+	Mule::UIUnitType currentType = measurement.GetUnitType();
+	const char* selectedOption = options[static_cast<uint32_t>(currentType)];
+
+	ImGui::PushItemWidth(50.f);
+	if (ImGui::BeginCombo("Combo", selectedOption))
+	{
+		for (uint32_t i = 0; i < static_cast<uint32_t>(Mule::UIUnitType::MAX_UNIT_TYPE); i++)
+		{
+			Mule::UIUnitType type = static_cast<Mule::UIUnitType>(i);
+			bool selected = (type == currentType);
+
+			if (ImGui::Selectable(options[i], selected))
+				measurement.SetUnitType(static_cast<Mule::UIUnitType>(i), parentSize);
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::PopID();
 }

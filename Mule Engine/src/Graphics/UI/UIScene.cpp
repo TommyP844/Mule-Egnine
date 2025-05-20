@@ -62,4 +62,22 @@ namespace Mule
 		}
 		mPanels.push_back(panel);
 	}
+
+	void UIScene::Update(const UIRect& windowRect)
+	{
+		for (auto element : mElements)
+			element->Update(windowRect);
+	}
+
+	WeakRef<UIElement> UIScene::HitTest(float screenX, float screenY)
+	{
+		for (auto element : mElements)
+		{
+			auto found = element->HitTest(screenX, screenY);
+			if (found)
+				return found;
+		}
+
+		return nullptr;
+	}
 }
