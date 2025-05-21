@@ -13,6 +13,7 @@ namespace Mule
 		BackgroundColor,
 		ForegroundColor,
 		Padding,
+		Font,
 
 		STYLE_KEY_MAX
 	};
@@ -27,7 +28,8 @@ namespace Mule
 		Color,
 		Ivec2,
 		IVec3,
-		Ivec4
+		Ivec4,
+		AssetHandle
 	};
 
 	constexpr UIStyleKeyDataType GetUIStyleKeyDataType(UIStyleKey key)
@@ -45,6 +47,9 @@ namespace Mule
 		case Mule::UIStyleKey::ForegroundColor:
 			return UIStyleKeyDataType::Color;
 
+		case Mule::UIStyleKey::Font:
+			return UIStyleKeyDataType::AssetHandle;
+
 		case Mule::UIStyleKey::STYLE_KEY_MAX:
 		default:
 			assert(false && "Invalid UIStyleKey");
@@ -61,6 +66,7 @@ namespace Mule
 		case Mule::UIStyleKey::BackgroundColor:	return "Background Color";
 		case Mule::UIStyleKey::ForegroundColor:	return "Foreground Color";
 		case Mule::UIStyleKey::Padding:			return "Padding";
+		case Mule::UIStyleKey::Font:			return "Font";
 		case Mule::UIStyleKey::STYLE_KEY_MAX:
 		default:
 			assert(false && "Invalid UIStyleKey");
@@ -75,6 +81,7 @@ namespace Mule
 		else if (name == "Background Color") return Mule::UIStyleKey::BackgroundColor;
 		else if (name == "Foreground Color") return Mule::UIStyleKey::ForegroundColor;
 		else if (name == "Padding") return Mule::UIStyleKey::Padding;
+		else if (name == "Font") return Mule::UIStyleKey::Font;
 
 		return UIStyleKey::STYLE_KEY_MAX;
 	}

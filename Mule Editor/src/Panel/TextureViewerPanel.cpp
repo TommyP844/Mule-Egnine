@@ -48,6 +48,8 @@ void TextureViewerPanel::OnUIRender(float dt)
 
 			ImGui::EndDisabled();
 
+			ImGui::Text("Dimension: %i x %i x %i", mTexture->GetWidth(), mTexture->GetHeight(), mTexture->GetDepth());
+
 			
 			if(mTexture->GetType() == Mule::TextureType::TextureType_2D)
 			{

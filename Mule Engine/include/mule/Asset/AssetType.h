@@ -22,6 +22,7 @@ namespace Mule
 		UIPanel,
 		UIElement,
 		UIScene,
+		UIFont,
 
 		None
 	};

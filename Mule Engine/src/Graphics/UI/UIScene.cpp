@@ -10,13 +10,13 @@ namespace Mule
 	{
 	}
 
-	void UIScene::Render(CommandList& commandList, const UIRect& screenRect)
+	void UIScene::Render(CommandList& commandList, const UIRect& screenRect, WeakRef<AssetManager> assetManager)
 	{
 		for (auto panel : mPanels)
 			panel->Render(commandList, screenRect);
 
 		for (auto element : mElements)
-			element->Render(commandList, screenRect);
+			element->Render(commandList, screenRect, assetManager);
 	}
 
 	void UIScene::AddUIElement(Ref<UIElement> element)

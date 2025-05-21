@@ -1,6 +1,7 @@
 #include "UIStyleEditorPanel.h"
 
 #include "Event/EditUIStyleEvent.h"
+#include "ImGuiExtension.h"
 
 UIStyleEditorPanel::UIStyleEditorPanel()
 	:
@@ -73,6 +74,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 					case Mule::UIStyleKeyDataType::Ivec2:	mStyle->SetValue(key, glm::ivec2(0)); break;
 					case Mule::UIStyleKeyDataType::IVec3:	mStyle->SetValue(key, glm::ivec3(0)); break;
 					case Mule::UIStyleKeyDataType::Ivec4:	mStyle->SetValue(key, glm::ivec4(0)); break;
+					case Mule::UIStyleKeyDataType::AssetHandle:	mStyle->SetValue(key, Mule::AssetHandle::Null());
 					}
 
 					mIsModified = true;
@@ -171,6 +173,26 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 					}
 					break;
 				}
+				case Mule::UIStyleKeyDataType::AssetHandle:
+				{
+					auto assetManager = mEngineContext->GetAssetManager();
+					auto fontHandle = mStyle->GetValue<Mule::AssetHandle>(key);
+					auto font = assetManager->Get<Mule::UIFont>(fontHandle);
+
+					std::string fontName = "(Null)";
+
+					if (font)
+						fontName = font->Name();
+
+					ImGui::Text(fontName.c_str());
+					ImGuiExtension::DragDropFile ddf;
+					if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+					{
+						mStyle->SetValue(key, ddf.AssetHandle);
+						mIsModified = true;
+					}
+				}
+				break;
 				}
 			}
 

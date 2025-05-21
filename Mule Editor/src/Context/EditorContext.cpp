@@ -73,6 +73,12 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 				assetManager->Load<Mule::UIStyle>(filePath);
 				});
 		}
+		else if (extension == ".ttf")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->Load<Mule::UIFont>(filePath);
+				});
+		}
 	}
 }
 

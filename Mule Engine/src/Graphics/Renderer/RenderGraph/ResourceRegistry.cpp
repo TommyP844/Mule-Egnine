@@ -28,6 +28,34 @@ namespace Mule
 		mResources[mCommandAllocatorHandle] = commandAllocator;
 		mResources[mTimelineSemaphoreHandle] = timelineSemaphore;
 
+		for (const auto& [name, dynamicVertexBuffer] : builder.GetDynamicVertexBufferBlueprints())
+		{
+			InFlightResource IFR(mFramesInFlight);
+
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				IFR.Resources[i] = DynamicVertexBuffer::Create(dynamicVertexBuffer.Layout, dynamicVertexBuffer.VertexCount);
+			}
+
+			ResourceHandle handle = ResourceHandle(name, ResourceType::DynamicVertexBuffer);
+			mResources[handle] = IFR;
+			mResourceHandles.push_back(handle);
+		}
+
+		for (const auto& [name, dynamicIndexBuffer] : builder.GetDynamicIndexBufferBlueprints())
+		{
+			InFlightResource IFR(mFramesInFlight);
+
+			for (uint32_t i = 0; i < mFramesInFlight; i++)
+			{
+				IFR.Resources[i] = DynamicIndexBuffer::Create(dynamicIndexBuffer.Type, dynamicIndexBuffer.IndexCount);
+			}
+
+			ResourceHandle handle = ResourceHandle(name, ResourceType::DynamicIndexBuffer);
+			mResources[handle] = IFR;
+			mResourceHandles.push_back(handle);
+		}
+
 		for (const auto& [name, samplerBlueprint] : builder.GetSamplerBlueprints())
 		{
 			Ref<Sampler> sampler = Sampler::Create(samplerBlueprint.Description);

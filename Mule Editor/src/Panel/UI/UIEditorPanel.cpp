@@ -97,12 +97,13 @@ void UIEditorPanel::DisplayCanvasPanel()
 		mUIEditorCamera->SetAspectRatio(region.x / region.y);
 	}
 
+	auto assetManager = mEngineContext->GetAssetManager();
 	auto scene = mEngineContext->GetScene();
 	if (scene)
 	{
 		scene->RecordRuntimeDrawCommands();
 		auto& commandList = scene->GetCommandList();
-		mUIScene->Render(commandList, windowRect);
+		mUIScene->Render(commandList, windowRect, assetManager);
 		Mule::Renderer::Get().Submit(*mUIEditorCamera, commandList);
 		commandList.Flush();
 		
@@ -111,7 +112,7 @@ void UIEditorPanel::DisplayCanvasPanel()
 	else
 	{
 		Mule::CommandList commandList;
-		mUIScene->Render(commandList, windowRect);
+		mUIScene->Render(commandList, windowRect, assetManager);
 		Mule::Renderer::Get().Submit(*mUIEditorCamera, commandList);
 
 		texId = mUIEditorCamera->GetColorOutput()->GetImGuiID();
@@ -195,6 +196,7 @@ void UIEditorPanel::DisplayInspectorPanel()
 		mSelectedElement->SetName(namebuffer);
 
 	Mule::UITransform& transform = mSelectedElement->GetTransform();
+	WeakRef<Mule::UIStyle> style = mSelectedElement->GetStyle();
 
 	auto& left = transform.GetLeft();
 	auto& top = transform.GetTop();
@@ -217,6 +219,51 @@ void UIEditorPanel::DisplayInspectorPanel()
 	if (left) DisplayUIMeasurement("Left", *left, parentWidth);
 	if (width) DisplayUIMeasurement("Width", *width, parentWidth);
 	if (height) DisplayUIMeasurement("Height", *height, parentHeight);
+
+	ImGui::SeparatorText("Style");
+	std::string styleName = "(Null)";
+
+	if (style)
+		styleName = style->Name();
+
+	ImGui::Text(styleName.c_str());
+	ImGuiExtension::DragDropFile ddf;
+	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+	{
+		auto assetManager = mEngineContext->GetAssetManager();
+		auto s = assetManager->Get<Mule::UIStyle>(ddf.AssetHandle);
+		if (s)
+		{
+			mSelectedElement->SetStyle(s);
+		}
+	}
+
+	switch (mSelectedElement->GetType())
+	{
+	case Mule::UIElementType::UIText:
+	{
+		WeakRef<Mule::UIText> textElem = mSelectedElement;
+		static char buffer[1024] = { 0 };
+		std::string text = textElem->GetText();
+		memcpy(buffer, text.data(), text.size());
+		ImGui::Text("Text");
+		ImGui::SameLine();
+		if (ImGui::InputText("##Text", buffer, 1024))
+		{
+			textElem->SetText(buffer);
+		}
+
+		ImGui::Text("Font Size");
+		ImGui::SameLine();
+		float fontSize = textElem->GetFontSize();
+		if (ImGui::DragFloat("##FontSize", &fontSize, 1.f, 2.f, 10000.f, "%.1f", ImGuiSliderFlags_AlwaysClamp))
+		{
+			textElem->SetFontSize(fontSize);
+		}
+		
+	}
+		break;
+	}
 }
 
 void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)

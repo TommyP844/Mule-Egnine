@@ -10,7 +10,7 @@ namespace Mule
 	public:
 		UIScene(const std::string name = "UI Scene");
 
-		void Render(CommandList& commandList, const UIRect& screenRect);
+		void Render(CommandList& commandList, const UIRect& screenRect, WeakRef<AssetManager> assetManager);
 
 		void AddUIElement(Ref<UIElement> element);
 		void RemoveUIElement(Ref<UIElement> element);

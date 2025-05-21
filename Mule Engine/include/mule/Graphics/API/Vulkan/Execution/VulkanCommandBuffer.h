@@ -47,6 +47,11 @@ namespace Mule::Vulkan
 		void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ) override;
 
 		// Mesh
+		void BindVertexBuffer(WeakRef<VertexBuffer> vertexBuffer) override;
+		void BindVertexBuffer(WeakRef<DynamicVertexBuffer> vertexBuffer) override;
+		void BindIndexBuffer(WeakRef<IndexBuffer> indexBuffer) override;
+		void BindIndexBuffer(WeakRef<DynamicIndexBuffer> indexBuffer) override;
+		void DrawIndexed(uint32_t indexCount, uint32_t indexOffset, uint32_t instanceCount = 1) override;
 		void BindMesh(WeakRef<Mesh> mesh) override;
 		void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount = 1) override;
 		void BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount) override;

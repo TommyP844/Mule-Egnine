@@ -6,6 +6,8 @@
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIStyle.h"
 
+#include "Asset/AssetManager.h"
+
 #include <string>
 
 namespace Mule
@@ -34,7 +36,7 @@ namespace Mule
 	class UIElement
 	{
 	public:
-		UIElement(const std::string& name = "UI Element");
+		UIElement(const std::string& name, UIElementType elementType);
 
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }
@@ -47,11 +49,11 @@ namespace Mule
 
 		// Per Frame
 		void Update(const UIRect& parentRect);
-		virtual void Render(CommandList& commandList, const UIRect& parentRect) = 0;
+		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager) = 0;
 
 		// Syle
-		void SetStyle(Ref<UIStyle> style) { mStyle = style; }
-		Ref<UIStyle> GetStyle() const { return mStyle; }
+		void SetStyle(WeakRef<UIStyle> style) { mStyle = style; }
+		WeakRef<UIStyle> GetStyle() const { return mStyle; }
 
 		// Transform
 		const UITransform& GetTransform() const { return mTransform; }
@@ -64,8 +66,9 @@ namespace Mule
 
 		WeakRef<UIElement> HitTest(float screenX, float screenY);
 
+		UIElementType GetType() const { return mType; }
 	protected:
-		Ref<UIStyle> mStyle;
+		WeakRef<UIStyle> mStyle;
 		bool mVisible;
 		UITransform mTransform;
 
@@ -74,6 +77,7 @@ namespace Mule
 	private:
 		std::string mName;
 		bool mIsDirty;
+		UIElementType mType;
 
 		UIRect mScreenRect;
 		WeakRef<UIElement> mParent;

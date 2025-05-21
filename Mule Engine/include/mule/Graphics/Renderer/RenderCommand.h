@@ -33,7 +33,8 @@ namespace Mule
 		DrawSpotLight,
 		DrawSkyBox,
 		ClearRenderTarget,
-		DrawScreenSpaceQuad
+		DrawScreenSpaceQuad,
+		DrawUICharacter
 	};
 
 	struct BaseCommand
@@ -266,9 +267,24 @@ namespace Mule
 		glm::vec4 Color;
 		bool HasBorder;
 		glm::vec4 BorderColor;
-		float BorderThickness;
+		float BorderThickness;		
+	};
 
+	struct DrawUICharacterCommand : BaseCommand
+	{
+		DrawUICharacterCommand() : BaseCommand(RenderCommandType::DrawUICharacter) {}
+		DrawUICharacterCommand(const glm::vec2& Min, const glm::vec2& Max, const glm::vec2& UVMin, const glm::vec2& UVMax, const glm::vec4& color, const uint32_t& TextureAtlasGlobalIndex)
+			: BaseCommand(RenderCommandType::DrawUICharacter),
+			Min(Min), Max(Max), UVMin(UVMin), UVMax(UVMax), Color(color), TextureAtlasGlobalIndex(TextureAtlasGlobalIndex)
+		{
+		}
 		
+		glm::vec2 Min;
+		glm::vec2 Max;
+		glm::vec2 UVMin;
+		glm::vec2 UVMax;
+		glm::vec4 Color;
+		uint32_t TextureAtlasGlobalIndex;		
 	};
 
 	class RenderCommand
@@ -291,6 +307,7 @@ namespace Mule
 		RenderCommand(const DrawSkyboxCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const ClearRenderTargetCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 		RenderCommand(const DrawScreenSpaceQuadCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
+		RenderCommand(const DrawUICharacterCommand& cmd) : mCommand(cmd), mType(cmd.Type) {}
 
 		template<typename T>
 		const T& GetCommand() const
@@ -322,6 +339,7 @@ namespace Mule
 			DrawPointLightCommand,
 			DrawSkyboxCommand,
 			ClearRenderTargetCommand,
-			DrawScreenSpaceQuadCommand> mCommand;
+			DrawScreenSpaceQuadCommand,
+			DrawUICharacterCommand> mCommand;
 	};
 }

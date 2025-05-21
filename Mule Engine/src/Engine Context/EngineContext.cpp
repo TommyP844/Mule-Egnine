@@ -17,9 +17,11 @@
 #include "Asset/Serializer/MaterialSerializer.h"
 #include "Asset/Serializer/ScriptSerializer.h"
 #include "Asset/Serializer/UIStyleSerializer.h"
+#include "Asset/Serializer/FontSerializer.h"
 
 // Generators
 #include "Asset/Generator/EnvironmentMapGenerator.h"
+//#include "Asset/Generator/FontGenerator.h"
 
 namespace Mule
 {
@@ -39,6 +41,7 @@ namespace Mule
 		mServiceManager->Register<ScriptContext>(this);
 		mServiceManager->Register<JobSystem>();
 		mServiceManager->Register<EnvironmentMapGenerator>(mServiceManager);
+		//mServiceManager->Register<FontGenerator>(mServiceManager);
 
 		// Needs to be called after imgui init
 		Renderer::Init();
@@ -51,6 +54,7 @@ namespace Mule
 		assetManager->RegisterLoader<TextureSerializer>(mServiceManager);
 		assetManager->RegisterLoader<MaterialSerializer>(mServiceManager);
 		assetManager->RegisterLoader<UIStyleSerializer>(mServiceManager);
+		assetManager->RegisterLoader<FontSerializer>(mServiceManager);
 
 		assetManager->RegisterLoadCallback<Material>([](WeakRef<Material> material) {
 			Renderer::Get().AddMaterial(material);

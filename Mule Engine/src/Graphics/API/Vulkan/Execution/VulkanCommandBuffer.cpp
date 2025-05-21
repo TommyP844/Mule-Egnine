@@ -15,6 +15,8 @@
 #include "Graphics/API/Vulkan/Buffer/VulkanIndexBuffer.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanVertexBuffer.h"
 #include "Graphics/API/Vulkan/Buffer/VulkanStagingBuffer.h"
+#include "Graphics/API/Vulkan/Buffer/VulkanDynamicIndexBuffer.h"
+#include "Graphics/API/Vulkan/Buffer/VulkanDynamicVertexBuffer.h"
 
 #include "Graphics/API/Vulkan/VulkanTypeConversion.h"
 
@@ -857,6 +859,47 @@ namespace Mule::Vulkan
 	void VulkanCommandBuffer::Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ)
 	{
 		vkCmdDispatch(mCommandBuffer, workGroupsX, workGroupsY, workGroupsZ);
+	}
+
+	void VulkanCommandBuffer::BindVertexBuffer(WeakRef<VertexBuffer> vertexBuffer)
+	{
+		VkDeviceSize offsets = 0;
+
+		WeakRef<VulkanVertexBuffer> vulkanVertexBuffer = vertexBuffer;
+		VkBuffer buffer = vulkanVertexBuffer->GetBuffer();
+
+		vkCmdBindVertexBuffers(mCommandBuffer, 0, 1, &buffer, &offsets);
+	}
+
+	void VulkanCommandBuffer::BindVertexBuffer(WeakRef<DynamicVertexBuffer> vertexBuffer)
+	{
+		VkDeviceSize offsets = 0;
+
+		WeakRef<VulkanDynamicVertexBuffer> vulkanVertexBuffer = vertexBuffer;
+		VkBuffer buffer = vulkanVertexBuffer->GetBuffer();
+
+		vkCmdBindVertexBuffers(mCommandBuffer, 0, 1, &buffer, &offsets);
+	}
+
+	void VulkanCommandBuffer::BindIndexBuffer(WeakRef<IndexBuffer> indexBuffer)
+	{
+		WeakRef<VulkanIndexBuffer> vulkanIndexBuffer = indexBuffer;
+		VkBuffer buffer = vulkanIndexBuffer->GetBuffer();
+
+		vkCmdBindIndexBuffer(mCommandBuffer, buffer, 0, GetIndexFormat(indexBuffer->GetIndexType()));
+	}
+
+	void VulkanCommandBuffer::BindIndexBuffer(WeakRef<DynamicIndexBuffer> indexBuffer)
+	{
+		WeakRef<VulkanDynamicIndexBuffer> vulkanIndexBuffer = indexBuffer;
+		VkBuffer buffer = vulkanIndexBuffer->GetBuffer();
+
+		vkCmdBindIndexBuffer(mCommandBuffer, buffer, 0, GetIndexFormat(indexBuffer->GetIndexType()));
+	}
+
+	void VulkanCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t indexOffset, uint32_t instanceCount)
+	{
+		vkCmdDrawIndexed(mCommandBuffer, indexCount, instanceCount, indexOffset, 0, 0);
 	}
 
 	void VulkanCommandBuffer::BindMesh(WeakRef<Mesh> mesh)

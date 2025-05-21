@@ -5,6 +5,7 @@
 #include "Graphics/ShaderFactory.h"
 
 #include "Graphics/API/Texture2DArray.h" 
+#include "Graphics/Vertex.h"
 
 #include "ScopedBuffer.h"
 
@@ -135,14 +136,22 @@ namespace Mule
 			shaderFactory.RegisterGraphicsPipeline("ShadowDepth", shadowDepthPipeline);
 
 
+			VertexLayout uiVertexLayout;
+			uiVertexLayout.AddAttribute(AttributeType::Vec2)
+				.AddAttribute(AttributeType::Vec2)
+				.AddAttribute(AttributeType::Vec4)
+				.AddAttribute(AttributeType::UInt)
+				.AddAttribute(AttributeType::UInt);
+
 			GraphicsPipelineDescription UIPipelineDescription{};
 			UIPipelineDescription.Filepath = "../Assets/Shaders/Graphics/UIShader.glsl";
 			UIPipelineDescription.FilleMode = FillMode::Solid;
 			UIPipelineDescription.CullMode = CullMode::None;
-			UIPipelineDescription.VertexLayout = defaultVertexLayout;
+			UIPipelineDescription.VertexLayout = uiVertexLayout;
 			UIPipelineDescription.DepthFormat = TextureFormat::NONE;
 			UIPipelineDescription.EnableDepthTest = false;
 			UIPipelineDescription.EnableDepthWrite = false;
+			UIPipelineDescription.EnableBlending = true;
 			shaderFactory.RegisterGraphicsPipeline("UIPipeline", UIPipelineDescription);
 		}
 
@@ -293,6 +302,17 @@ namespace Mule
 		depthSamplerDesc.BorderColor = SamplerBorderColor::White;
 
 		ResourceHandle shadowDepthSampler = mResourceBuilder.CreateSampler("Sampler.Shadow.Depth", depthSamplerDesc);
+
+		VertexLayout UIVertexLayout;
+		UIVertexLayout.AddAttribute(AttributeType::Vec2)
+			.AddAttribute(AttributeType::Vec2)
+			.AddAttribute(AttributeType::Vec4)
+			.AddAttribute(AttributeType::UInt)
+			.AddAttribute(AttributeType::UInt);
+
+		// UI - Dynamic Buffers
+		ResourceHandle UIVertexBufferHandle = mResourceBuilder.CreateDynamicVertexBuffer("UI.Buffer.Vertex", UIVertexLayout, 1000);
+		ResourceHandle UIIndexBufferHandle = mResourceBuilder.CreateDynamicIndexBuffer("UI.Buffer.Index", IndexType::Size_32Bit, 3000);
 
 		// Uniform Buffers
 		ResourceHandle cameraBuffer = mResourceBuilder.CreateUniformBuffer("Buffer.Camera", sizeof(GPU::Camera));
@@ -476,29 +496,90 @@ namespace Mule
 
 				WeakRef<Texture2D> outputImage = registry.GetResource<Texture>(mainOutput, frameIndex);
 
+				std::vector<UIVertex> uiVertices;
+				std::vector<uint32_t> indices;
+
+				glm::vec2 ViewportSize = { outputImage->GetWidth(), outputImage->GetHeight() };
+				cmd->SetPushConstants(uiPipeline, ShaderStage::Vertex, &ViewportSize[0], sizeof(glm::vec2));
+
 				for (auto command : commandList.GetCommands())
 				{
 					if (command.GetType() == RenderCommandType::DrawScreenSpaceQuad)
 					{
 						const auto& drawQuadCommand = command.GetCommand<DrawScreenSpaceQuadCommand>();
 						
-						struct UIConstants
-						{
-							glm::vec2 ScreenPos;
-							glm::vec2 ScreenSize;
-							glm::vec2 ViewportSize;
+						glm::vec2 min = drawQuadCommand.Position;
+						glm::vec2 max = drawQuadCommand.Position + drawQuadCommand.Size;
+						glm::vec2 uvMin = glm::vec2(0.f);
+						glm::vec2 uvMax = glm::vec2(0.f);
+						glm::vec4 color = drawQuadCommand.Color;
+						uint32_t textureIndex = mWhiteTex->GetGlobalIndex();
 
-						} constants;
+						// Build the four corners of the quad
+						UIVertex topLeft = { {min.x, min.y}, {uvMin.x, uvMin.y}, color, textureIndex, 0 };
+						UIVertex topRight = { {max.x, min.y}, {uvMax.x, uvMin.y}, color, textureIndex, 0 };
+						UIVertex bottomLeft = { {min.x, max.y}, {uvMin.x, uvMax.y}, color, textureIndex, 0 };
+						UIVertex bottomRight = { {max.x, max.y}, {uvMax.x, uvMax.y}, color, textureIndex, 0 };
 
-						constants.ScreenPos = drawQuadCommand.Position;
-						constants.ScreenSize = glm::vec2(drawQuadCommand.Size.x, -drawQuadCommand.Size.y);
-						constants.ViewportSize = { outputImage->GetWidth(), outputImage->GetHeight() };
+						uiVertices.push_back(topLeft);
+						uiVertices.push_back(bottomLeft);
+						uiVertices.push_back(topRight);
+						uiVertices.push_back(bottomRight);
 
-						cmd->SetPushConstants(uiPipeline, ShaderStage::Vertex, &constants, sizeof(constants));
-						cmd->BindAndDrawMesh(mQuadMesh, 1);
+						uint32_t offset = indices.size();
+						indices.push_back(offset + 0);
+						indices.push_back(offset + 1);
+						indices.push_back(offset + 2);
+
+						indices.push_back(offset + 2);
+						indices.push_back(offset + 1);
+						indices.push_back(offset + 3);
+					}
+					else if (command.GetType() == RenderCommandType::DrawUICharacter)
+					{
+						const auto drawCharCommand = command.GetCommand<DrawUICharacterCommand>();
+
+						const glm::vec2& min = drawCharCommand.Min;
+						const glm::vec2& max = drawCharCommand.Max;
+						const glm::vec2& uvMin = drawCharCommand.UVMin;
+						const glm::vec2& uvMax = drawCharCommand.UVMax;
+						const glm::vec4& color = drawCharCommand.Color;
+						const uint32_t textureIndex = drawCharCommand.TextureAtlasGlobalIndex;
+
+						// Build the four corners of the quad
+						UIVertex topLeft = { {min.x, min.y}, {uvMin.x, uvMin.y}, color, textureIndex, 1 };
+						UIVertex topRight = { {max.x, min.y}, {uvMax.x, uvMin.y}, color, textureIndex, 1 };
+						UIVertex bottomLeft = { {min.x, max.y}, {uvMin.x, uvMax.y}, color, textureIndex, 1 };
+						UIVertex bottomRight = { {max.x, max.y}, {uvMax.x, uvMax.y}, color, textureIndex, 1 };
+
+						uint32_t offset = uiVertices.size();
+
+						uiVertices.push_back(topLeft);
+						uiVertices.push_back(bottomLeft);
+						uiVertices.push_back(topRight);
+						uiVertices.push_back(bottomRight);
+
+						indices.push_back(offset + 0);
+						indices.push_back(offset + 1);
+						indices.push_back(offset + 2);
+
+						indices.push_back(offset + 2);
+						indices.push_back(offset + 1);
+						indices.push_back(offset + 3);
 					}
 
 				}
+
+				WeakRef<DynamicIndexBuffer> indexBuffer = registry.GetResource<DynamicIndexBuffer>(UIIndexBufferHandle, frameIndex);
+				WeakRef<DynamicVertexBuffer> vertexBuffer = registry.GetResource<DynamicVertexBuffer>(UIVertexBufferHandle, frameIndex);
+				
+				indexBuffer->SetData(indices.data(), indices.size() * sizeof(uint32_t));
+				vertexBuffer->SetData(uiVertices.data(), uiVertices.size() * sizeof(UIVertex));
+
+				cmd->BindVertexBuffer(vertexBuffer);
+				cmd->BindIndexBuffer(indexBuffer);
+				cmd->DrawIndexed(indices.size(), 0);
+
 				});
 		}
 				
@@ -729,6 +810,7 @@ namespace Mule
 			if (index == UINT32_MAX)
 				index = mBindlessTextureIndices.Insert(texture->Handle(), texture);
 			
+			texture->SetGlobalIndex(index);
 			bindlessTextureSRG->Update(0, DescriptorType::Texture, ImageLayout::ShaderReadOnly, texture, index);
 		}
 

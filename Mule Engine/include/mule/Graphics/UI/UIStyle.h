@@ -4,6 +4,7 @@
 #include "Asset/Asset.h"
 
 #include "UIStyleKey.h"
+#include "UIFont.h"
 
 #include <array>
 #include <variant>
@@ -37,7 +38,8 @@ namespace Mule
 			int,
 			float,
 			glm::vec2, glm::vec3, glm::vec4,
-			glm::ivec2, glm::ivec3, glm::ivec4
+			glm::ivec2, glm::ivec3, glm::ivec4,
+			AssetHandle
 		>;
 
 		std::array<UIStyleValue, static_cast<size_t>(UIStyleKey::STYLE_KEY_MAX)> mValues;

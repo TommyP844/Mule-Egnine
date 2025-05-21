@@ -65,6 +65,7 @@
 
 // Generators
 #include "Asset/Generator/EnvironmentMapGenerator.h"
+#include "Asset/Generator/FontGenerator.h"
 
 // UI
 #include "Graphics/UI/UIMeasurement.h"
@@ -73,6 +74,7 @@
 #include "Graphics/UI/UIStyle.h"
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIScene.h"
+#include "Graphics/UI/UIFont.h"
 
 // UI Elements
 #include "Graphics/UI/Element/UIText.h"

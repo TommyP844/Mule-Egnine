@@ -33,6 +33,9 @@ namespace Mule
 		TextureFlags GetFlags() const { return mFlags; }
 		TextureType GetType() const { return mType; }
 
+		void SetGlobalIndex(uint32_t globalIndex) { mGlobalIndex = globalIndex; }
+		uint32_t GetGlobalIndex() const { return mGlobalIndex; }
+
 	protected:
 		Texture(const std::string& name, TextureFormat format, TextureFlags flags, TextureType type)
 			:
@@ -46,5 +49,6 @@ namespace Mule
 		TextureFormat mFormat;
 		TextureFlags mFlags;
 		TextureType mType;
+		uint32_t mGlobalIndex;
 	};
 }

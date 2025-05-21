@@ -12,6 +12,8 @@ namespace Mule
 		CommandAllocator,
 		RenderTarget,
 		DepthAttachment,
-		Sampler
+		Sampler,
+		DynamicVertexBuffer,
+		DynamicIndexBuffer
 	};
 }

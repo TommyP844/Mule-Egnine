@@ -7,6 +7,8 @@
 #include "Graphics/API/ComputePipeline.h"
 #include "Graphics/API/StagingBuffer.h"
 #include "Graphics/API/ShaderResourceGroup.h"
+#include "Graphics/API/DynamicIndexBuffer.h"
+#include "Graphics/API/DynamicVertexBuffer.h"
 
 namespace Mule
 {
@@ -68,6 +70,11 @@ namespace Mule
 		virtual void Execute(uint32_t workGroupsX, uint32_t workGroupsY, uint32_t workGroupsZ) = 0;
 
 		// Mesh
+		virtual void BindVertexBuffer(WeakRef<VertexBuffer> vertexBuffer) = 0;
+		virtual void BindVertexBuffer(WeakRef<DynamicVertexBuffer> vertexBuffer) = 0;
+		virtual void BindIndexBuffer(WeakRef<IndexBuffer> indexBuffer) = 0;
+		virtual void BindIndexBuffer(WeakRef<DynamicIndexBuffer> indexBuffer) = 0;
+		virtual void DrawIndexed(uint32_t indexCount, uint32_t indexOffset, uint32_t instanceCount = 1) = 0;
 		virtual void BindMesh(WeakRef<Mesh> mesh) = 0;
 		virtual void DrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount = 1) = 0;
 		virtual void BindAndDrawMesh(WeakRef<Mesh> mesh, uint32_t instanceCount) = 0;

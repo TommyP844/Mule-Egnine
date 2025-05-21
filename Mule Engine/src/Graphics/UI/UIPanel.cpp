@@ -33,7 +33,7 @@ namespace Mule
 
 		for (auto element : mElements)
 		{
-			element->Render(commandList, windowRect);
+			//element->Render(commandList, windowRect);
 		}
 	}
 }

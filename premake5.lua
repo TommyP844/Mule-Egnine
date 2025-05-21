@@ -21,7 +21,10 @@ workspace "Mule"
         dir .. "/Submodules/ImGuizmo",
         "%VULKAN_SDK%/Include",
         dir .. "/Submodules/Coral/Coral.Native/Include",
-        dir .. "/Submodules/JoltPhysics"
+        dir .. "/Submodules/JoltPhysics",
+        dir .. "/Submodules/msdf-atlas-gen",
+        dir .. "/Submodules/msdf-atlas-gen/msdfgen/include",
+        dir .. "/Submodules/msdf-atlas-gen/msdfgen",
     }
 
     debugLibs = {
@@ -88,6 +91,7 @@ workspace "Mule"
         include "Submodules/ImGuizmo/imguizmo.lua"
         include "Submodules/Coral/Coral.Managed/premake5.lua"
         include "Submodules/Coral/Coral.Native/premake5.lua"
+        include "Submodules/msdf-atlas-gen/premake5.lua"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"

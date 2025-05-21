@@ -16,6 +16,8 @@
 #include "Graphics/API/CommandBuffer.h"
 #include "Graphics/API/TimelineSemaphore.h"
 #include "Graphics/API/Texture2DArray.h"
+#include "Graphics/API/DynamicVertexBuffer.h"
+#include "Graphics/API/DynamicIndexBuffer.h"
 
 #include <vector>
 #include <variant>
@@ -95,7 +97,9 @@ namespace Mule
 			Ref<CommandAllocator>,
 			Ref<CommandBuffer>,
 			Ref<TimelineSemaphore>,
-			Ref<Sampler>
+			Ref<Sampler>,
+			Ref<DynamicVertexBuffer>,
+			Ref<DynamicIndexBuffer>
 			>;
 
 		struct InFlightResource

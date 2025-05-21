@@ -26,7 +26,8 @@ project "Mule Engine"
         "spdlog",
         "yaml-cpp",
         libs,
-        "Coral.Native"
+        "Coral.Native",
+        "msdf-atlas-gen"
     }
 
     files {

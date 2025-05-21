@@ -6,6 +6,18 @@ namespace Mule
 	{
 	}
 
+	ResourceHandle ResourceBuilder::CreateDynamicVertexBuffer(const std::string& name, const VertexLayout& layout, uint32_t vertexCount)
+	{
+		mDynamicVertexBufferBlueprints[name] = DynamicVertexBufferBlueprint{ layout, vertexCount };
+		return ResourceHandle(name, ResourceType::DynamicVertexBuffer);
+	}
+
+	ResourceHandle ResourceBuilder::CreateDynamicIndexBuffer(const std::string& name, IndexType index, uint32_t vertexCount)
+	{
+		mDynamicIndexBufferBlueprints[name] = DynamicIndexBufferBlueprint{ index, vertexCount };
+		return ResourceHandle(name, ResourceType::DynamicIndexBuffer);
+	}
+
 	ResourceHandle ResourceBuilder::CreateSampler(const std::string& name, const SamplerDescription& description)
 	{
 		mSamplerBlueprints[name] = SamplerBlueprint{ description };
