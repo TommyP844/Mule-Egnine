@@ -2,12 +2,14 @@
 
 namespace Mule
 {
-	UIElement::UIElement(const std::string& name, UIElementType elementType)
+	UIElement::UIElement(const std::string& name, UIElementType elementType, UIHandle handle)
 		:
 		mName(name),
-		mType(elementType)
+		mType(elementType),
+		mHandle(handle),
+		mIsDirty(true)
 	{
-		mStyle = nullptr;
+		mStyle = UIStyle::GetDefault();
 	}
 
 	void UIElement::AddChild(const Ref<UIElement>& child)

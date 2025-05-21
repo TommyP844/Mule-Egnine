@@ -3,9 +3,11 @@
 #include "UIPanel.h"
 #include "Element/UIElement.h"
 
+#include <unordered_map>
+
 namespace Mule
 {
-	class UIScene : Asset<AssetType::UIScene>
+	class UIScene : public Asset<AssetType::UIScene>
 	{
 	public:
 		UIScene(const std::string name = "UI Scene");
@@ -24,9 +26,15 @@ namespace Mule
 		void Update(const UIRect& windowRect);
 		WeakRef<UIElement> HitTest(float screenX, float screenY);
 
+		WeakRef<UIElement> GetElement(UIHandle handle) const;
+
+		void SetThemeHandle(AssetHandle themeHandle) { mThemeHandle = themeHandle; }
+		AssetHandle GetThemeHandle() const { return mThemeHandle; }
+
 	private:
 		std::vector<Ref<UIElement>> mElements;
 		std::vector<Ref<UIPanel>> mPanels;
-
+		std::unordered_map<UIHandle, Ref<UIElement>> mElementHandles;
+		AssetHandle mThemeHandle;
 	};
 }

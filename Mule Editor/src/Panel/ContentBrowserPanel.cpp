@@ -6,6 +6,8 @@
 #include "Event/EditMaterialEvent.h"
 #include "Event/ViewTextureEvent.h"
 #include "Event/EditUIStyleEvent.h"
+#include "Event/EditUISceneEvent.h"
+#include "Event/EditUIThemeEvent.h"
 
 #include <imgui.h>
 #include <IconsFontAwesome6.h>
@@ -339,6 +341,18 @@ bool ContentBrowserPanel::FilePopContent(const DisplayFile& file)
 			case Mule::AssetType::UIStyle:
 			{
 				Ref<EditUIStyleEvent> event = MakeRef<EditUIStyleEvent>(file.Handle);
+				mEditorContext->PushEvent(event);
+			}
+			break;
+			case Mule::AssetType::UIScene:
+			{
+				Ref<EditUISceneEvent> event = MakeRef<EditUISceneEvent>(file.Handle);
+				mEditorContext->PushEvent(event);
+			}
+			break;
+			case Mule::AssetType::UITheme:
+			{
+				Ref<EditUIThemeEvent> event = MakeRef<EditUIThemeEvent>(file.Handle);
 				mEditorContext->PushEvent(event);
 			}
 			break;

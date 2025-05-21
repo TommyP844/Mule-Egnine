@@ -14,6 +14,7 @@ namespace Mule
 		ForegroundColor,
 		Padding,
 		Font,
+		FontSize,
 
 		STYLE_KEY_MAX
 	};
@@ -36,21 +37,22 @@ namespace Mule
 	{
 		switch (key)
 		{
-		case Mule::UIStyleKey::BorderRadius:
+		case UIStyleKey::FontSize:
+		case UIStyleKey::BorderRadius:
 			return UIStyleKeyDataType::Float;
 
-		case Mule::UIStyleKey::Padding:
+		case UIStyleKey::Padding:
 			return UIStyleKeyDataType::Vec2;
 
-		case Mule::UIStyleKey::BorderColor:
-		case Mule::UIStyleKey::BackgroundColor:
-		case Mule::UIStyleKey::ForegroundColor:
+		case UIStyleKey::BorderColor:
+		case UIStyleKey::BackgroundColor:
+		case UIStyleKey::ForegroundColor:
 			return UIStyleKeyDataType::Color;
 
-		case Mule::UIStyleKey::Font:
+		case UIStyleKey::Font:
 			return UIStyleKeyDataType::AssetHandle;
 
-		case Mule::UIStyleKey::STYLE_KEY_MAX:
+		case UIStyleKey::STYLE_KEY_MAX:
 		default:
 			assert(false && "Invalid UIStyleKey");
 			break;
@@ -67,6 +69,7 @@ namespace Mule
 		case Mule::UIStyleKey::ForegroundColor:	return "Foreground Color";
 		case Mule::UIStyleKey::Padding:			return "Padding";
 		case Mule::UIStyleKey::Font:			return "Font";
+		case Mule::UIStyleKey::FontSize:			return "FontSize";
 		case Mule::UIStyleKey::STYLE_KEY_MAX:
 		default:
 			assert(false && "Invalid UIStyleKey");
@@ -82,6 +85,7 @@ namespace Mule
 		else if (name == "Foreground Color") return Mule::UIStyleKey::ForegroundColor;
 		else if (name == "Padding") return Mule::UIStyleKey::Padding;
 		else if (name == "Font") return Mule::UIStyleKey::Font;
+		else if (name == "FontSize") return Mule::UIStyleKey::FontSize;
 
 		return UIStyleKey::STYLE_KEY_MAX;
 	}

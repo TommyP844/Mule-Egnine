@@ -18,6 +18,8 @@
 #include "Asset/Serializer/ScriptSerializer.h"
 #include "Asset/Serializer/UIStyleSerializer.h"
 #include "Asset/Serializer/FontSerializer.h"
+#include "Asset/Serializer/ThemeSerializer.h"
+#include "Asset/Serializer/UISceneSerializer.h"
 
 // Generators
 #include "Asset/Generator/EnvironmentMapGenerator.h"
@@ -55,6 +57,8 @@ namespace Mule
 		assetManager->RegisterLoader<MaterialSerializer>(mServiceManager);
 		assetManager->RegisterLoader<UIStyleSerializer>(mServiceManager);
 		assetManager->RegisterLoader<FontSerializer>(mServiceManager);
+		assetManager->RegisterLoader<ThemeSerializer>(mServiceManager);
+		assetManager->RegisterLoader<UISceneSerializer>(mServiceManager);
 
 		assetManager->RegisterLoadCallback<Material>([](WeakRef<Material> material) {
 			Renderer::Get().AddMaterial(material);
@@ -239,6 +243,11 @@ namespace Mule
 		jobSystem->PushJob([assetManager]() {
 			auto texture = assetManager->Load<Texture2D>("../Assets/Textures/brdf_lut.png");
 			assetManager->UpdateHandle(texture->Handle(), MULE_BDRF_LUT_TEXTURE_HANDLE);
+			});
+
+		jobSystem->PushJob([assetManager]() {
+			auto font = assetManager->Load<UIFont>("../Assets/Fonts/Roboto/Roboto-Black.ttf");
+			assetManager->UpdateHandle(font->Handle(), MULE_DEFAULT_FONT_HANDLE);
 			});
 	}
 }

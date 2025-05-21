@@ -3,11 +3,12 @@
 namespace Mule
 {
 
-    UIFont::UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, AssetHandle atlasHandle)
+    UIFont::UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, float lineHeight, AssetHandle atlasHandle)
         :
         mFontAtlas(atlas),
         mGlyphs(glyphs),
-        mAtlasHandle(atlasHandle)
+        mAtlasHandle(atlasHandle),
+        mLineHeight(lineHeight)
     {
     }
 

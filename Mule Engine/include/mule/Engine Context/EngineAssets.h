@@ -40,3 +40,8 @@
 #define MULE_CAPSULE_MESH_HANDLE 2007
 
 #pragma endregion
+
+// Default UI Handles range from 3000 - 3099
+#pragma region UI
+
+#define MULE_DEFAULT_FONT_HANDLE 3000

@@ -4,7 +4,9 @@ enum class EditorEventType
 {
 	EditMaterial,
 	ViewTexture,
-	EditUIStyle
+	EditUIStyle,
+	EditUIScene,
+	EditUITheme
 };
 
 class IEditorEvent

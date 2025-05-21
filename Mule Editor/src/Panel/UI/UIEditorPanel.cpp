@@ -2,6 +2,8 @@
 
 #include "ImGuiExtension.h"
 
+#include "Event/EditUISceneEvent.h"
+
 UIEditorPanel::UIEditorPanel()
 	:
 	IPanel("UI Editor")
@@ -13,7 +15,6 @@ void UIEditorPanel::OnAttach()
 	auto assetManager = mEngineContext->GetAssetManager();
 	mBlackTexture = assetManager->Get<Mule::Texture2D>(MULE_BLACK_TEXTURE_HANDLE);
 
-	mUIScene = MakeRef<Mule::UIScene>();
 	mUIEditorCamera = MakeRef<Mule::Camera>();
 	auto registry = Mule::Renderer::Get().CreateResourceRegistry();
 	mUIEditorCamera->SetResourceRegistry(registry);
@@ -38,6 +39,33 @@ void UIEditorPanel::OnUIRender(float dt)
 
 		if (ImGui::BeginChild("Elements", { elementPanelWidth, 0.f }, ImGuiChildFlags_Border))
 		{
+			auto assetManager = mEngineContext->GetAssetManager();
+			ImGui::SeparatorText("UI Scene");
+
+			ImGui::BeginDisabled(!mIsModified);
+			if (ImGui::Button("Save"))
+			{
+				assetManager->Save<Mule::UIScene>(mUIScene->Handle());
+				mIsModified = false;
+			}
+			ImGui::EndDisabled();
+
+			auto theme = assetManager->Get<Mule::UITheme>(mUIScene->GetThemeHandle());
+			std::string themeName = "Default";
+			if (theme)
+				themeName = theme->Name();
+
+			ImGui::Text("Theme: %s", themeName.c_str());
+			ImGuiExtension::DragDropFile ddf;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+			{
+				if (ddf.AssetType == Mule::AssetType::UITheme)
+				{
+					mUIScene->SetThemeHandle(ddf.AssetHandle);
+				}
+			}
+
+
 			ImGui::SeparatorText("Elements");
 			DisplayElementPanel();
 		}
@@ -65,10 +93,29 @@ void UIEditorPanel::OnUIRender(float dt)
 
 void UIEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 {
+	switch (event->GetEventType())
+	{
+	case EditorEventType::EditUIScene:
+	{
+		Ref<EditUISceneEvent> sceneEvent = event;
+		auto assetManager = mEngineContext->GetAssetManager();
+		mUIScene = assetManager->Get<Mule::UIScene>(sceneEvent->GetUISceneHandle());
+		mSelectedElement = nullptr;
+		mIsModified = false;
+	}
+	break;
+	}
 }
 
 void UIEditorPanel::OnEngineEvent(Ref<Mule::Event> event)
 {
+}
+
+void UIEditorPanel::SetUIScene(WeakRef<Mule::UIScene> scene)
+{
+	mUIScene = scene;
+	mSelectedElement = nullptr;
+	mIsModified = false;
 }
 
 void UIEditorPanel::DisplayElementPanel()
@@ -146,6 +193,8 @@ void UIEditorPanel::DisplayCanvasPanel()
 			assert("Invalid UIElementType");
 			break;
 		}
+
+		mIsModified = true;
 	}
 
 	if (mSelectedElement)
@@ -167,6 +216,8 @@ void UIEditorPanel::DisplayCanvasPanel()
 			transform.SetTop(Mule::UIMeasurement(relativeTop, Mule::UIUnitType::Pixels));
 			transform.SetWidth(Mule::UIMeasurement(relativeWidth, Mule::UIUnitType::Pixels));
 			transform.SetHeight(Mule::UIMeasurement(relativeHeight, Mule::UIUnitType::Pixels));
+
+			mIsModified = true;
 		}
 	}
 
@@ -193,7 +244,10 @@ void UIEditorPanel::DisplayInspectorPanel()
 	ImGui::Text("Name");
 	ImGui::SameLine();
 	if (ImGui::InputText("##name", namebuffer, 256))
+	{
 		mSelectedElement->SetName(namebuffer);
+		mIsModified = true;
+	}
 
 	Mule::UITransform& transform = mSelectedElement->GetTransform();
 	WeakRef<Mule::UIStyle> style = mSelectedElement->GetStyle();
@@ -235,6 +289,7 @@ void UIEditorPanel::DisplayInspectorPanel()
 		if (s)
 		{
 			mSelectedElement->SetStyle(s);
+			mIsModified = true;
 		}
 	}
 
@@ -245,22 +300,15 @@ void UIEditorPanel::DisplayInspectorPanel()
 		WeakRef<Mule::UIText> textElem = mSelectedElement;
 		static char buffer[1024] = { 0 };
 		std::string text = textElem->GetText();
+		memset(buffer, 0, 1024);
 		memcpy(buffer, text.data(), text.size());
 		ImGui::Text("Text");
 		ImGui::SameLine();
-		if (ImGui::InputText("##Text", buffer, 1024))
+		if (ImGui::InputTextMultiline("##Text", buffer, 1024, {250, 150}))
 		{
 			textElem->SetText(buffer);
-		}
-
-		ImGui::Text("Font Size");
-		ImGui::SameLine();
-		float fontSize = textElem->GetFontSize();
-		if (ImGui::DragFloat("##FontSize", &fontSize, 1.f, 2.f, 10000.f, "%.1f", ImGuiSliderFlags_AlwaysClamp))
-		{
-			textElem->SetFontSize(fontSize);
-		}
-		
+			mIsModified = true;
+		}		
 	}
 		break;
 	}
@@ -271,9 +319,12 @@ void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)
 	float width = ImGui::GetContentRegionAvail().x;
 	std::string name = Mule::GetUIElementNameFromType(type);
 	ImGui::PushItemWidth(width);
-	ImGui::Selectable(name.c_str());
-	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_UI_ELEMENT_TYPE, type, [name]() {
-		ImGui::Text(name.c_str());
+	ImGui::Selectable(name.c_str()); 
+	bool& mod = mIsModified;
+	ImGuiExtension::DragDropSource(ImGuiExtension::PAYLOAD_TYPE_UI_ELEMENT_TYPE, type, [&]() {
+		static std::string n = name; // We need to copy this or it will go out ous scope since using reference capture lamda
+		ImGui::Text(n.c_str());
+		mIsModified = true;
 		});
 }
 
@@ -283,7 +334,10 @@ void UIEditorPanel::DisplayUIMeasurement(const char* label, Mule::UIMeasurement&
 	ImGui::Text(label);
 	ImGui::SameLine(75.f);
 	ImGui::PushItemWidth(100.f);
-	ImGui::DragFloat("##MeasurementValue", &measurement.Value, 1.f, 0.f, 0.f, "%.1f");
+	if (ImGui::DragFloat("##MeasurementValue", &measurement.Value, 1.f, 0.f, 0.f, "%.1f"))
+	{
+		mIsModified = true;
+	}
 	ImGui::SameLine();
 
 	const char* options[] = {
@@ -303,7 +357,10 @@ void UIEditorPanel::DisplayUIMeasurement(const char* label, Mule::UIMeasurement&
 			bool selected = (type == currentType);
 
 			if (ImGui::Selectable(options[i], selected))
+			{
 				measurement.SetUnitType(static_cast<Mule::UIUnitType>(i), parentSize);
+				mIsModified = true;
+			}
 		}
 		ImGui::EndCombo();
 	}

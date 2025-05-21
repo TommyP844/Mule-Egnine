@@ -18,6 +18,7 @@
 #include "Panel/UI/UIEditorPanel.h"
 #include "Panel/UI/UIElementEditorPanel.h"
 #include "Panel/UI/UIStyleEditorPanel.h"
+#include "Panel/UI/UIThemeEditor.h"
 
 
 // STD
@@ -54,6 +55,7 @@ private:
 	UIEditorPanel mUIEditorPanel;
 	UIElementEditorPanel mUIElementEditorPanel;
 	UIStyleEditorPanel mUIStyleEditorPanel;
+	UIThemeEditor mUIThemeEditorPanel;
 
 
 	bool mShowDemoWindow = false;
@@ -63,5 +65,7 @@ private:
 	bool mNewMaterialPopup = false;
 	bool mNewScriptPopup = false;
 	bool mNewUIStylePopup = false;
+	bool mNewUIThemePopup = false;
+	bool mNewUIScenePopup = false;
 
 };

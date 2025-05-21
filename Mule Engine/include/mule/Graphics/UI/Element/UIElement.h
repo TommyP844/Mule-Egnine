@@ -2,9 +2,11 @@
 
 #include "WeakRef.h"
 
+#include "Graphics/UI/UIHandle.h"
 #include "Graphics/Renderer/CommandList.h"
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIStyle.h"
+#include "Graphics/UI/UITheme.h"
 
 #include "Asset/AssetManager.h"
 
@@ -33,10 +35,17 @@ namespace Mule
 		}
 	}
 
+	constexpr UIElementType GetUIElementTypeFromString(const std::string& type)
+	{
+		if (type == "UIText") return UIElementType::UIText;
+		if (type == "UIButton") return UIElementType::UIButton;
+		return UIElementType::MAX_UI_ELEMENT_TYPE;
+	}
+
 	class UIElement
 	{
 	public:
-		UIElement(const std::string& name, UIElementType elementType);
+		UIElement(const std::string& name, UIElementType elementType, UIHandle handle = UIHandle::Create());
 
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }
@@ -49,13 +58,14 @@ namespace Mule
 
 		// Per Frame
 		void Update(const UIRect& parentRect);
-		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager) = 0;
+		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 
 		// Syle
 		void SetStyle(WeakRef<UIStyle> style) { mStyle = style; }
 		WeakRef<UIStyle> GetStyle() const { return mStyle; }
 
 		// Transform
+		void SetTransform(const UITransform& transform) { mTransform = transform; mIsDirty = true; }
 		const UITransform& GetTransform() const { return mTransform; }
 		UITransform& GetTransform() { return mTransform; }
 		
@@ -64,9 +74,19 @@ namespace Mule
 		bool IsVisible() const { return mVisible; }
 		const UIRect& GetScreenRect() const { return mScreenRect; }
 
-		WeakRef<UIElement> HitTest(float screenX, float screenY);
+		void SetHandle(UIHandle handle) { mHandle = handle; }
+		UIHandle GetHandle() const { return mHandle; }
 
+		WeakRef<UIElement> HitTest(float screenX, float screenY);
 		UIElementType GetType() const { return mType; }
+
+		template<typename T>
+		WeakRef<T> As()
+		{
+			static_assert(std::is_base_of<UIElement, T>::value, "T must derive from UIElement");
+			return WeakRef<T>((T*)this);
+		}
+
 	protected:
 		WeakRef<UIStyle> mStyle;
 		bool mVisible;
@@ -79,6 +99,7 @@ namespace Mule
 		bool mIsDirty;
 		UIElementType mType;
 
+		UIHandle mHandle;
 		UIRect mScreenRect;
 		WeakRef<UIElement> mParent;
 		std::vector<Ref<UIElement>> mChildren;

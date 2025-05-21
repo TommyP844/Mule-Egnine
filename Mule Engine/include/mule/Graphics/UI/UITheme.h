@@ -1,38 +1,31 @@
 #pragma once
 
-#include "WeakRef.h"
 #include "Ref.h"
 #include "Asset/Asset.h"
-
-#include "UITheme.h"
-
 #include "UIStyleKey.h"
-
-#include <array>
-#include <variant>
 
 #include <glm/glm.hpp>
 
+#include <variant>
+#include <array>
+
 namespace Mule
 {
-	class UIStyle : public Asset<AssetType::UIStyle>
+	class UITheme : public Asset<AssetType::UITheme>
 	{
 	public:
-		UIStyle(const std::string& name);
-		~UIStyle() = default;
+		UITheme(const std::string& name);
+		~UITheme();
+
+		static Ref<UITheme> GetDefault();
 
 		template<typename T>
 		void SetValue(UIStyleKey key, const T& value);
 
 		template<typename T>
-		T GetValue(UIStyleKey key, WeakRef<UITheme> theme) const;
-
-		bool HasValue(UIStyleKey key) const;
-
-		static Ref<UIStyle> GetDefault();
+		T GetValue(UIStyleKey key) const;
 
 	private:
-
 		using UIStyleValue = std::variant<
 			bool,
 			int,
@@ -43,8 +36,7 @@ namespace Mule
 		>;
 
 		std::array<UIStyleValue, static_cast<size_t>(UIStyleKey::STYLE_KEY_MAX)> mValues;
-		std::array<bool, static_cast<size_t>(UIStyleKey::STYLE_KEY_MAX)> mValid;
 	};
 }
 
-#include "UIStyle.inl"
+#include "UITheme.inl"

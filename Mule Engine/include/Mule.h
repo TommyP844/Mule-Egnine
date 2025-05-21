@@ -75,6 +75,7 @@
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIScene.h"
 #include "Graphics/UI/UIFont.h"
+#include "Graphics/UI/UITheme.h"
 
 // UI Elements
 #include "Graphics/UI/Element/UIText.h"

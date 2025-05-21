@@ -26,8 +26,17 @@ namespace Mule
 
 		std::optional<UIMeasurement>& GetLeft() { return mLeft; }
 		std::optional<UIMeasurement>& GetTop() { return mTop; }
+		std::optional<UIMeasurement>& GetBottom() { return mBottom; }
+		std::optional<UIMeasurement>& GetRight() { return mRight; }
 		std::optional<UIMeasurement>& GetWidth() { return mWidth; }
 		std::optional<UIMeasurement>& GetHeight() { return mHeight; }
+
+		const std::optional<UIMeasurement>& GetLeft() const { return mLeft; }
+		const std::optional<UIMeasurement>& GetTop() const { return mTop; }
+		const std::optional<UIMeasurement>& GetBottom() const { return mBottom; }
+		const std::optional<UIMeasurement>& GetRight() const { return mRight; }
+		const std::optional<UIMeasurement>& GetWidth() const { return mWidth; }
+		const std::optional<UIMeasurement>& GetHeight() const { return mHeight; }
 
 	private:
 		std::optional<UIMeasurement> mLeft;

@@ -69,16 +69,16 @@ namespace Mule
 
 			switch (dataType)
 			{
-			case Mule::UIStyleKeyDataType::Bool:		node[keyName] = asset->GetValue<bool>(key); break;
-			case Mule::UIStyleKeyDataType::Integer:		node[keyName] = asset->GetValue<int>(key); break;
-			case Mule::UIStyleKeyDataType::Float:		node[keyName] = asset->GetValue<float>(key); break;
-			case Mule::UIStyleKeyDataType::Vec2:		node[keyName] = asset->GetValue<glm::vec2>(key); break;
-			case Mule::UIStyleKeyDataType::Vec3:		node[keyName] = asset->GetValue<glm::vec3>(key); break;
-			case Mule::UIStyleKeyDataType::Color:		node[keyName] = asset->GetValue<glm::vec4>(key); break;
-			case Mule::UIStyleKeyDataType::Ivec2:		node[keyName] = asset->GetValue<glm::ivec2>(key); break;
-			case Mule::UIStyleKeyDataType::IVec3:		node[keyName] = asset->GetValue<glm::ivec3>(key); break;
-			case Mule::UIStyleKeyDataType::Ivec4:		node[keyName] = asset->GetValue<glm::ivec4>(key); break;
-			case Mule::UIStyleKeyDataType::AssetHandle:	node[keyName] = asset->GetValue<AssetHandle>(key); break;
+			case Mule::UIStyleKeyDataType::Bool:		node[keyName] = asset->GetValue<bool>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Integer:		node[keyName] = asset->GetValue<int>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Float:		node[keyName] = asset->GetValue<float>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Vec2:		node[keyName] = asset->GetValue<glm::vec2>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Vec3:		node[keyName] = asset->GetValue<glm::vec3>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Color:		node[keyName] = asset->GetValue<glm::vec4>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Ivec2:		node[keyName] = asset->GetValue<glm::ivec2>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::IVec3:		node[keyName] = asset->GetValue<glm::ivec3>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::Ivec4:		node[keyName] = asset->GetValue<glm::ivec4>(key, nullptr); break;
+			case Mule::UIStyleKeyDataType::AssetHandle:	node[keyName] = asset->GetValue<AssetHandle>(key, nullptr); break;
 			}
 		}
 

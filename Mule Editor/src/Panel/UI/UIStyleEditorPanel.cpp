@@ -46,6 +46,9 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 
 		ImGui::SeparatorText("Style Values");
 
+		auto assetManager = mEngineContext->GetAssetManager();
+		auto theme = Mule::UITheme::GetDefault();
+
 		for (uint32_t i = 0; i < static_cast<uint32_t>(Mule::UIStyleKey::STYLE_KEY_MAX); i++)
 		{
 			Mule::UIStyleKey key = static_cast<Mule::UIStyleKey>(i);
@@ -86,7 +89,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				{
 				case Mule::UIStyleKeyDataType::Bool:
 				{
-					auto val = mStyle->GetValue<bool>(key);
+					auto val = mStyle->GetValue<bool>(key, theme);
 					if (ImGui::Checkbox(hiddenStyleName.c_str(), &val))
 					{
 						mStyle->SetValue(key, val);
@@ -96,7 +99,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Integer:
 				{
-					auto val = mStyle->GetValue<int>(key);
+					auto val = mStyle->GetValue<int>(key, theme);
 					if (ImGui::DragInt(hiddenStyleName.c_str(), &val))
 					{
 						mStyle->SetValue(key, val);
@@ -106,7 +109,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Float:
 				{
-					auto val = mStyle->GetValue<float>(key);
+					auto val = mStyle->GetValue<float>(key, theme);
 					if (ImGui::DragFloat(hiddenStyleName.c_str(), &val))
 					{
 						mStyle->SetValue(key, val);
@@ -116,7 +119,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Vec2:
 				{
-					auto val = mStyle->GetValue<glm::vec2>(key);
+					auto val = mStyle->GetValue<glm::vec2>(key, theme);
 					if (ImGui::DragFloat2(hiddenStyleName.c_str(), &val[0]))
 					{
 						mStyle->SetValue(key, val);
@@ -126,7 +129,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Vec3:
 				{
-					auto val = mStyle->GetValue<glm::vec3>(key);
+					auto val = mStyle->GetValue<glm::vec3>(key, theme);
 					if (ImGui::DragFloat3(hiddenStyleName.c_str(), &val[0]))
 					{
 						mStyle->SetValue(key, val);
@@ -136,7 +139,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Color:
 				{
-					auto val = mStyle->GetValue<glm::vec4>(key);
+					auto val = mStyle->GetValue<glm::vec4>(key, theme);
 					if (ImGui::ColorEdit4(hiddenStyleName.c_str(), &val[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
 					{
 						mStyle->SetValue(key, val);
@@ -145,7 +148,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Ivec2:
 				{
-					auto val = mStyle->GetValue<glm::ivec2>(key);
+					auto val = mStyle->GetValue<glm::ivec2>(key, theme);
 					if (ImGui::DragInt2(hiddenStyleName.c_str(), &val[0]))
 					{
 						mStyle->SetValue(key, val);
@@ -155,7 +158,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::IVec3:
 				{
-					auto val = mStyle->GetValue<glm::ivec3>(key);
+					auto val = mStyle->GetValue<glm::ivec3>(key, theme);
 					if (ImGui::DragInt3(hiddenStyleName.c_str(), &val[0]))
 					{
 						mStyle->SetValue(key, val);
@@ -165,7 +168,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				}
 				case Mule::UIStyleKeyDataType::Ivec4:
 				{
-					auto val = mStyle->GetValue<glm::ivec4>(key);
+					auto val = mStyle->GetValue<glm::ivec4>(key, theme);
 					if (ImGui::DragInt4(hiddenStyleName.c_str(), &val[0]))
 					{
 						mStyle->SetValue(key, val);
@@ -176,7 +179,7 @@ void UIStyleEditorPanel::OnUIRender(float dt)
 				case Mule::UIStyleKeyDataType::AssetHandle:
 				{
 					auto assetManager = mEngineContext->GetAssetManager();
-					auto fontHandle = mStyle->GetValue<Mule::AssetHandle>(key);
+					auto fontHandle = mStyle->GetValue<Mule::AssetHandle>(key, theme);
 					auto font = assetManager->Get<Mule::UIFont>(fontHandle);
 
 					std::string fontName = "(Null)";

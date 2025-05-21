@@ -11,13 +11,10 @@ namespace Mule
 
 		void SetText(const std::string& text);
 		const std::string& GetText() const { return mText; }
-		void SetFontSize(float size) { mFontSize = size; }
-		float GetFontSize() const { return mFontSize; }
 
-		void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager) override;
+		void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) override;
 
 	private:
 		std::string mText;
-		float mFontSize;
 	};
 }

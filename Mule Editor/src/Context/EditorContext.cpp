@@ -79,6 +79,18 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 				assetManager->Load<Mule::UIFont>(filePath);
 				});
 		}
+		else if (extension == ".mtheme")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->Load<Mule::UITheme>(filePath);
+				});
+		}
+		else if (extension == ".muis")
+		{
+			jobSystem->PushJob([assetManager, filePath]() {
+				assetManager->Load<Mule::UIScene>(filePath);
+				});
+		}
 	}
 }
 

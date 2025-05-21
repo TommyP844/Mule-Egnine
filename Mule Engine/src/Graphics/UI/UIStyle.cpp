@@ -10,19 +10,17 @@ namespace Mule
 			mValid[i] = false;
 	}
 
-	void UIStyle::SetParentStyle(Ref<UIStyle> parentStyle)
-	{
-		assert(parentStyle.Get() != this && "Parent Style cannot be equal to itself");
-		mParentStyle = parentStyle;
-	}
-
-	Ref<UIStyle> UIStyle::GetParentStyle() const
-	{
-		return mParentStyle;
-	}
-
 	bool UIStyle::HasValue(UIStyleKey key) const
 	{
 		return mValid[static_cast<uint64_t>(key)];
+	}
+
+	Ref<UIStyle> UIStyle::GetDefault()
+	{
+		static Ref<UIStyle> style = nullptr;
+		if (!style)
+			style = MakeRef<UIStyle>("Default");
+
+		return style;
 	}
 }

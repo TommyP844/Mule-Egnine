@@ -21,15 +21,16 @@ namespace Mule
 	class UIFont : public Asset<AssetType::UIFont>
 	{
 	public:
-		UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, AssetHandle atlasHandle);
+		UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, float lineHeight, AssetHandle atlasHandle);
 		~UIFont();
 
 		const UIFontGlyph& GetGlyph(uint32_t codepoint) const;
 		AssetHandle GetAtlasHandle() const { return mAtlasHandle; }
-
+		float GetLineHeight() const { return mLineHeight; }
 	private:
 		Ref<Texture2D> mFontAtlas;
 		std::unordered_map<uint32_t, UIFontGlyph> mGlyphs;
 		AssetHandle mAtlasHandle;
+		float mLineHeight;
 	};
 }

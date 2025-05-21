@@ -12,11 +12,14 @@ namespace Mule
 
 	void UIScene::Render(CommandList& commandList, const UIRect& screenRect, WeakRef<AssetManager> assetManager)
 	{
+		auto theme = assetManager->Get<UITheme>(mThemeHandle);
+		theme = theme ? theme : UITheme::GetDefault();
+
 		for (auto panel : mPanels)
 			panel->Render(commandList, screenRect);
 
 		for (auto element : mElements)
-			element->Render(commandList, screenRect, assetManager);
+			element->Render(commandList, screenRect, assetManager, theme);
 	}
 
 	void UIScene::AddUIElement(Ref<UIElement> element)
@@ -28,6 +31,7 @@ namespace Mule
 			return;
 		}
 		mElements.push_back(element);
+		mElementHandles[element->GetHandle()] = element;
 	}
 
 	void UIScene::RemoveUIElement(Ref<UIElement> element)
@@ -39,6 +43,7 @@ namespace Mule
 			return;
 		}
 		mElements.erase(iter);
+		mElementHandles.erase(element->GetHandle());
 	}
 
 	void UIScene::AddUIPanel(Ref<UIPanel> panel)
@@ -78,6 +83,13 @@ namespace Mule
 				return found;
 		}
 
+		return nullptr;
+	}
+	WeakRef<UIElement> UIScene::GetElement(UIHandle handle) const
+	{
+		auto iter = mElementHandles.find(handle);
+		if (iter != mElementHandles.end())
+			return iter->second;
 		return nullptr;
 	}
 }

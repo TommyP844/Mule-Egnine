@@ -1,17 +1,9 @@
 #pragma once
 
-#include <type_traits> // uint32_t
+#include "UIUnitType.h"
 
 namespace Mule
 {
-	enum class UIUnitType : uint32_t
-	{
-		Pixels,
-		Percentage,
-
-		MAX_UNIT_TYPE
-	};
-
 	struct UIMeasurement
 	{
 		UIMeasurement() = default;
@@ -48,6 +40,12 @@ namespace Mule
 				break;
 			}
 
+			mUnitType = type;
+		}
+
+		void Init(float value, UIUnitType type)
+		{
+			Value = value;
 			mUnitType = type;
 		}
 

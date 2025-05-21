@@ -15,12 +15,15 @@ public:
 
 	void OnEngineEvent(Ref<Mule::Event> event) override;
 
+	void SetUIScene(WeakRef<Mule::UIScene> scene);
+
 private:
 	WeakRef<Mule::Texture2D> mBlackTexture;
-	Ref<Mule::UIScene> mUIScene;
+	WeakRef<Mule::UIScene> mUIScene;
 	Ref<Mule::Camera> mUIEditorCamera;
 	ImVec2 mViewportSize;
 	WeakRef<Mule::UIElement> mSelectedElement;
+	bool mIsModified;
 
 	void DisplayElementPanel();
 	void DisplayCanvasPanel();

@@ -119,7 +119,7 @@ namespace Mule
                 auto assetManager = mServiceManager->Get<AssetManager>();
                 assetManager->Insert(atlasTexture);
 
-                uiFont = MakeRef<UIFont>(atlasTexture, uiGlyphs, atlasTexture->Handle());
+                uiFont = MakeRef<UIFont>(atlasTexture, uiGlyphs, fontGeometry.getMetrics().lineHeight, atlasTexture->Handle());
                 uiFont->SetFilePath(filepath);
 
                 msdfgen::destroyFont(font);
