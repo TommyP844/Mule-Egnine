@@ -21,9 +21,10 @@ private:
 	WeakRef<Mule::Texture2D> mBlackTexture;
 	WeakRef<Mule::UIScene> mUIScene;
 	Ref<Mule::Camera> mUIEditorCamera;
-	ImVec2 mViewportSize;
 	WeakRef<Mule::UIElement> mSelectedElement;
 	bool mIsModified;
+	ImVec2 mViewportSize;
+	ImVec2 mFrameCursorPos;
 
 	void DisplayElementPanel();
 	void DisplayCanvasPanel();
@@ -33,5 +34,5 @@ private:
 	void DisplayUIMeasurement(const char* label, Mule::UIMeasurement& measurement, float parentSize);
 
 	void SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec2& mousePos, float threshold = 5.f);
-	bool ModifySelected(ImVec2& pos, ImVec2& size);
+	bool ModifySelected();
 };

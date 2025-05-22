@@ -133,14 +133,13 @@ void UIEditorPanel::DisplayCanvasPanel()
 	ImTextureID texId = mBlackTexture->GetImGuiID();
 
 	ImVec2 region = ImGui::GetContentRegionAvail();
-	ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+	mFrameCursorPos = ImGui::GetCursorScreenPos();
 
 	Mule::UIRect windowRect(0, 0, region.x, region.y);
 	
 	auto assetManager = mEngineContext->GetAssetManager();
 	
 	mUIScene->Update(windowRect, assetManager);
-
 
 	if (region.x != mViewportSize.x || region.y != mViewportSize.y)
 	{
@@ -174,7 +173,7 @@ void UIEditorPanel::DisplayCanvasPanel()
 	Mule::UIElementType type;
 	if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_UI_ELEMENT_TYPE, type))
 	{
-		ImVec2 mousePos = ImGui::GetMousePos() - cursorPos;
+		ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
 		switch (type)
 		{
 		case Mule::UIElementType::UIText:
@@ -212,34 +211,8 @@ void UIEditorPanel::DisplayCanvasPanel()
 		mIsModified = true;
 	}
 
-
-	ImVec2 mousePos = ImGui::GetMousePos() - cursorPos;
-
-	bool dragging = false;
-	if (mSelectedElement)
-	{
-		Mule::UIRect uiRect = mSelectedElement->GetScreenRect();
-		ImVec2 pos = ImVec2(uiRect.X, uiRect.Y) + cursorPos;
-		ImVec2 size = { uiRect.Width, uiRect.Height };
-
-		if (ModifySelected(pos, size))
-		{
-			float relativeLeft = pos.x - cursorPos.x;
-			float relativeTop = pos.y - cursorPos.y;
-			float relativeWidth = size.x;
-			float relativeHeight = size.y;
-
-			Mule::UITransform& transform = mSelectedElement->GetTransform();
-
-			mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
-			mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
-			mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
-			mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
-			mIsModified = true;
-			dragging = true;
-		}
-	}
-
+	ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
+	bool dragging = ModifySelected();
 
 	if (mousePos.x > 0.f && mousePos.x < region.x
 		&& mousePos.y > 0.f && mousePos.y < region.y && !dragging)
@@ -269,55 +242,6 @@ void UIEditorPanel::DisplayCanvasPanel()
 		ImGui::EndPopup();
 	}
 
-	if (dragging)
-	{
-		// draw other bod lines
-		for (auto element : mUIScene->GetUIElements())
-		{
-			if (element == mSelectedElement)
-				continue;
-
-			auto rect = element->GetScreenRect();
-
-			const float threshold = 15.f;
-			bool left = false;
-			bool right = false;
-			bool top = false;
-			bool bottom = false;
-
-			if (glm::abs(mousePos.x - rect.X) < threshold)
-				left = true;
-
-			if (glm::abs(mousePos.x - rect.X - rect.Width) < threshold)
-				right = true;
-
-			if (glm::abs(mousePos.y - rect.Y) < threshold)
-				top = true;
-
-			if (glm::abs(mousePos.y - rect.Y - rect.Height) < threshold)
-				bottom = true;
-
-			if (left)
-			{
-				ImGuiExtension::DrawDashedLine({ cursorPos.x + rect.X, cursorPos.y }, { cursorPos.x + rect.X, cursorPos.y + region.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-			}
-
-			if (right)
-			{
-				ImGuiExtension::DrawDashedLine({ cursorPos.x + rect.X + rect.Width, cursorPos.y }, { cursorPos.x + rect.X + rect.Width, cursorPos.y + region.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-			}
-
-			if (top)
-			{
-				ImGuiExtension::DrawDashedLine({ cursorPos.x, cursorPos.y + rect.Y }, { cursorPos.x + region.x, cursorPos.y + rect.Y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-			}
-				
-			if (bottom)
-			{
-				ImGuiExtension::DrawDashedLine({ cursorPos.x, cursorPos.y + rect.Y + rect.Height }, { cursorPos.x + region.x, cursorPos.y + rect.Y + rect.Height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-			}
-		}
-	}
 }
 
 void UIEditorPanel::DisplayInspectorPanel()
@@ -490,11 +414,17 @@ void UIEditorPanel::SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec
 	}
 }
 
-bool UIEditorPanel::ModifySelected(ImVec2& pos, ImVec2& size)
+bool UIEditorPanel::ModifySelected()
 {
+	if (!mSelectedElement)
+		return false;
+
 	ImGui::PushID("ModifyElement");
 
 	ImVec2 cursorPos = ImGui::GetCursorPos();
+	Mule::UIRect uiRect = mSelectedElement->GetScreenRect();
+	ImVec2 pos = ImVec2(uiRect.X, uiRect.Y) + mFrameCursorPos;
+	ImVec2 size = { uiRect.Width, uiRect.Height };
 
 	const ImVec2 minSize = ImVec2(10.f, 10.f);
 
@@ -683,6 +613,73 @@ bool UIEditorPanel::ModifySelected(ImVec2& pos, ImVec2& size)
 	}
 
 	ImGui::PopID();
+
+	if (changed)
+	{
+		float relativeLeft = pos.x - mFrameCursorPos.x;
+		float relativeTop = pos.y - mFrameCursorPos.y;
+		float relativeWidth = size.x;
+		float relativeHeight = size.y;
+
+		Mule::UITransform& transform = mSelectedElement->GetTransform();
+
+		mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
+
+		mIsModified = true;
+
+		// Local Lines
+		{
+			ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
+			// draw other bod lines
+			for (auto element : mUIScene->GetUIElements())
+			{
+				if (element == mSelectedElement)
+					continue;
+
+				const Mule::UIRect& rect = element->GetScreenRect();
+				const float threshold = 15.f;
+				bool left = false;
+				bool right = false;
+				bool top = false;
+				bool bottom = false;
+
+				if (glm::abs(mousePos.x - rect.X) < threshold)
+					left = true;
+
+				if (glm::abs(mousePos.x - rect.X - rect.Width) < threshold)
+					right = true;
+
+				if (glm::abs(mousePos.y - rect.Y) < threshold)
+					top = true;
+
+				if (glm::abs(mousePos.y - rect.Y - rect.Height) < threshold)
+					bottom = true;
+
+				if (left)
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+				}
+
+				if (right)
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+				}
+
+				if (top)
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+				}
+
+				if (bottom)
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y + rect.Height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y + rect.Height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+				}
+			}
+		}
+	}
 
 	return changed;
 }
