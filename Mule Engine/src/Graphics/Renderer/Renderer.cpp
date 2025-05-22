@@ -504,40 +504,68 @@ namespace Mule
 
 				for (auto command : commandList.GetCommands())
 				{
-					if (command.GetType() == RenderCommandType::DrawScreenSpaceQuad)
+					if (command.GetType() == RenderCommandType::DrawRect)
 					{
-						const auto& drawQuadCommand = command.GetCommand<DrawScreenSpaceQuadCommand>();
+						const auto& drawRect = command.GetCommand<DrawRectCommand>();
 						
-						glm::vec2 min = drawQuadCommand.Position;
-						glm::vec2 max = drawQuadCommand.Position + drawQuadCommand.Size;
+						glm::vec2 min = drawRect.Position;
+						glm::vec2 max = drawRect.Position + drawRect.Size;
 						glm::vec2 uvMin = glm::vec2(0.f);
 						glm::vec2 uvMax = glm::vec2(0.f);
-						glm::vec4 color = drawQuadCommand.Color;
+						glm::vec4 color = drawRect.Color;
 						uint32_t textureIndex = mWhiteTex->GetGlobalIndex();
 
-						// Build the four corners of the quad
-						UIVertex topLeft = { {min.x, min.y}, {uvMin.x, uvMin.y}, color, textureIndex, 0 };
-						UIVertex topRight = { {max.x, min.y}, {uvMax.x, uvMin.y}, color, textureIndex, 0 };
-						UIVertex bottomLeft = { {min.x, max.y}, {uvMin.x, uvMax.y}, color, textureIndex, 0 };
-						UIVertex bottomRight = { {max.x, max.y}, {uvMax.x, uvMax.y}, color, textureIndex, 0 };
+						// Border
+						if(drawRect.HasBorder)
+						{
+							float border = drawRect.BorderThickness;
+							UIVertex topLeft = { {min.x - border, min.y - border}, {uvMin.x - border, uvMin.y - border}, drawRect.BorderColor, textureIndex, 0 };
+							UIVertex topRight = { {max.x + border, min.y - border}, {uvMax.x + border, uvMin.y - border}, drawRect.BorderColor, textureIndex, 0 };
+							UIVertex bottomLeft = { {min.x - border, max.y + border}, {uvMin.x - border, uvMax.y + border}, drawRect.BorderColor, textureIndex, 0 };
+							UIVertex bottomRight = { {max.x + border, max.y + border}, {uvMax.x + border, uvMax.y + border}, drawRect.BorderColor, textureIndex, 0 };
 
-						uiVertices.push_back(topLeft);
-						uiVertices.push_back(bottomLeft);
-						uiVertices.push_back(topRight);
-						uiVertices.push_back(bottomRight);
+							uint32_t offset = uiVertices.size();
 
-						uint32_t offset = indices.size();
-						indices.push_back(offset + 0);
-						indices.push_back(offset + 1);
-						indices.push_back(offset + 2);
+							uiVertices.push_back(topLeft);
+							uiVertices.push_back(bottomLeft);
+							uiVertices.push_back(topRight);
+							uiVertices.push_back(bottomRight);
 
-						indices.push_back(offset + 2);
-						indices.push_back(offset + 1);
-						indices.push_back(offset + 3);
+							indices.push_back(offset + 0);
+							indices.push_back(offset + 1);
+							indices.push_back(offset + 2);
+
+							indices.push_back(offset + 2);
+							indices.push_back(offset + 1);
+							indices.push_back(offset + 3);
+						}
+
+						// Quad
+						{
+							UIVertex topLeft = { {min.x, min.y}, {uvMin.x, uvMin.y}, color, textureIndex, 0 };
+							UIVertex topRight = { {max.x, min.y}, {uvMax.x, uvMin.y}, color, textureIndex, 0 };
+							UIVertex bottomLeft = { {min.x, max.y}, {uvMin.x, uvMax.y}, color, textureIndex, 0 };
+							UIVertex bottomRight = { {max.x, max.y}, {uvMax.x, uvMax.y}, color, textureIndex, 0 };
+
+							uint32_t offset = uiVertices.size();
+
+							uiVertices.push_back(topLeft);
+							uiVertices.push_back(bottomLeft);
+							uiVertices.push_back(topRight);
+							uiVertices.push_back(bottomRight);
+
+							indices.push_back(offset + 0);
+							indices.push_back(offset + 1);
+							indices.push_back(offset + 2);
+
+							indices.push_back(offset + 2);
+							indices.push_back(offset + 1);
+							indices.push_back(offset + 3);
+						}
 					}
-					else if (command.GetType() == RenderCommandType::DrawUICharacter)
+					else if (command.GetType() == RenderCommandType::DrawCharacter)
 					{
-						const auto drawCharCommand = command.GetCommand<DrawUICharacterCommand>();
+						const auto drawCharCommand = command.GetCommand<DrawCharacterCommand>();
 
 						const glm::vec2& min = drawCharCommand.Min;
 						const glm::vec2& max = drawCharCommand.Max;

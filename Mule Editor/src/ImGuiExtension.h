@@ -291,6 +291,21 @@ namespace ImGuiExtension
 		return ret;
 	}
 
+	static void DrawDashedLine(ImVec2 p1, ImVec2 p2, float dashLength = 4.f, float gapLength = 2.f, ImU32 lineColor = IM_COL32(255, 255, 255, 255))
+	{
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		ImVec2 dir = p2 - p1;
+		float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+		ImVec2 norm = dir / len;
+		float current = 0.f;
+		while (current < len) {
+			float start = current;
+			float end = std::min(current + dashLength, len);
+			drawList->AddLine(p1 + norm * start, p1 + norm * end, lineColor);
+			current += dashLength + gapLength;
+		}
+	}
+
 	static bool DragBox(const std::string& name, ImVec2& pos, ImVec2& size, const ImVec2& minSize = ImVec2(10.0f, 10.0f))
 	{
 		ImGui::PushID(name.c_str());
@@ -313,19 +328,6 @@ namespace ImGuiExtension
 		// Helpers
 		auto drawQuad = [&](ImVec2 center, ImU32 color) {
 			drawList->AddRectFilled(center - halfHandle, center + halfHandle, color);
-			};
-
-		auto drawDashedLine = [&](ImVec2 p1, ImVec2 p2) {
-			ImVec2 dir = p2 - p1;
-			float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-			ImVec2 norm = dir / len;
-			float current = 0.f;
-			while (current < len) {
-				float start = current;
-				float end = std::min(current + dashLength, len);
-				drawList->AddLine(p1 + norm * start, p1 + norm * end, lineColor);
-				current += dashLength + gapLength;
-			}
 			};
 
 		// Handle definitions
@@ -356,10 +358,10 @@ namespace ImGuiExtension
 		static int activeHandle = -1;
 
 		// Draw dashed border last
-		drawDashedLine(min, ImVec2(max.x, min.y));
-		drawDashedLine(ImVec2(max.x, min.y), max);
-		drawDashedLine(max, ImVec2(min.x, max.y));
-		drawDashedLine(ImVec2(min.x, max.y), min);
+		DrawDashedLine(min, ImVec2(max.x, min.y));
+		DrawDashedLine(ImVec2(max.x, min.y), max);
+		DrawDashedLine(max, ImVec2(min.x, max.y));
+		DrawDashedLine(ImVec2(min.x, max.y), min);
 
 		struct LineArea {
 			ImVec2 p1, p2;
@@ -496,6 +498,7 @@ namespace ImGuiExtension
 
 		return changed;
 	}
+
 
 #pragma endregion
 }

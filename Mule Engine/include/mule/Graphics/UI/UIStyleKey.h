@@ -8,13 +8,15 @@ namespace Mule
 {
 	enum class UIStyleKey : uint64_t
 	{
-		BorderColor,
 		BorderRadius,
 		BackgroundColor,
 		ForegroundColor,
 		Padding,
 		Font,
 		FontSize,
+		HasBorder,
+		BorderColor,
+		BorderWidth,
 
 		STYLE_KEY_MAX
 	};
@@ -37,6 +39,10 @@ namespace Mule
 	{
 		switch (key)
 		{
+		case UIStyleKey::HasBorder:
+			return UIStyleKeyDataType::Bool;
+
+		case UIStyleKey::BorderWidth:
 		case UIStyleKey::FontSize:
 		case UIStyleKey::BorderRadius:
 			return UIStyleKeyDataType::Float;
@@ -63,13 +69,15 @@ namespace Mule
 	{
 		switch (key)
 		{
-		case Mule::UIStyleKey::BorderColor:		return "Border Color";
-		case Mule::UIStyleKey::BorderRadius:	return "Border Radius";
-		case Mule::UIStyleKey::BackgroundColor:	return "Background Color";
-		case Mule::UIStyleKey::ForegroundColor:	return "Foreground Color";
-		case Mule::UIStyleKey::Padding:			return "Padding";
-		case Mule::UIStyleKey::Font:			return "Font";
-		case Mule::UIStyleKey::FontSize:			return "FontSize";
+		case UIStyleKey::BorderColor:		return "Border Color";
+		case UIStyleKey::BorderRadius:		return "Border Radius";
+		case UIStyleKey::BackgroundColor:	return "Background Color";
+		case UIStyleKey::ForegroundColor:	return "Foreground Color";
+		case UIStyleKey::Padding:			return "Padding";
+		case UIStyleKey::Font:				return "Font";
+		case UIStyleKey::FontSize:			return "Font Size";
+		case UIStyleKey::HasBorder:			return "Has Border";
+		case UIStyleKey::BorderWidth:		return "Border Width";
 		case Mule::UIStyleKey::STYLE_KEY_MAX:
 		default:
 			assert(false && "Invalid UIStyleKey");
@@ -79,13 +87,15 @@ namespace Mule
 
 	constexpr UIStyleKey GetUIStyleKeyFromName(const std::string& name)
 	{
-		if (name == "Border Color") return Mule::UIStyleKey::BorderColor;
-		else if (name == "Border Radius") return Mule::UIStyleKey::BorderRadius;
-		else if (name == "Background Color") return Mule::UIStyleKey::BackgroundColor;
-		else if (name == "Foreground Color") return Mule::UIStyleKey::ForegroundColor;
-		else if (name == "Padding") return Mule::UIStyleKey::Padding;
-		else if (name == "Font") return Mule::UIStyleKey::Font;
-		else if (name == "FontSize") return Mule::UIStyleKey::FontSize;
+		if (name == "Border Color")				return UIStyleKey::BorderColor;
+		else if (name == "Border Radius")		return UIStyleKey::BorderRadius;
+		else if (name == "Background Color")	return UIStyleKey::BackgroundColor;
+		else if (name == "Foreground Color")	return UIStyleKey::ForegroundColor;
+		else if (name == "Padding")				return UIStyleKey::Padding;
+		else if (name == "Font")				return UIStyleKey::Font;
+		else if (name == "Font Size")			return UIStyleKey::FontSize;
+		else if (name == "Has Border")			return UIStyleKey::HasBorder;
+		else if (name == "Border Width")		return UIStyleKey::BorderWidth;
 
 		return UIStyleKey::STYLE_KEY_MAX;
 	}

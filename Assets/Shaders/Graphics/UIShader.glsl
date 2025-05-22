@@ -71,7 +71,7 @@ void main()
         FragColor = vec4(_color.rgb, alpha * _color.a);
     } else {
         // Regular image rendering
-        FragColor = vec4(vec3(texColor * _color), 1);
+        FragColor = vec4(vec3(texColor * _color), _color.a);
     }
 }
 

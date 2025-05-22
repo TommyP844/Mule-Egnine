@@ -4,6 +4,7 @@
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/Element/UIElement.h"
 #include "Graphics/UI/Element/UIText.h"
+#include "Graphics/UI/Element/UIButton.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -55,34 +56,34 @@ namespace YAML
         {
             Node node;
             
-            if (transform.GetLeft())
+            if (transform.Left)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetLeft();
+                const Mule::UIMeasurement& measurement = *transform.Left;
                 node["Left"] = measurement;
             }
-            if (transform.GetTop())
+            if (transform.Top)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetTop();
+                const Mule::UIMeasurement& measurement = *transform.Top;
                 node["Top"] = measurement;
             }
-            if (transform.GetBottom())
+            if (transform.Bottom)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetBottom();
+                const Mule::UIMeasurement& measurement = *transform.Bottom;
                 node["Bottom"] = measurement;
             }
-            if (transform.GetRight())
+            if (transform.Right)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetRight();
+                const Mule::UIMeasurement& measurement = *transform.Right;
                 node["Right"] = measurement;
             }
-            if (transform.GetWidth())
+            if (transform.Width)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetWidth();
+                const Mule::UIMeasurement& measurement = *transform.Width;
                 node["Width"] = measurement;
             }
-            if (transform.GetHeight())
+            if (transform.Height)
             {
-                const Mule::UIMeasurement& measurement = *transform.GetHeight();
+                const Mule::UIMeasurement& measurement = *transform.Height;
                 node["Height"] = measurement;
             }
 
@@ -93,27 +94,27 @@ namespace YAML
         {
             if (node["Left"])
             {
-                transform.SetLeft(node["Left"].as<Mule::UIMeasurement>());
+                transform.Left = node["Left"].as<Mule::UIMeasurement>();
             }
             if (node["Top"])
             {
-                transform.SetTop(node["Top"].as<Mule::UIMeasurement>());
+                transform.Top = node["Top"].as<Mule::UIMeasurement>();
             }
             if (node["Bottom"])
             {
-                transform.SetBottom(node["Bottom"].as<Mule::UIMeasurement>());
+                transform.Bottom = node["Bottom"].as<Mule::UIMeasurement>();
             }
             if (node["Right"])
             {
-                transform.SetRight(node["Right"].as<Mule::UIMeasurement>());
+                transform.Right = node["Right"].as<Mule::UIMeasurement>();
             }
             if (node["Width"])
             {
-                transform.SetWidth(node["Width"].as<Mule::UIMeasurement>());
+                transform.Width = node["Width"].as<Mule::UIMeasurement>();
             }
             if (node["Height"])
             {
-                transform.SetHeight(node["Height"].as<Mule::UIMeasurement>());
+                transform.Height = node["Height"].as<Mule::UIMeasurement>();
             }
 
             return true;
@@ -173,6 +174,36 @@ namespace YAML
 
             std::string text = node["Text"].as<std::string>();
             element->SetText(text);
+
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Ref<Mule::UIButton>>
+    {
+        static Node encode(const Ref<Mule::UIButton>& element)
+        {
+            Node node;
+
+            Ref<Mule::UIElement> baseElement = element;
+            node = baseElement;
+            
+            node["Text"] = element->GetTextElement();
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Ref<Mule::UIButton>& element)
+        {
+            std::string name = node["Name"].as<std::string>();
+            element = MakeRef<Mule::UIButton>(name);
+
+            Ref<Mule::UIElement> baseElem = element;
+            convert<Ref<Mule::UIElement>>::decode(node, baseElem);
+
+            Ref<Mule::UIText> textElem = node["Text"].as<Ref<Mule::UIText>>();
+
 
             return true;
         }

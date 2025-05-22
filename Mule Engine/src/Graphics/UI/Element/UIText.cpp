@@ -2,25 +2,26 @@
 
 #include "Graphics/Renderer/RenderCommand.h"
 #include "Graphics/UI/UIFont.h"
+#include "Core/StringUtil.h"
 
 namespace Mule
 {
 	UIText::UIText(const std::string& name)
 		:
 		UIElement(name, UIElementType::UIText),
-		mText("")
+		mText(""),
+		mAutoSize(false)
 	{
 	}
 
 	void UIText::SetText(const std::string& text)
 	{
 		mText = text;
-		
 	}
 
 	void UIText::Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme)
 	{
-		if (!mVisible || !mStyle)
+		if (!mVisible)
 			return;
 
 		AssetHandle fontHandle = mStyle->GetValue<AssetHandle>(UIStyleKey::Font, theme);
@@ -33,25 +34,20 @@ namespace Mule
 		float fontSize = mStyle->GetValue<float>(UIStyleKey::FontSize, theme);
 		glm::vec4 fontColor = mStyle->GetValue<glm::vec4>(UIStyleKey::ForegroundColor, theme);
 		glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor, theme);
+		bool hasBorder = mStyle->GetValue<bool>(UIStyleKey::HasBorder, theme);
+		glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BorderColor, theme);
+		float borderWidth = mStyle->GetValue<float>(UIStyleKey::BorderWidth, theme);
+		glm::vec2 padding = mStyle->GetValue<glm::vec2>(UIStyleKey::Padding, theme);
 
 		const UIRect& rect = GetScreenRect();
 
-		DrawScreenSpaceQuadCommand command(
-			{ rect.X, rect.Y },				// Screen space position	(pixels)
-			{ rect.Width, rect.Height },	// Size						(pixels)
-			backgroundColor,				// Background Color
-			false,							// Has Border				(TODO: get from Style)
-			glm::vec4(0.f),					// Border Color				(TODO: Get from Style)
-			0.f								// Border Thickness			(TODO: Get from Style)
-			);
-		commandList.AddCommand(command);
+		glm::vec2 cursor = padding + glm::vec2(rect.X, rect.Y + font->GetLineHeight() * fontSize);
 
-		glm::vec2 cursor = { rect.X, rect.Y + font->GetLineHeight() * fontSize };
 		for (auto c : mText)
 		{			
 			if (c == '\n')
 			{
-				cursor.x = rect.X;
+				cursor.x = rect.X + padding.x;
 				cursor.y += font->GetLineHeight() * fontSize;
 				continue;
 			}
@@ -60,9 +56,9 @@ namespace Mule
 			glm::vec2 min = cursor + glyph.PlaneMin * fontSize;
 			glm::vec2 max = cursor + glyph.PlaneMax * fontSize;
 
-			if (max.x > rect.X + rect.Width)
+			if (max.x > rect.X + rect.Width - padding.x)
 			{
-				cursor.x = rect.X;
+				cursor.x = rect.X + padding.x;
 				cursor.y += font->GetLineHeight() * fontSize;
 
 				min = cursor + glyph.PlaneMin * fontSize;
@@ -71,15 +67,11 @@ namespace Mule
 
 			if (c == ' ')
 			{
-				if (rect.X == cursor.x && cursor.y > rect.Y + font->GetLineHeight() * fontSize)
-				{}
-				else
-					cursor.x += glyph.Advance * fontSize;
-
+				cursor.x += glyph.Advance * fontSize;
 				continue;
 			}
 
-			DrawUICharacterCommand command(
+			DrawCharacterCommand command(
 				min,
 				max,
 				glyph.MinUV,
@@ -93,10 +85,29 @@ namespace Mule
 
 			cursor.x += glyph.Advance * fontSize;
 		}
+	}
 
-		for (auto child : GetChildren())
+	// TODO: needs option to decide whether the user can set the size, or the text sets the size
+	void UIText::Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme)
+	{
+		if (mAutoSize)
 		{
-			child->Render(commandList, rect, assetManager, theme);
+			auto fontHandle = mStyle->GetValue<AssetHandle>(UIStyleKey::Font, theme);
+			auto font = assetManager->Get<UIFont>(fontHandle); // Font should always exist, default loaded at engine startup
+
+			glm::vec2 textSize = font->CalculateSize(mText, mStyle, theme, parentRect.Width);
+
+			mTransform.Width = UIMeasurement(textSize.x, UIUnitType::Pixels);
+			mTransform.Height = UIMeasurement(textSize.y, UIUnitType::Pixels);
 		}
+		
+		UpdateRect(parentRect);
+		
+	}
+
+	void UIText::SetAutoSize(bool autoSize)
+	{
+		mAutoSize = true;
+		mIsDirty = true;
 	}
 }

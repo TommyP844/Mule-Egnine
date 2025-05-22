@@ -7,6 +7,7 @@
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIStyle.h"
 #include "Graphics/UI/UITheme.h"
+#include "Graphics/UI/UIAnchor.h"
 
 #include "Asset/AssetManager.h"
 
@@ -47,20 +48,17 @@ namespace Mule
 	public:
 		UIElement(const std::string& name, UIElementType elementType, UIHandle handle = UIHandle::Create());
 
+		void AddAnchor(WeakRef<UIElement> targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
+		void RemoveAnchor(UIAnchorAxis selfAxis);
+
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }
 
-		// Hierarchy
-		WeakRef<UIElement> GetParent() const { return mParent; }		
-		void AddChild(const Ref<UIElement>& child);
-		void RemoveChild(const Ref<UIElement>& child);
-		const std::vector<Ref<UIElement>> GetChildren() const { return mChildren; }
-
 		// Per Frame
-		void Update(const UIRect& parentRect);
+		virtual void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 
-		// Syle
+		// Style
 		void SetStyle(WeakRef<UIStyle> style) { mStyle = style; }
 		WeakRef<UIStyle> GetStyle() const { return mStyle; }
 
@@ -68,10 +66,17 @@ namespace Mule
 		void SetTransform(const UITransform& transform) { mTransform = transform; mIsDirty = true; }
 		const UITransform& GetTransform() const { return mTransform; }
 		UITransform& GetTransform() { return mTransform; }
-		
+		void SetLeft(float value, UIUnitType type);
+		void SetRight(float value, UIUnitType type);
+		void SetTop(float value, UIUnitType type);
+		void SetBottom(float value, UIUnitType type);
+		void SetWidth(float value, UIUnitType type);
+		void SetHeight(float value, UIUnitType type);
+
 		// Helpers
 		void SetVisible(bool visible) { mVisible = visible; }
 		bool IsVisible() const { return mVisible; }
+		void UpdateRect(const UIRect& parentRect);
 		const UIRect& GetScreenRect() const { return mScreenRect; }
 
 		void SetHandle(UIHandle handle) { mHandle = handle; }
@@ -92,16 +97,16 @@ namespace Mule
 		bool mVisible;
 		UITransform mTransform;
 
-		void MarkDirty() { mIsDirty = true; }
+		bool mIsDirty;
+		UIRect mScreenRect;
+
+		// Self Axis -> Anchor
+		std::unordered_map<UIAnchorAxis, UIAnchor> mAnchors;
 
 	private:
 		std::string mName;
-		bool mIsDirty;
 		UIElementType mType;
 
 		UIHandle mHandle;
-		UIRect mScreenRect;
-		WeakRef<UIElement> mParent;
-		std::vector<Ref<UIElement>> mChildren;
 	};
 }

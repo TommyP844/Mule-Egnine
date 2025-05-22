@@ -15,7 +15,7 @@ namespace Mule
 		void Render(CommandList& commandList, const UIRect& screenRect, WeakRef<AssetManager> assetManager);
 
 		void AddUIElement(Ref<UIElement> element);
-		void RemoveUIElement(Ref<UIElement> element);
+		void RemoveUIElement(WeakRef<UIElement> element);
 
 		void AddUIPanel(Ref<UIPanel> panel);
 		void RemoveUIPanel(Ref<UIPanel> panel);
@@ -23,7 +23,7 @@ namespace Mule
 		const std::vector<Ref<UIElement>>& GetUIElements() const { return mElements; }
 		const std::vector<Ref<UIPanel>>& GetUIPanels() const { return mPanels; }
 
-		void Update(const UIRect& windowRect);
+		void Update(const UIRect& windowRect, WeakRef<AssetManager> assetManager);
 		WeakRef<UIElement> HitTest(float screenX, float screenY);
 
 		WeakRef<UIElement> GetElement(UIHandle handle) const;

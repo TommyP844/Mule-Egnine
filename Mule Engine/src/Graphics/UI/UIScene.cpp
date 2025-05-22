@@ -34,7 +34,7 @@ namespace Mule
 		mElementHandles[element->GetHandle()] = element;
 	}
 
-	void UIScene::RemoveUIElement(Ref<UIElement> element)
+	void UIScene::RemoveUIElement(WeakRef<UIElement> element)
 	{
 		auto iter = std::find(mElements.begin(), mElements.end(), element);
 		if (iter == mElements.end())
@@ -68,10 +68,13 @@ namespace Mule
 		mPanels.push_back(panel);
 	}
 
-	void UIScene::Update(const UIRect& windowRect)
+	void UIScene::Update(const UIRect& windowRect, WeakRef<AssetManager> assetManager)
 	{
+		auto theme = assetManager->Get<UITheme>(mThemeHandle);
+		theme = theme ? theme : UITheme::GetDefault();
+
 		for (auto element : mElements)
-			element->Update(windowRect);
+			element->Update(windowRect, assetManager, theme);
 	}
 
 	WeakRef<UIElement> UIScene::HitTest(float screenX, float screenY)

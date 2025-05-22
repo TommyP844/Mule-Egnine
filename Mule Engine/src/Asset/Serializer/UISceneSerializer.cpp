@@ -6,6 +6,7 @@
 
 // Elements
 #include "Graphics/UI/Element/UIText.h"
+#include "Graphics/UI/Element/UIButton.h"
 
 #include <fstream>
 #include <spdlog/spdlog.h>
@@ -40,7 +41,11 @@ namespace Mule
 			case UIElementType::UIText:
 				element = child.as<Ref<UIText>>();
 				break;
+			case UIElementType::UIButton:
+				element = child.as<Ref<UIButton>>();
+				break;
 			}
+
 
 			scene->AddUIElement(element);
 		}
@@ -84,15 +89,12 @@ namespace Mule
 		case UIElementType::UIText:
 			elementNode = Ref<UIText>(element);
 			break;
+		case UIElementType::UIButton:
+			elementNode = Ref<UIButton>(element);
+			break;
 		default:
 			assert(false && "Invalid UIElementType");
 			break;
-		}		
-
-		for (auto child : element->GetChildren())
-		{
-			YAML::Node childNode = SerializeElement(child);
-			elementNode["Children"].push_back(childNode);
 		}
 
 		return elementNode;
