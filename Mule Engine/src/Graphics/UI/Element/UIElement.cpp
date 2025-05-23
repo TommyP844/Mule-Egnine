@@ -70,8 +70,6 @@ namespace Mule
 
 	void UIElement::UpdateRect(const UIRect& parentRect)
 	{
-		std::optional<float> top, left, bottom, right, width, height;
-
 		std::vector<UIAnchorAxis> anchorsToRemove;
 		for (const auto& [selfAxis, anchor] : mAnchors)
 		{
@@ -107,26 +105,26 @@ namespace Mule
 			switch (selfAxis)
 			{
 			case UIAnchorAxis::Top:
-				top = getVertical(anchor.Target, targetRect);
+				mTransform.Top = UIMeasurement(getVertical(anchor.Target, targetRect), UIUnitType::Pixels);
 				break;
 			case UIAnchorAxis::Bottom:
-				bottom = parentRect.Height - getVertical(anchor.Target, targetRect);
+				mTransform.Bottom = UIMeasurement(parentRect.Height - getVertical(anchor.Target, targetRect), UIUnitType::Pixels);
 				break;
 			case UIAnchorAxis::Left:
-				left = getHorizontal(anchor.Target, targetRect);
+				mTransform.Left = UIMeasurement(getHorizontal(anchor.Target, targetRect), UIUnitType::Pixels);
 				break;
 			case UIAnchorAxis::Right:
-				right = parentRect.Width - getHorizontal(anchor.Target, targetRect);
+				mTransform.Right = UIMeasurement(parentRect.Width - getHorizontal(anchor.Target, targetRect), UIUnitType::Pixels);
 				break;
 			case UIAnchorAxis::CenterHorizontal: {
 				float targetX = getHorizontal(anchor.Target, targetRect);
 				if (mTransform.Width) {
 					float w = mTransform.Width->Resolve(parentRect.Width);
-					left = targetX - w / 2.0f;
-					width = w;
+					mTransform.Left = UIMeasurement(targetX - w / 2.0f, UIUnitType::Pixels);
+					mTransform.Width = UIMeasurement(w, UIUnitType::Pixels);
 				}
 				else {
-					left = targetX;
+					mTransform.Left = UIMeasurement(targetX, UIUnitType::Pixels);
 				}
 				break;
 			}
@@ -134,11 +132,11 @@ namespace Mule
 				float targetY = getVertical(anchor.Target, targetRect);
 				if (mTransform.Height) {
 					float h = mTransform.Height->Resolve(parentRect.Height);
-					top = targetY - h / 2.0f;
-					height = h;
+					mTransform.Top = UIMeasurement(targetY - h / 2.0f, UIUnitType::Pixels);
+					mTransform.Height = UIMeasurement(h, UIUnitType::Pixels);
 				}
 				else {
-					top = targetY;
+					mTransform.Top = UIMeasurement(targetY, UIUnitType::Pixels);
 				}
 				break;
 			}
@@ -150,65 +148,63 @@ namespace Mule
 		for (auto axis : anchorsToRemove)
 			mAnchors.erase(axis);
 
-		// TODO: need to check here first and see if we have enough information to generate a rect
-		// otherwise we end up with a double offset
+		float l = 0.f, r = 0.f, t = 0.f, b = 0.f, w = 0.f, h = 0.f;
+		l = mTransform.Left ? mTransform.Left->Resolve(parentRect.Width) : 0.f;
+		r = mTransform.Right ? mTransform.Right->Resolve(parentRect.Width) : 0.f;
+		t = mTransform.Top ? mTransform.Top->Resolve(parentRect.Height) : 0.f;
+		b = mTransform.Bottom ? mTransform.Bottom->Resolve(parentRect.Height) : 0.f;
+		w = mTransform.Width ? mTransform.Width->Resolve(parentRect.Width) : 0.f;
+		h = mTransform.Height ? mTransform.Height->Resolve(parentRect.Height) : 0.f;
 
-		if (!top) top = mTransform.Top ? std::make_optional<float>(mTransform.Top->Resolve(parentRect.Height)) : std::nullopt;
-		if (!bottom) bottom = mTransform.Bottom ? std::make_optional<float>(mTransform.Bottom->Resolve(parentRect.Height)) : std::nullopt;
-		if (!left) left = mTransform.Left ? std::make_optional<float>(mTransform.Left->Resolve(parentRect.Width)) : std::nullopt;
-		if (!right) right = mTransform.Right ? std::make_optional<float>(mTransform.Right->Resolve(parentRect.Width)) : std::nullopt;
-		if (!width && (!left || !right)) width = mTransform.Width ? std::make_optional<float>(mTransform.Width->Resolve(parentRect.Width)) : std::nullopt;
-		if (!height && (!top || !bottom)) height = mTransform.Height ? std::make_optional<float>(mTransform.Height->Resolve(parentRect.Height)) : std::nullopt;
-
-		float x = 0.f, y = 0.f, w = 0.f, h = 0.f;
+		float rx = 0.f, ry = 0.f, rw = 0.f, rh = 0.f;
 
 		// Horizontal Layout
-		if (left && width)
+		if (mTransform.Left && mTransform.Width)
 		{
-			x = *left; // Needs parent.x if no anchors present
-			w = *width;
+			rx = l; // Needs parent.x if no anchors present
+			rw = w;
 		}
-		else if (left && right)
+		else if (mTransform.Left && mTransform.Right)
 		{
-			x = parentRect.X + *left;
-			w = parentRect.Width - *left - *right;
+			rx = parentRect.X + l;
+			rw = parentRect.Width - l - r;
 		}
-		else if (width && right)
+		else if (mTransform.Width && mTransform.Right)
 		{
-			w = *width;
-			x = parentRect.X + parentRect.Width - *right - w;
+			rw = w;
+			rx = parentRect.X + parentRect.Width - r - rw;
 		}
 		else
 		{
-			x = parentRect.X;
-			w = parentRect.Width;
+			rx = parentRect.X;
+			rw = parentRect.Width;
 		}
 
 		// Vertical layout
-		if (top && height)
+		if (mTransform.Top && mTransform.Height)
 		{
-			y = *top;
-			h = *height;
+			ry = t;
+			rh = h;
 		}
-		else if (top && bottom)
+		else if (mTransform.Top && mTransform.Bottom)
 		{
-			y = parentRect.Y + *top;
-			h = parentRect.Height - *top - *bottom;
+			ry = parentRect.Y + t;
+			rh = parentRect.Height - t - t;
 		}
-		else if (height && bottom)
+		else if (mTransform.Height && mTransform.Bottom)
 		{
-			h = *height;
-			y = parentRect.Y + parentRect.Height - *bottom - h;
+			rh = h;
+			ry = parentRect.Y + parentRect.Height - b - rh;
 		}
 		else
 		{
-			y = parentRect.Y;
-			h = parentRect.Height;
+			ry = parentRect.Y;
+			rh = parentRect.Height;
 		}
 
 		mScreenRect = {
-			x, y,
-			w, h
+			rx, ry,
+			rw, rh
 		};
 	}
 
