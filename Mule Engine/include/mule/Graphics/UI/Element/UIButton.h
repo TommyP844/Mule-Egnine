@@ -17,6 +17,8 @@ namespace Mule
 		Ref<UIText> GetTextElement() const { return mButtonText; }
 		void SetTextElement(Ref<UIText> textElem) { mButtonText = textElem; }
 
+		void SetScene(WeakRef<UIScene> scene) override;
+
 	private:
 		Ref<UIText> mButtonText;
 	};

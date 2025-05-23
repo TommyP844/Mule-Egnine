@@ -1,15 +1,15 @@
 #pragma once
 
+#include "UIHandle.h"
 #include "UIAnchorAxis.h"
 #include "WeakRef.h"
 
 namespace Mule
 {
-	class UIElement;
 
 	struct UIAnchor
 	{
-		WeakRef<UIElement> TargetElement;
+		UIHandle TargetElement;
 		UIAnchorAxis Target;
 		UIAnchorAxis Self;
 	};

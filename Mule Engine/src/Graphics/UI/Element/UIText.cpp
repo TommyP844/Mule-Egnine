@@ -110,4 +110,9 @@ namespace Mule
 		mAutoSize = true;
 		mIsDirty = true;
 	}
+
+	void UIText::SetScene(WeakRef<UIScene> scene)
+	{
+		mScene = scene;
+	}
 }

@@ -32,6 +32,7 @@ namespace Mule
 		}
 		mElements.push_back(element);
 		mElementHandles[element->GetHandle()] = element;
+		element->SetScene(this);
 	}
 
 	void UIScene::RemoveUIElement(WeakRef<UIElement> element)

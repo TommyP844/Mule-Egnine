@@ -43,15 +43,19 @@ namespace Mule
 		return UIElementType::MAX_UI_ELEMENT_TYPE;
 	}
 
+	class UIScene;
+
 	class UIElement
 	{
 	public:
 		UIElement(const std::string& name, UIElementType elementType, UIHandle handle = UIHandle::Create());
 
-		void AddAnchor(WeakRef<UIElement> targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
+		// Anchors
+		void AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
 		void RemoveAnchor(UIAnchorAxis selfAxis);
 		void RemoveAllAnchors();
-		bool IsAnchoredToElementAxis(WeakRef<UIElement> element, UIAnchorAxis anchorAxis) const;
+		bool IsAnchoredToElementAxis(UIHandle handle, UIAnchorAxis anchorAxis) const;
+		const std::unordered_map<UIAnchorAxis, UIAnchor>& GetAnchors() const { return mAnchors; }
 
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }
@@ -94,6 +98,8 @@ namespace Mule
 			return WeakRef<T>((T*)this);
 		}
 
+		virtual void SetScene(WeakRef<UIScene> scene) = 0;
+
 	protected:
 		WeakRef<UIStyle> mStyle;
 		bool mVisible;
@@ -104,6 +110,7 @@ namespace Mule
 
 		// Self Axis -> Anchor
 		std::unordered_map<UIAnchorAxis, UIAnchor> mAnchors;
+		WeakRef<UIScene> mScene;
 
 	private:
 		std::string mName;

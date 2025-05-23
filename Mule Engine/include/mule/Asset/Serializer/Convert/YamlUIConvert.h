@@ -134,6 +134,16 @@ namespace YAML
             node["Transform"] = transform;
             node["Name"] = element->GetName();
 
+            for (auto [selfAxis, anchor] : element->GetAnchors())
+            {
+                YAML::Node anchorNode;
+                anchorNode["Self"] = Mule::GetUIAnchorAxisString(selfAxis);
+                anchorNode["Target"] = Mule::GetUIAnchorAxisString(anchor.Target);
+                anchorNode["Handle"] = anchor.TargetElement;
+
+                node["Anchors"].push_back(anchorNode);
+            }
+
             return node;
         }
 
@@ -144,7 +154,17 @@ namespace YAML
             Mule::UITransform transform = node["Transform"].as<Mule::UITransform>();
             std::string name = node["Name"].as<std::string>();
 
-            element->SetTransform(transform);        
+            for (const auto& anchorNode : node["Anchors"])
+            {
+                Mule::UIAnchorAxis self = Mule::GetUIAnchorAxisFromString(anchorNode["Self"].as<std::string>());
+                Mule::UIAnchorAxis target = Mule::GetUIAnchorAxisFromString(anchorNode["Target"].as<std::string>());
+                Mule::UIHandle targetHandle = anchorNode["Handle"].as<Mule::UIHandle>();
+
+                element->AddAnchor(targetHandle, target, self);
+            }
+
+            element->SetTransform(transform);
+            element->SetHandle(handle);
             
             return true;
         }

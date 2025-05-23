@@ -1,5 +1,7 @@
 #include "Graphics/UI/Element/UIElement.h"
 
+#include "Graphics/UI/UIScene.h"
+
 namespace Mule
 {
 	UIElement::UIElement(const std::string& name, UIElementType elementType, UIHandle handle)
@@ -12,7 +14,7 @@ namespace Mule
 		mStyle = UIStyle::GetDefault();
 	}
 
-	void UIElement::AddAnchor(WeakRef<UIElement> targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis)
+	void UIElement::AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis)
 	{
 		mAnchors[selfAxis] = {
 			targetElement,
@@ -58,7 +60,7 @@ namespace Mule
 		mAnchors.clear();
 	}
 
-	bool UIElement::IsAnchoredToElementAxis(WeakRef<UIElement> element, UIAnchorAxis anchorAxis) const
+	bool UIElement::IsAnchoredToElementAxis(UIHandle element, UIAnchorAxis anchorAxis) const
 	{
 		for (const auto& [axis, anchor] : mAnchors)
 			if (anchor.TargetElement == element && anchorAxis == anchor.Target)
@@ -70,12 +72,19 @@ namespace Mule
 	{
 		std::optional<float> top, left, bottom, right, width, height;
 
+		std::vector<UIAnchorAxis> anchorsToRemove;
 		for (const auto& [selfAxis, anchor] : mAnchors)
 		{
-			// TODO: if its not valid remove the anchor
-			if (!anchor.TargetElement) continue;
+			auto targetElement = mScene->GetElement(anchor.TargetElement);
 
-			const UIRect& targetRect = anchor.TargetElement->GetScreenRect();
+			if (!targetElement)
+			{
+				anchorsToRemove.push_back(selfAxis);
+				continue;
+			}
+
+			const UIRect& targetRect = targetElement->GetScreenRect();
+
 
 			auto getVertical = [](UIAnchorAxis axis, const UIRect& r) -> float {
 				switch (axis) {
@@ -137,6 +146,9 @@ namespace Mule
 				break;
 			}
 		}
+
+		for (auto axis : anchorsToRemove)
+			mAnchors.erase(axis);
 
 		// TODO: need to check here first and see if we have enough information to generate a rect
 		// otherwise we end up with a double offset

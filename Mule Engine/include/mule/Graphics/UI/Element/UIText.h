@@ -17,6 +17,8 @@ namespace Mule
 
 		void SetAutoSize(bool autoSize);
 
+		void SetScene(WeakRef<UIScene> scene) override;
+
 	private:
 		std::string mText;
 		bool mAutoSize;

@@ -8,8 +8,8 @@ namespace Mule
 	{
 		mButtonText = MakeRef<UIText>();
 		mButtonText->SetText("Button");
-		mButtonText->AddAnchor(this, UIAnchorAxis::CenterHorizontal, UIAnchorAxis::CenterHorizontal);
-		mButtonText->AddAnchor(this, UIAnchorAxis::CenterVertical, UIAnchorAxis::CenterVertical);
+		mButtonText->AddAnchor(GetHandle(), UIAnchorAxis::CenterHorizontal, UIAnchorAxis::CenterHorizontal);
+		mButtonText->AddAnchor(GetHandle(), UIAnchorAxis::CenterVertical, UIAnchorAxis::CenterVertical);
 		mButtonText->SetWidth(50, UIUnitType::Pixels);
 		mButtonText->SetHeight(50, UIUnitType::Pixels);
 		mButtonText->SetAutoSize(true);
@@ -50,5 +50,11 @@ namespace Mule
 		UpdateRect(parentRect);
 
 		mButtonText->Update(mScreenRect, assetManager, theme);
+	}
+	
+	void UIButton::SetScene(WeakRef<UIScene> scene)
+	{
+		mScene = scene;
+		mButtonText->SetScene(scene);
 	}
 }
