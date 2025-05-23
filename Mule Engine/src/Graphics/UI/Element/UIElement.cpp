@@ -53,6 +53,19 @@ namespace Mule
 			mAnchors.erase(iter);
 	}
 
+	void UIElement::RemoveAllAnchors()
+	{
+		mAnchors.clear();
+	}
+
+	bool UIElement::IsAnchoredToElementAxis(WeakRef<UIElement> element, UIAnchorAxis anchorAxis) const
+	{
+		for (const auto& [axis, anchor] : mAnchors)
+			if (anchor.TargetElement == element && anchorAxis == anchor.Target)
+				return true;
+		return false;
+	}
+
 	void UIElement::UpdateRect(const UIRect& parentRect)
 	{
 		std::optional<float> top, left, bottom, right, width, height;
@@ -132,8 +145,8 @@ namespace Mule
 		if (!bottom) bottom = mTransform.Bottom ? std::make_optional<float>(mTransform.Bottom->Resolve(parentRect.Height)) : std::nullopt;
 		if (!left) left = mTransform.Left ? std::make_optional<float>(mTransform.Left->Resolve(parentRect.Width)) : std::nullopt;
 		if (!right) right = mTransform.Right ? std::make_optional<float>(mTransform.Right->Resolve(parentRect.Width)) : std::nullopt;
-		if (!width) width = mTransform.Width ? std::make_optional<float>(mTransform.Width->Resolve(parentRect.Width)) : std::nullopt;
-		if (!height) height = mTransform.Height ? std::make_optional<float>(mTransform.Height->Resolve(parentRect.Height)) : std::nullopt;
+		if (!width && (!left || !right)) width = mTransform.Width ? std::make_optional<float>(mTransform.Width->Resolve(parentRect.Width)) : std::nullopt;
+		if (!height && (!top || !bottom)) height = mTransform.Height ? std::make_optional<float>(mTransform.Height->Resolve(parentRect.Height)) : std::nullopt;
 
 		float x = 0.f, y = 0.f, w = 0.f, h = 0.f;
 

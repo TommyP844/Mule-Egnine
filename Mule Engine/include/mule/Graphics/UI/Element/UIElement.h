@@ -50,6 +50,8 @@ namespace Mule
 
 		void AddAnchor(WeakRef<UIElement> targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
 		void RemoveAnchor(UIAnchorAxis selfAxis);
+		void RemoveAllAnchors();
+		bool IsAnchoredToElementAxis(WeakRef<UIElement> element, UIAnchorAxis anchorAxis) const;
 
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }

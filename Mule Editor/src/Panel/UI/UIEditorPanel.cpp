@@ -574,32 +574,149 @@ bool UIEditorPanel::ModifySelected()
 		}
 	}
 
+	bool leftSnapped = false;
+	bool rightSnapped = false;
+	bool topSnapped = false;
+	bool bottomSnapped = false;
+
 	if (activeHandle != -1 && ImGui::IsMouseDown(0)) {
 		ImVec2 delta = io.MouseDelta;
 		Handle& h = handles[activeHandle];
 
+		// Draw Snap Lines
+		{
+			ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
+			// draw other bod lines
+			for (auto element : mUIScene->GetUIElements())
+			{
+				if (element == mSelectedElement)
+					continue;
+
+				const Mule::UIRect& rect = element->GetScreenRect();
+				const float displayLineThreshold = 15.f;
+				const float snapDist = 5.f;
+
+				float mouseLeftDist = glm::abs(mousePos.x - rect.X);
+				float mouseRightDist = glm::abs(mousePos.x - rect.X - rect.Width);
+				float mouseTopDist = glm::abs(mousePos.y - rect.Y);
+				float mouseBottomDist = glm::abs(mousePos.y - rect.Y - rect.Height);
+
+				if (mouseLeftDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element, Mule::UIAnchorAxis::Left))
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					if (mouseLeftDist <= snapDist)
+					{
+						if (h.dir.x < 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Left, Mule::UIAnchorAxis::Left);
+							leftSnapped = true;
+						}
+						else if (h.dir.x > 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Left, Mule::UIAnchorAxis::Right);
+							leftSnapped = true;
+						}
+					}
+				}
+
+				if (mouseRightDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element, Mule::UIAnchorAxis::Right))
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					if (mouseRightDist <= snapDist)
+					{
+						if (h.dir.x < 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Right, Mule::UIAnchorAxis::Left);
+							rightSnapped = true;
+						}
+						else if (h.dir.x > 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Right, Mule::UIAnchorAxis::Right);
+							rightSnapped = true;
+						}
+					}
+				}
+
+				if (mouseTopDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element, Mule::UIAnchorAxis::Top))
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					if (mouseTopDist <= snapDist)
+					{
+						if (h.dir.y < 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Top, Mule::UIAnchorAxis::Top);
+							topSnapped = true;
+						}
+						else if (h.dir.y > 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Top, Mule::UIAnchorAxis::Bottom);
+							topSnapped = true;
+						}
+					}
+				}
+
+				if (mouseBottomDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element, Mule::UIAnchorAxis::Bottom))
+				{
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y + rect.Height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y + rect.Height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					if (mouseBottomDist <= snapDist)
+					{
+						if (h.dir.y < 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Bottom, Mule::UIAnchorAxis::Top);
+							bottomSnapped = true;
+						}
+						else if (h.dir.y > 0)
+						{
+							mSelectedElement->AddAnchor(element, Mule::UIAnchorAxis::Bottom, Mule::UIAnchorAxis::Bottom);
+							bottomSnapped = true;
+						}
+					}
+				}
+			}
+		}
+		
+
 		// X-axis handling
 		if (h.dir.x < 0) {
-			pos.x += delta.x;
+			if (!leftSnapped && !rightSnapped)
+			{
+				pos.x += delta.x;
+				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
+			}
+			
 			size.x -= delta.x;
 		}
 		else if (h.dir.x > 0) {
-			size.x += delta.x;
+			if (!leftSnapped && !rightSnapped)
+			{
+				size.x += delta.x;
+				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
+			}
 		}
 
 		// Y-axis handling
 		if (h.dir.y < 0) {
-			pos.y += delta.y;
+			if (!topSnapped && !bottomSnapped)
+			{
+				pos.y += delta.y;
+				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Top);
+			}
 			size.y -= delta.y;
 		}
 		else if (h.dir.y > 0) {
-			size.y += delta.y;
+			if (!topSnapped && !bottomSnapped)
+			{
+				size.y += delta.y;
+				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Bottom);
+			}
 		}
 
 		if (h.dir.x == 0 && h.dir.y == 0)
 		{
 			pos.x += delta.x;
 			pos.y += delta.y;
+			mSelectedElement->RemoveAllAnchors();
 		}
 
 		// Clamp to min size
@@ -614,72 +731,19 @@ bool UIEditorPanel::ModifySelected()
 
 	ImGui::PopID();
 
-	if (changed)
-	{
-		float relativeLeft = pos.x - mFrameCursorPos.x;
-		float relativeTop = pos.y - mFrameCursorPos.y;
-		float relativeWidth = size.x;
-		float relativeHeight = size.y;
+	float relativeLeft = pos.x - mFrameCursorPos.x;
+	float relativeTop = pos.y - mFrameCursorPos.y;
+	float relativeWidth = size.x;
+	float relativeHeight = size.y;
 
-		Mule::UITransform& transform = mSelectedElement->GetTransform();
+	Mule::UITransform& transform = mSelectedElement->GetTransform();
 
-		mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
+	mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
+	mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
+	mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
+	mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
 
-		mIsModified = true;
-
-		// Local Lines
-		{
-			ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
-			// draw other bod lines
-			for (auto element : mUIScene->GetUIElements())
-			{
-				if (element == mSelectedElement)
-					continue;
-
-				const Mule::UIRect& rect = element->GetScreenRect();
-				const float threshold = 15.f;
-				bool left = false;
-				bool right = false;
-				bool top = false;
-				bool bottom = false;
-
-				if (glm::abs(mousePos.x - rect.X) < threshold)
-					left = true;
-
-				if (glm::abs(mousePos.x - rect.X - rect.Width) < threshold)
-					right = true;
-
-				if (glm::abs(mousePos.y - rect.Y) < threshold)
-					top = true;
-
-				if (glm::abs(mousePos.y - rect.Y - rect.Height) < threshold)
-					bottom = true;
-
-				if (left)
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-				}
-
-				if (right)
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-				}
-
-				if (top)
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-				}
-
-				if (bottom)
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y + rect.Height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y + rect.Height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-				}
-			}
-		}
-	}
+	mIsModified = true;
 
 	return changed;
 }
