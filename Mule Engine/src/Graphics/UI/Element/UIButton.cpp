@@ -23,12 +23,15 @@ namespace Mule
 	{
 		if (!mVisible)
 			return;
+
+		WeakRef<UIButtonStyle> style = mStyle ? mStyle : theme->ButtonStyle;
+		WeakRef<UIButtonStyle> fallbackStyle = theme->ButtonStyle;
 		
-		glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor, theme);
-		bool hasBorder = mStyle->GetValue<bool>(UIStyleKey::HasBorder, theme);
-		glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BorderColor, theme);
-		float borderWidth = mStyle->GetValue<float>(UIStyleKey::BorderWidth, theme);
-		glm::vec2 padding = mStyle->GetValue<glm::vec2>(UIStyleKey::Padding, theme);
+		glm::vec4 backgroundColor = style->GetBackgroundColor(mState, fallbackStyle);
+		//bool hasBorder = mStyle->GetValue<bool>(mState, UIStyleKey::HasBorder, theme);
+		//glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BorderColor, theme);
+		//float borderWidth = mStyle->GetValue<float>(mState, UIStyleKey::BorderWidth, theme);
+		//glm::vec2 padding = mStyle->GetValue<glm::vec2>(mState, UIStyleKey::Padding, theme);
 
 		const UIRect& rect = GetScreenRect();
 
@@ -36,13 +39,14 @@ namespace Mule
 			{ rect.X, rect.Y },				// Screen space position	(pixels)
 			{ rect.Width, rect.Height },	// Size						(pixels)
 			backgroundColor,				// Background Color
-			hasBorder,						// Has Border				
-			borderColor,					// Border Color				
-			borderWidth						// Border Thickness	
+			false,						// Has Border				
+			glm::vec4(0.f),					// Border Color				
+			0.f						// Border Thickness	
 		);
 		commandList.AddCommand(command);
 
 		mButtonText->Render(commandList, rect, assetManager, theme);
+		
 	}
 
 	void UIButton::Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme)
@@ -50,6 +54,13 @@ namespace Mule
 		UpdateRect(parentRect);
 
 		mButtonText->Update(mScreenRect, assetManager, theme);
+	}
+
+	void UIButton::SetHandle(UIHandle handle)
+	{
+		mHandle = handle;
+		mButtonText->AddAnchor(GetHandle(), UIAnchorAxis::CenterHorizontal, UIAnchorAxis::CenterHorizontal);
+		mButtonText->AddAnchor(GetHandle(), UIAnchorAxis::CenterVertical, UIAnchorAxis::CenterVertical);
 	}
 	
 	void UIButton::SetScene(WeakRef<UIScene> scene)

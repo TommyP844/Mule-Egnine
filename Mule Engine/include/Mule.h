@@ -71,11 +71,12 @@
 #include "Graphics/UI/UIMeasurement.h"
 #include "Graphics/UI/UIPanel.h"
 #include "Graphics/UI/UIRect.h"
-#include "Graphics/UI/UIStyle.h"
 #include "Graphics/UI/UITransform.h"
 #include "Graphics/UI/UIScene.h"
 #include "Graphics/UI/UIFont.h"
 #include "Graphics/UI/UITheme.h"
+#include "Graphics/UI/Element/UIText.h"
+#include "Graphics/UI/Element/UIButton.h"
 
 // UI Elements
 #include "Graphics/UI/Element/UIText.h"

@@ -4,17 +4,17 @@
 
 namespace Mule
 {
-	UIElement::UIElement(const std::string& name, UIElementType elementType, UIHandle handle)
+	UIBaseElement::UIBaseElement(const std::string& name, UIElementType elementType, UIHandle handle)
 		:
 		mName(name),
 		mType(elementType),
 		mHandle(handle),
-		mIsDirty(true)
+		mIsDirty(true),
+		mState(UIElementState::Idle)
 	{
-		mStyle = UIStyle::GetDefault();
 	}
 
-	void UIElement::AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis)
+	void UIBaseElement::AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis)
 	{
 		mAnchors[selfAxis] = {
 			targetElement,
@@ -48,19 +48,19 @@ namespace Mule
 		}
 	}
 
-	void UIElement::RemoveAnchor(UIAnchorAxis selfAxis)
+	void UIBaseElement::RemoveAnchor(UIAnchorAxis selfAxis)
 	{
 		auto iter = mAnchors.find(selfAxis);
 		if (iter != mAnchors.end())
 			mAnchors.erase(iter);
 	}
 
-	void UIElement::RemoveAllAnchors()
+	void UIBaseElement::RemoveAllAnchors()
 	{
 		mAnchors.clear();
 	}
 
-	bool UIElement::IsAnchoredToElementAxis(UIHandle element, UIAnchorAxis anchorAxis) const
+	bool UIBaseElement::IsAnchoredToElementAxis(UIHandle element, UIAnchorAxis anchorAxis) const
 	{
 		for (const auto& [axis, anchor] : mAnchors)
 			if (anchor.TargetElement == element && anchorAxis == anchor.Target)
@@ -68,7 +68,12 @@ namespace Mule
 		return false;
 	}
 
-	void UIElement::UpdateRect(const UIRect& parentRect)
+	// TODO:
+	void UIBaseElement::OnEvent(WeakRef<Event> event)
+	{
+	}
+
+	void UIBaseElement::UpdateRect(const UIRect& parentRect)
 	{
 		std::vector<UIAnchorAxis> anchorsToRemove;
 		for (const auto& [selfAxis, anchor] : mAnchors)
@@ -208,7 +213,7 @@ namespace Mule
 		};
 	}
 
-	WeakRef<UIElement> UIElement::HitTest(float screenX, float screenY)
+	WeakRef<UIBaseElement> UIBaseElement::HitTest(float screenX, float screenY)
 	{
 		if (screenX >= mScreenRect.X && screenX <= (mScreenRect.X + mScreenRect.Width)
 			&& screenY >= mScreenRect.Y && screenY <= (mScreenRect.Y + mScreenRect.Height))
@@ -217,42 +222,42 @@ namespace Mule
 		return nullptr;
 	}
 	
-	void UIElement::SetLeft(float value, UIUnitType type)
+	void UIBaseElement::SetLeft(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Left = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
 
-	void UIElement::SetRight(float value, UIUnitType type)
+	void UIBaseElement::SetRight(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Right = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
 
-	void UIElement::SetTop(float value, UIUnitType type)
+	void UIBaseElement::SetTop(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Top = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
 
-	void UIElement::SetBottom(float value, UIUnitType type)
+	void UIBaseElement::SetBottom(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Bottom = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
 
-	void UIElement::SetWidth(float value, UIUnitType type)
+	void UIBaseElement::SetWidth(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Width = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
 
-	void UIElement::SetHeight(float value, UIUnitType type)
+	void UIBaseElement::SetHeight(float value, UIUnitType type)
 	{
 		// TODO: remove anchors if need be
 		mTransform.Height = UIMeasurement(value, type);

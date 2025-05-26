@@ -1,7 +1,7 @@
 #include "UIStyleEditorPanel.h"
 
 #include "Event/EditUIStyleEvent.h"
-#include "ImGuiExtension.h"
+#include "UIEditorDisplay.h"
 
 UIStyleEditorPanel::UIStyleEditorPanel()
 	:
@@ -12,196 +12,57 @@ UIStyleEditorPanel::UIStyleEditorPanel()
 
 void UIStyleEditorPanel::OnAttach()
 {
+	mTempStyle = MakeRef<Mule::UIButtonStyle>();
+	mStyle = mTempStyle;
 }
 
 void UIStyleEditorPanel::OnUIRender(float dt)
 {
-	if (!mIsOpen)
+	if (!mIsOpen || !mStyle)
 		return;
 
 	if (ImGui::Begin(mName.c_str(), &mIsOpen))
 	{
-		if (!mStyle)
-		{
-			ImGui::End();
-			return;
-		}
+		Mule::UIElementType type = mStyle->GetElementType();
+		std::string styleTypeStr = Mule::ToString(type);
 
-		fs::path assetPath = mEditorContext->GetAssetsPath();
-		std::string name = mStyle->Name();
-		std::string filepath = mStyle->FilePath().lexically_relative(assetPath).string();
-		uint64_t handle = mStyle->Handle();
+		ImGui::Text("Style Type: %s", styleTypeStr.c_str());
 
-		ImGui::Text("Name: %s", name.c_str());
-		ImGui::Text("Filepath: %s", filepath.c_str());
-		ImGui::Text("Handle: %llu", handle);
+		float width = ImGui::GetContentRegionAvail().x;
+		width -= ImGui::CalcTextSize("Save").x + ImGui::GetStyle().FramePadding.x * 2.f;
+		ImGui::SameLine(width);
 
 		ImGui::BeginDisabled(!mIsModified);
+
 		if (ImGui::Button("Save"))
 		{
-			mEngineContext->GetAssetManager()->Save<Mule::UIStyle>(mStyle->Handle());
+			//mEngineContext->GetAssetManager()->Save<Mule::UIBaseStyle>(handle, mStyle);
 			mIsModified = false;
 		}
+
 		ImGui::EndDisabled();
 
-		ImGui::SeparatorText("Style Values");
+		ImGui::Separator();
 
-		auto assetManager = mEngineContext->GetAssetManager();
-		auto theme = Mule::UITheme::GetDefault();
-
-		for (uint32_t i = 0; i < static_cast<uint32_t>(Mule::UIStyleKey::STYLE_KEY_MAX); i++)
+		if (ImGui::BeginTabBar("StateTabBar"))
 		{
-			Mule::UIStyleKey key = static_cast<Mule::UIStyleKey>(i);
-			Mule::UIStyleKeyDataType dataType = Mule::GetUIStyleKeyDataType(key);
-			std::string styleName = Mule::GetUIStyleKeyName(key);
-			std::string hiddenStyleName = "##" + styleName;
-
-			ImGui::Text(styleName.c_str());
-			ImGui::SameLine(150.f);
-			ImGui::PushItemWidth(250.f);
-
-			ImGui::PushID(i);
-
-			if (!mStyle->HasValue(key))
+			for (auto state : Mule::AllUIStates)
 			{
-				if (ImGui::Button("Add"))
+				std::string tabName = Mule::ToString(state);
+				if (ImGui::BeginTabItem(tabName.c_str()))
 				{
-					switch (dataType)
+					switch (type)
 					{
-					case Mule::UIStyleKeyDataType::Bool:	mStyle->SetValue(key, false); break;
-					case Mule::UIStyleKeyDataType::Integer: mStyle->SetValue(key, 0); break;
-					case Mule::UIStyleKeyDataType::Float:	mStyle->SetValue(key, 0.f); break;
-					case Mule::UIStyleKeyDataType::Vec2:	mStyle->SetValue(key, glm::vec2(0.f)); break;
-					case Mule::UIStyleKeyDataType::Vec3:	mStyle->SetValue(key, glm::vec3(0.f)); break;
-					case Mule::UIStyleKeyDataType::Color:	mStyle->SetValue(key, glm::vec4(1.f)); break;
-					case Mule::UIStyleKeyDataType::Ivec2:	mStyle->SetValue(key, glm::ivec2(0)); break;
-					case Mule::UIStyleKeyDataType::IVec3:	mStyle->SetValue(key, glm::ivec3(0)); break;
-					case Mule::UIStyleKeyDataType::Ivec4:	mStyle->SetValue(key, glm::ivec4(0)); break;
-					case Mule::UIStyleKeyDataType::AssetHandle:	mStyle->SetValue(key, Mule::AssetHandle::Null());
+					case Mule::UIElementType::UIButton:
+						mIsModified |= DisplayButtonStyleEditor(mStyle, state);
+						break;
 					}
 
-					mIsModified = true;
-				}
-			}
-			else
-			{
-				switch (dataType)
-				{
-				case Mule::UIStyleKeyDataType::Bool:
-				{
-					auto val = mStyle->GetValue<bool>(key, theme);
-					if (ImGui::Checkbox(hiddenStyleName.c_str(), &val))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Integer:
-				{
-					auto val = mStyle->GetValue<int>(key, theme);
-					if (ImGui::DragInt(hiddenStyleName.c_str(), &val))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Float:
-				{
-					auto val = mStyle->GetValue<float>(key, theme);
-					if (ImGui::DragFloat(hiddenStyleName.c_str(), &val))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Vec2:
-				{
-					auto val = mStyle->GetValue<glm::vec2>(key, theme);
-					if (ImGui::DragFloat2(hiddenStyleName.c_str(), &val[0]))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Vec3:
-				{
-					auto val = mStyle->GetValue<glm::vec3>(key, theme);
-					if (ImGui::DragFloat3(hiddenStyleName.c_str(), &val[0]))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Color:
-				{
-					auto val = mStyle->GetValue<glm::vec4>(key, theme);
-					if (ImGui::ColorEdit4(hiddenStyleName.c_str(), &val[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
-					{
-						mStyle->SetValue(key, val);
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Ivec2:
-				{
-					auto val = mStyle->GetValue<glm::ivec2>(key, theme);
-					if (ImGui::DragInt2(hiddenStyleName.c_str(), &val[0]))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::IVec3:
-				{
-					auto val = mStyle->GetValue<glm::ivec3>(key, theme);
-					if (ImGui::DragInt3(hiddenStyleName.c_str(), &val[0]))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::Ivec4:
-				{
-					auto val = mStyle->GetValue<glm::ivec4>(key, theme);
-					if (ImGui::DragInt4(hiddenStyleName.c_str(), &val[0]))
-					{
-						mStyle->SetValue(key, val);
-						mIsModified = true;
-					}
-					break;
-				}
-				case Mule::UIStyleKeyDataType::AssetHandle:
-				{
-					auto assetManager = mEngineContext->GetAssetManager();
-					auto fontHandle = mStyle->GetValue<Mule::AssetHandle>(key, theme);
-					auto font = assetManager->Get<Mule::UIFont>(fontHandle);
-
-					std::string fontName = "(Null)";
-
-					if (font)
-						fontName = font->Name();
-
-					ImGui::Text(fontName.c_str());
-					ImGuiExtension::DragDropFile ddf;
-					if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
-					{
-						mStyle->SetValue(key, ddf.AssetHandle);
-						mIsModified = true;
-					}
-				}
-				break;
+					ImGui::EndTabItem();
 				}
 			}
 
-			ImGui::PopID();
-
-			ImGui::Separator();
+			ImGui::EndTabBar();
 		}
 	}
 
@@ -214,10 +75,6 @@ void UIStyleEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 	{
 	case EditorEventType::EditUIStyle:
 	{
-		WeakRef<EditUIStyleEvent> editUiStyleEvent = event;
-		auto assetManager = mEngineContext->GetAssetManager();
-		mStyle = assetManager->Get<Mule::UIStyle>(editUiStyleEvent->GetUIStyleHandle());
-		Open();
 	}
 	break;
 	}
@@ -225,10 +82,4 @@ void UIStyleEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 
 void UIStyleEditorPanel::OnEngineEvent(Ref<Mule::Event> event)
 {
-}
-
-void UIStyleEditorPanel::SetStyle(Ref<Mule::UIStyle> style)
-{
-	mStyle = style;
-	mIsModified = false;
 }

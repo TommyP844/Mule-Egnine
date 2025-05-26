@@ -22,7 +22,7 @@ namespace Mule
 			element->Render(commandList, screenRect, assetManager, theme);
 	}
 
-	void UIScene::AddUIElement(Ref<UIElement> element)
+	void UIScene::AddUIElement(Ref<UIBaseElement> element)
 	{
 		auto iter = std::find(mElements.begin(), mElements.end(), element);
 		if (iter != mElements.end())
@@ -35,7 +35,7 @@ namespace Mule
 		element->SetScene(this);
 	}
 
-	void UIScene::RemoveUIElement(WeakRef<UIElement> element)
+	void UIScene::RemoveUIElement(WeakRef<UIBaseElement> element)
 	{
 		auto iter = std::find(mElements.begin(), mElements.end(), element);
 		if (iter == mElements.end())
@@ -78,7 +78,7 @@ namespace Mule
 			element->Update(windowRect, assetManager, theme);
 	}
 
-	WeakRef<UIElement> UIScene::HitTest(float screenX, float screenY)
+	WeakRef<UIBaseElement> UIScene::HitTest(float screenX, float screenY)
 	{
 		for (auto element : mElements)
 		{
@@ -89,7 +89,7 @@ namespace Mule
 
 		return nullptr;
 	}
-	WeakRef<UIElement> UIScene::GetElement(UIHandle handle) const
+	WeakRef<UIBaseElement> UIScene::GetElement(UIHandle handle) const
 	{
 		auto iter = mElementHandles.find(handle);
 		if (iter != mElementHandles.end())

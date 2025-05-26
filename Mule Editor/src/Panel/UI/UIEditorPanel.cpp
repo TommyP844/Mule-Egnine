@@ -262,7 +262,6 @@ void UIEditorPanel::DisplayInspectorPanel()
 	}
 
 	Mule::UITransform& transform = mSelectedElement->GetTransform();
-	WeakRef<Mule::UIStyle> style = mSelectedElement->GetStyle();
 
 	ImGui::SeparatorText("Location");
 
@@ -277,6 +276,7 @@ void UIEditorPanel::DisplayInspectorPanel()
 	ImGui::SeparatorText("Style");
 	std::string styleName = "(Null)";
 
+	/*
 	if (style)
 		styleName = style->Name();
 
@@ -292,6 +292,7 @@ void UIEditorPanel::DisplayInspectorPanel()
 			mIsModified = true;
 		}
 	}
+	*/
 
 	switch (mSelectedElement->GetType())
 	{
@@ -317,7 +318,7 @@ void UIEditorPanel::DisplayInspectorPanel()
 void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)
 {
 	float width = ImGui::GetContentRegionAvail().x;
-	std::string name = Mule::GetUIElementNameFromType(type);
+	std::string name = Mule::ToString(type);
 	ImGui::PushItemWidth(width);
 	ImGui::Selectable(name.c_str()); 
 	bool& mod = mIsModified;

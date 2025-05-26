@@ -8,7 +8,7 @@ namespace Mule
 	{
 	}
 
-	void UIPanel::AddElement(Ref<UIElement> element)
+	void UIPanel::AddElement(Ref<UIBaseElement> element)
 	{
 		auto it = std::find(mElements.begin(), mElements.end(), element);
 		if (it == mElements.end())
@@ -17,7 +17,7 @@ namespace Mule
 		}
 	}
 
-	void UIPanel::RemoveElement(Ref<UIElement> element)
+	void UIPanel::RemoveElement(Ref<UIBaseElement> element)
 	{
 		auto it = std::find(mElements.begin(), mElements.end(), element);
 		if (it != mElements.end())

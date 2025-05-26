@@ -21,7 +21,7 @@ private:
 	WeakRef<Mule::Texture2D> mBlackTexture;
 	WeakRef<Mule::UIScene> mUIScene;
 	Ref<Mule::Camera> mUIEditorCamera;
-	WeakRef<Mule::UIElement> mSelectedElement;
+	WeakRef<Mule::UIBaseElement> mSelectedElement;
 	bool mIsModified;
 	ImVec2 mViewportSize;
 	ImVec2 mFrameCursorPos;

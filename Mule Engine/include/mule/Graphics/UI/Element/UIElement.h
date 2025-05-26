@@ -2,12 +2,13 @@
 
 #include "WeakRef.h"
 
-#include "Graphics/UI/UIHandle.h"
-#include "Graphics/Renderer/CommandList.h"
+#include "Graphics/UI/Element/UIHandle.h"
+#include "Graphics/UI/Element/UIAnchor.h"
+#include "Graphics/UI/Element/UIElementType.h"
+#include "Graphics/UI/Element/UIElementState.h"
 #include "Graphics/UI/UITransform.h"
-#include "Graphics/UI/UIStyle.h"
 #include "Graphics/UI/UITheme.h"
-#include "Graphics/UI/UIAnchor.h"
+#include "Graphics/Renderer/CommandList.h"
 
 #include "Asset/AssetManager.h"
 
@@ -15,40 +16,16 @@
 
 namespace Mule
 {
-	enum class UIElementType
-	{
-		UIText,
-		UIButton,
-
-		MAX_UI_ELEMENT_TYPE
-	};
-
-	constexpr std::string GetUIElementNameFromType(UIElementType type)
-	{
-		switch (type)
-		{
-		case Mule::UIElementType::UIText: return "UIText";
-		case Mule::UIElementType::UIButton: return "UIButton";
-		case Mule::UIElementType::MAX_UI_ELEMENT_TYPE:
-		default:
-			assert("Invalid UIElementType");
-			break;
-		}
-	}
-
-	constexpr UIElementType GetUIElementTypeFromString(const std::string& type)
-	{
-		if (type == "UIText") return UIElementType::UIText;
-		if (type == "UIButton") return UIElementType::UIButton;
-		return UIElementType::MAX_UI_ELEMENT_TYPE;
-	}
-
 	class UIScene;
 
-	class UIElement
+	class UIBaseElement
 	{
 	public:
-		UIElement(const std::string& name, UIElementType elementType, UIHandle handle = UIHandle::Create());
+		UIBaseElement(const std::string& name, UIElementType elementType, UIHandle handle);
+		virtual ~UIBaseElement() {}
+
+		virtual void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
+		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 
 		// Anchors
 		void AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
@@ -61,12 +38,8 @@ namespace Mule
 		const std::string& GetName() const { return mName; }
 
 		// Per Frame
-		virtual void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
-		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 
-		// Style
-		void SetStyle(WeakRef<UIStyle> style) { mStyle = style; }
-		WeakRef<UIStyle> GetStyle() const { return mStyle; }
+		void OnEvent(WeakRef<Event> event);
 
 		// Transform
 		void SetTransform(const UITransform& transform) { mTransform = transform; mIsDirty = true; }
@@ -85,23 +58,23 @@ namespace Mule
 		void UpdateRect(const UIRect& parentRect);
 		const UIRect& GetScreenRect() const { return mScreenRect; }
 
-		void SetHandle(UIHandle handle) { mHandle = handle; }
+		virtual void SetHandle(UIHandle handle) = 0;
 		UIHandle GetHandle() const { return mHandle; }
 
-		WeakRef<UIElement> HitTest(float screenX, float screenY);
+		WeakRef<UIBaseElement> HitTest(float screenX, float screenY);
 		UIElementType GetType() const { return mType; }
 
 		template<typename T>
 		WeakRef<T> As()
 		{
-			static_assert(std::is_base_of<UIElement, T>::value, "T must derive from UIElement");
+			static_assert(std::is_base_of<UIBaseElement, T>::value, "T must derive from UIElement");
 			return WeakRef<T>((T*)this);
 		}
 
 		virtual void SetScene(WeakRef<UIScene> scene) = 0;
 
 	protected:
-		WeakRef<UIStyle> mStyle;
+		UIElementState mState;
 		bool mVisible;
 		UITransform mTransform;
 
@@ -112,10 +85,32 @@ namespace Mule
 		std::unordered_map<UIAnchorAxis, UIAnchor> mAnchors;
 		WeakRef<UIScene> mScene;
 
+		UIHandle mHandle;
 	private:
 		std::string mName;
 		UIElementType mType;
-
-		UIHandle mHandle;
 	};
+
+	template<typename Style>
+	class UIElement : public UIBaseElement
+	{
+	public:
+		UIElement(const std::string& name, UIElementType elementType, UIHandle handle = UIHandle::Create());
+		
+		// Style
+		void SetStyle(WeakRef<Style> style) { mStyle = style; }
+		WeakRef<Style> GetStyle() const { return mStyle; }
+				
+	protected:
+		WeakRef<Style> mStyle;
+
+	};
+
+
+	template<typename Style>
+	inline UIElement<Style>::UIElement(const std::string& name, UIElementType elementType, UIHandle handle)
+		:
+		UIBaseElement(name, elementType, handle)
+	{
+	}
 }

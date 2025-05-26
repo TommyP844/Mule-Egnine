@@ -316,6 +316,7 @@ void EditorLayer::OnUIRender(float dt)
 		// TODO: notify Script context and reload dll
 		});
 
+	/*
 	NewItemPopup(mNewUIStylePopup, "UI Style", ".mstyle", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		auto style = MakeRef<Mule::UIStyle>("");
 		style->SetFilePath(filepath);
@@ -325,9 +326,10 @@ void EditorLayer::OnUIRender(float dt)
 
 		// TODO: check if current style exists and is modified then prompt the user before opening
 		});
+	*/
 
 	NewItemPopup(mNewUIThemePopup, "UI Theme", ".mtheme", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
-		auto theme = MakeRef<Mule::UITheme>("");
+		auto theme = MakeRef<Mule::UITheme>();
 		theme->SetFilePath(filepath);
 		assetManager->Insert(theme);
 		mUIThemeEditorPanel.Open();

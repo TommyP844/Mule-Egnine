@@ -2,18 +2,11 @@
 
 #include <string>
 #include <assert.h>
+#include "Core/Core.h"
 
 namespace Mule
 {
-#define MULE_ENUM_OPERATORS(type) \
-	static type operator&(const type& lhs, const type& rhs) \
-	{ \
-		return static_cast<type>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs)); \
-	} \
-	static type operator|(const type& lhs, const type& rhs) \
-	{ \
-		return static_cast<type>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs)); \
-	} \
+
 
 	enum class TextureFlags
 	{

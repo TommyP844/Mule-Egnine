@@ -21,9 +21,8 @@ namespace Mule
         return mGlyphs.at(codepoint);
     }
 
-    glm::vec2 UIFont::CalculateSize(const std::string& str, WeakRef<UIStyle> style, WeakRef<UITheme> theme, float wrapWidth)
+    glm::vec2 UIFont::CalculateSize(const std::string& str, float fontSize, float wrapWidth)
     {
-		float fontSize = style->GetValue<float>(UIStyleKey::FontSize, theme);
 		glm::vec2 cursor = glm::vec2(0.f, GetLineHeight() * fontSize);
 
 		for (auto c : str)

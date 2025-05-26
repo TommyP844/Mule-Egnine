@@ -2,41 +2,29 @@
 
 #include "Ref.h"
 #include "Asset/Asset.h"
-#include "UIStyleKey.h"
+#include "Element/UIElementState.h"
+
+// Styles
+#include "Graphics/UI/Style/UIButtonStyle.h"
+#include "Graphics/UI/Style/UITextStyle.h"
 
 #include <glm/glm.hpp>
 
 #include <variant>
 #include <array>
+#include <unordered_map>
 
 namespace Mule
 {
 	class UITheme : public Asset<AssetType::UITheme>
 	{
 	public:
-		UITheme(const std::string& name);
+		UITheme();
 		~UITheme();
 
 		static Ref<UITheme> GetDefault();
 
-		template<typename T>
-		void SetValue(UIStyleKey key, const T& value);
-
-		template<typename T>
-		T GetValue(UIStyleKey key) const;
-
-	private:
-		using UIStyleValue = std::variant<
-			bool,
-			int,
-			float,
-			glm::vec2, glm::vec3, glm::vec4,
-			glm::ivec2, glm::ivec3, glm::ivec4,
-			AssetHandle
-		>;
-
-		std::array<UIStyleValue, static_cast<size_t>(UIStyleKey::STYLE_KEY_MAX)> mValues;
+		Ref<UIButtonStyle> ButtonStyle;
+		Ref<UITextStyle> TextStyle;
 	};
 }
-
-#include "UITheme.inl"

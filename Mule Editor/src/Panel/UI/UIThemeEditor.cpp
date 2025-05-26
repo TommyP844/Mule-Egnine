@@ -2,6 +2,7 @@
 
 #include "ImGuiExtension.h"
 #include "Event/EditUIThemeEvent.h"
+#include "UIEditorDisplay.h"
 
 UIThemeEditor::UIThemeEditor()
 	:
@@ -17,6 +18,8 @@ UIThemeEditor::~UIThemeEditor()
 
 void UIThemeEditor::OnAttach()
 {
+	mTempTheme = MakeRef<Mule::UITheme>();
+	mTheme = mTempTheme;
 }
 
 void UIThemeEditor::OnUIRender(float dt)
@@ -51,135 +54,24 @@ void UIThemeEditor::OnUIRender(float dt)
 
 		ImGui::SeparatorText("Theme Values");
 
-		for (uint32_t i = 0; i < static_cast<uint32_t>(Mule::UIStyleKey::STYLE_KEY_MAX); i++)
+		if (ImGui::BeginTabBar("ThemeStates"))
 		{
-			Mule::UIStyleKey key = static_cast<Mule::UIStyleKey>(i);
-			Mule::UIStyleKeyDataType dataType = Mule::GetUIStyleKeyDataType(key);
-			std::string styleName = Mule::GetUIStyleKeyName(key);
-			std::string hiddenStyleName = "##" + styleName;
+			for (auto state : Mule::AllUIStates)
+			{
+				std::string stateName = Mule::ToString(state);
+				if (ImGui::BeginTabItem(stateName.c_str()))
+				{
+					if (ImGui::CollapsingHeader("Button Style"))
+						mIsModified |= DisplayButtonStyleEditor(mTheme->ButtonStyle, state);
 
-			ImGui::Text(styleName.c_str());
-			ImGui::SameLine(150.f);
-			ImGui::PushItemWidth(250.f);
+					if (ImGui::CollapsingHeader("Text Style"))
+						mIsModified |= DisplayTextStyleEditor(mTheme->TextStyle, state);
 
-			ImGui::PushID(i);
-
-			switch (dataType)
-			{
-			case Mule::UIStyleKeyDataType::Bool:
-			{
-				auto val = mTheme->GetValue<bool>(key);
-				if (ImGui::Checkbox(hiddenStyleName.c_str(), &val))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
+					ImGui::EndTabItem();
 				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Integer:
-			{
-				auto val = mTheme->GetValue<int>(key);
-				if (ImGui::DragInt(hiddenStyleName.c_str(), &val))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Float:
-			{
-				auto val = mTheme->GetValue<float>(key);
-				if (ImGui::DragFloat(hiddenStyleName.c_str(), &val))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Vec2:
-			{
-				auto val = mTheme->GetValue<glm::vec2>(key);
-				if (ImGui::DragFloat2(hiddenStyleName.c_str(), &val[0]))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Vec3:
-			{
-				auto val = mTheme->GetValue<glm::vec3>(key);
-				if (ImGui::DragFloat3(hiddenStyleName.c_str(), &val[0]))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Color:
-			{
-				auto val = mTheme->GetValue<glm::vec4>(key);
-				if (ImGui::ColorEdit4(hiddenStyleName.c_str(), &val[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel))
-				{
-					mTheme->SetValue(key, val);
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Ivec2:
-			{
-				auto val = mTheme->GetValue<glm::ivec2>(key);
-				if (ImGui::DragInt2(hiddenStyleName.c_str(), &val[0]))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::IVec3:
-			{
-				auto val = mTheme->GetValue<glm::ivec3>(key);
-				if (ImGui::DragInt3(hiddenStyleName.c_str(), &val[0]))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::Ivec4:
-			{
-				auto val = mTheme->GetValue<glm::ivec4>(key);
-				if (ImGui::DragInt4(hiddenStyleName.c_str(), &val[0]))
-				{
-					mTheme->SetValue(key, val);
-					mIsModified = true;
-				}
-				break;
-			}
-			case Mule::UIStyleKeyDataType::AssetHandle:
-			{
-				auto assetManager = mEngineContext->GetAssetManager();
-				auto fontHandle = mTheme->GetValue<Mule::AssetHandle>(key);
-				auto font = assetManager->Get<Mule::UIFont>(fontHandle);
-
-				std::string fontName = "(Null)";
-
-				if (font)
-					fontName = font->Name();
-
-				ImGui::Text(fontName.c_str());
-				ImGuiExtension::DragDropFile ddf;
-				if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
-				{
-					mTheme->SetValue(key, ddf.AssetHandle);
-					mIsModified = true;
-				}
-			}
-			break;
 			}
 
-			ImGui::PopID();
-
-			ImGui::Separator();
+			ImGui::EndTabBar();
 		}
 	}
 

@@ -18,6 +18,6 @@ namespace Mule
 		void Save(Ref<UIScene> asset) override;
 
 	private:
-		YAML::Node SerializeElement(Ref<UIElement> element);
+		YAML::Node SerializeElement(Ref<UIBaseElement> element);
 	};
 }

@@ -16,7 +16,6 @@
 #include "Asset/Serializer/EnvironmentMapSerializer.h"
 #include "Asset/Serializer/MaterialSerializer.h"
 #include "Asset/Serializer/ScriptSerializer.h"
-#include "Asset/Serializer/UIStyleSerializer.h"
 #include "Asset/Serializer/FontSerializer.h"
 #include "Asset/Serializer/ThemeSerializer.h"
 #include "Asset/Serializer/UISceneSerializer.h"
@@ -55,7 +54,6 @@ namespace Mule
 		assetManager->RegisterLoader<ModelSerializer>(mServiceManager);
 		assetManager->RegisterLoader<TextureSerializer>(mServiceManager);
 		assetManager->RegisterLoader<MaterialSerializer>(mServiceManager);
-		assetManager->RegisterLoader<UIStyleSerializer>(mServiceManager);
 		assetManager->RegisterLoader<FontSerializer>(mServiceManager);
 		assetManager->RegisterLoader<ThemeSerializer>(mServiceManager);
 		assetManager->RegisterLoader<UISceneSerializer>(mServiceManager);

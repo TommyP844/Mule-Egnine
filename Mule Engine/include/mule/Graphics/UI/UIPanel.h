@@ -11,8 +11,8 @@ namespace Mule
 	public:
 		UIPanel(const std::string& name);
 
-		void AddElement(Ref<UIElement> element);
-		void RemoveElement(Ref<UIElement> element);
+		void AddElement(Ref<UIBaseElement> element);
+		void RemoveElement(Ref<UIBaseElement> element);
 
 		void Render(CommandList& commandList, const UIRect& windowRect);
 
@@ -21,6 +21,6 @@ namespace Mule
 	private:
 		std::string mName;
 		bool mVisible;
-		std::vector<Ref<UIElement>> mElements;
+		std::vector<Ref<UIBaseElement>> mElements;
 	};
 }

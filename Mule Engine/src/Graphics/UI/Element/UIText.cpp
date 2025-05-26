@@ -23,31 +23,34 @@ namespace Mule
 	{
 		if (!mVisible)
 			return;
+		
+		WeakRef<UITextStyle> style = mStyle ? mStyle : theme->TextStyle;
+		WeakRef<UITextStyle> fallbackStyle = theme->TextStyle;
 
-		AssetHandle fontHandle = mStyle->GetValue<AssetHandle>(UIStyleKey::Font, theme);
+		AssetHandle fontHandle = style->GetFontHandle(mState, fallbackStyle);
 
 		if (!fontHandle)
 			return;
 
 		WeakRef<UIFont> font = assetManager->Get<UIFont>(fontHandle);
 		WeakRef<Texture2D> fontAtlas = assetManager->Get<Texture2D>(font->GetAtlasHandle());
-		float fontSize = mStyle->GetValue<float>(UIStyleKey::FontSize, theme);
-		glm::vec4 fontColor = mStyle->GetValue<glm::vec4>(UIStyleKey::ForegroundColor, theme);
-		glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BackgroundColor, theme);
-		bool hasBorder = mStyle->GetValue<bool>(UIStyleKey::HasBorder, theme);
-		glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(UIStyleKey::BorderColor, theme);
-		float borderWidth = mStyle->GetValue<float>(UIStyleKey::BorderWidth, theme);
-		glm::vec2 padding = mStyle->GetValue<glm::vec2>(UIStyleKey::Padding, theme);
+		float fontSize = style->GetFontSize(mState, fallbackStyle);
+		glm::vec4 fontColor = style->GetForegroundColor(mState, fallbackStyle);
+		//glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BackgroundColor, theme);
+		//bool hasBorder = mStyle->GetValue<bool>(mState, UIStyleKey::HasBorder, theme);
+		//glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BorderColor, theme);
+		//float borderWidth = mStyle->GetValue<float>(mState, UIStyleKey::BorderWidth, theme);
+		//glm::vec2 padding = mStyle->GetValue<glm::vec2>(mState, UIStyleKey::Padding, theme);
 
 		const UIRect& rect = GetScreenRect();
 
-		glm::vec2 cursor = padding + glm::vec2(rect.X, rect.Y + font->GetLineHeight() * fontSize);
+		glm::vec2 cursor = glm::vec2(rect.X, rect.Y + font->GetLineHeight() * fontSize);
 
 		for (auto c : mText)
 		{			
 			if (c == '\n')
 			{
-				cursor.x = rect.X + padding.x;
+				cursor.x = rect.X;
 				cursor.y += font->GetLineHeight() * fontSize;
 				continue;
 			}
@@ -56,9 +59,9 @@ namespace Mule
 			glm::vec2 min = cursor + glyph.PlaneMin * fontSize;
 			glm::vec2 max = cursor + glyph.PlaneMax * fontSize;
 
-			if (max.x > rect.X + rect.Width - padding.x)
+			if (max.x > rect.X + rect.Width)
 			{
-				cursor.x = rect.X + padding.x;
+				cursor.x = rect.X;
 				cursor.y += font->GetLineHeight() * fontSize;
 
 				min = cursor + glyph.PlaneMin * fontSize;
@@ -85,24 +88,36 @@ namespace Mule
 
 			cursor.x += glyph.Advance * fontSize;
 		}
+		
 	}
 
-	// TODO: needs option to decide whether the user can set the size, or the text sets the size
 	void UIText::Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme)
 	{
+		
 		if (mAutoSize)
 		{
-			auto fontHandle = mStyle->GetValue<AssetHandle>(UIStyleKey::Font, theme);
+			WeakRef<UITextStyle> style = mStyle ? mStyle : theme->TextStyle;
+			WeakRef<UITextStyle> fallbackStyle = theme->TextStyle;
+
+			float fontSize = style->GetFontSize(mState, fallbackStyle);
+			auto fontHandle = style->GetFontHandle(mState, fallbackStyle);
 			auto font = assetManager->Get<UIFont>(fontHandle); // Font should always exist, default loaded at engine startup
 
-			glm::vec2 textSize = font->CalculateSize(mText, mStyle, theme, parentRect.Width);
+			if (font)
+			{
+				glm::vec2 textSize = font->CalculateSize(mText, fontSize, parentRect.Width);
 
-			mTransform.Width = UIMeasurement(textSize.x, UIUnitType::Pixels);
-			mTransform.Height = UIMeasurement(textSize.y, UIUnitType::Pixels);
+				mTransform.Width = UIMeasurement(textSize.x, UIUnitType::Pixels);
+				mTransform.Height = UIMeasurement(textSize.y, UIUnitType::Pixels);
+			}
+			else
+			{
+				mTransform.Width = UIMeasurement(10.f, UIUnitType::Pixels);
+				mTransform.Height = UIMeasurement(10.f, UIUnitType::Pixels);
+			}
 		}
 		
-		UpdateRect(parentRect);
-		
+		UpdateRect(parentRect);		
 	}
 
 	void UIText::SetAutoSize(bool autoSize)
@@ -114,5 +129,10 @@ namespace Mule
 	void UIText::SetScene(WeakRef<UIScene> scene)
 	{
 		mScene = scene;
+	}
+
+	void UIText::SetHandle(UIHandle handle)
+	{
+		mHandle = handle;
 	}
 }

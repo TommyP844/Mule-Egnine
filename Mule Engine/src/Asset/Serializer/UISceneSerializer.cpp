@@ -34,15 +34,13 @@ namespace Mule
 		scene->SetThemeHandle(themeHandle);
 		for (auto child : node["Elements"])
 		{
-			auto type = GetUIElementTypeFromString(child["Type"].as<std::string>());
-			Ref<UIElement> element;
+			auto type = FromString<UIElementType>(child["Type"].as<std::string>());
+			Ref<UIBaseElement> element;
 			switch (type)
 			{
 			case UIElementType::UIText:
-				element = child.as<Ref<UIText>>();
 				break;
 			case UIElementType::UIButton:
-				element = child.as<Ref<UIButton>>();
 				break;
 			}
 
@@ -80,17 +78,15 @@ namespace Mule
 		file.close();
 	}
 	
-	YAML::Node UISceneSerializer::SerializeElement(Ref<UIElement> element)
+	YAML::Node UISceneSerializer::SerializeElement(Ref<UIBaseElement> element)
 	{
 		YAML::Node elementNode;
 
 		switch (element->GetType())
 		{
 		case UIElementType::UIText:
-			elementNode = Ref<UIText>(element);
 			break;
 		case UIElementType::UIButton:
-			elementNode = Ref<UIButton>(element);
 			break;
 		default:
 			assert(false && "Invalid UIElementType");

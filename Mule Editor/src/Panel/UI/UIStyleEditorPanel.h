@@ -14,10 +14,11 @@ public:
 	void OnEditorEvent(Ref<IEditorEvent> event) override;
 	void OnEngineEvent(Ref<Mule::Event> event) override;
 
-	void SetStyle(Ref<Mule::UIStyle> style);
 
 private:
-	WeakRef<Mule::UIStyle> mStyle;
 	bool mIsModified;
+	WeakRef<Mule::UIBaseStyle> mStyle;
+	Ref<Mule::UIBaseStyle> mTempStyle; // TODO: delete once style is saved
 };
+
 
