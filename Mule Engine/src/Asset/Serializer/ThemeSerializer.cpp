@@ -22,7 +22,17 @@ namespace Mule
 		Ref<UITheme> theme = MakeRef<UITheme>();
 		theme->SetFilePath(filepath);
 
+		YAML::Node node = YAML::LoadFile(filepath.string());
 
+		theme->TextStyle = MakeRef<UITextStyle>();
+		for(auto child : node["TextStyle"])
+		{
+			std::string stateName = child.first.as<std::string>();
+			UIElementState state = FromString<UIElementState>(stateName);
+
+			auto& vars = theme->TextStyle->GetStateVars(state);
+			vars = child.second.as<UITextStyleVars>();
+		}
 
 		return theme;
 	}
@@ -31,6 +41,21 @@ namespace Mule
 	{
 		YAML::Node node;
 
+		// Text
+		{
+			YAML::Node textStyleNode = node["TextStyle"];
+			SerializeStyle(asset->TextStyle, textStyleNode);
+		}
+
+		// Button
+		{
+			YAML::Node buttonStyleNode = node["ButtonStyle"];
+			SerializeStyle(asset->ButtonStyle, buttonStyleNode);
+
+			
+			YAML::Node buttonTextStyleNode = buttonStyleNode["TextStyle"];
+			SerializeStyle(asset->ButtonStyle->TextStyle.GetValue(), buttonTextStyleNode);
+		}
 
 		YAML::Emitter emitter;
 		emitter << node;

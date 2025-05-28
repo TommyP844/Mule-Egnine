@@ -14,15 +14,10 @@ namespace Mule
 		const std::string& GetText() const { return mText; }
 
 		void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) override;
-		void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) override;
-		void SetScene(WeakRef<UIScene> scene) override;
-		void SetHandle(UIHandle handle) override;
-
-		void SetAutoSize(bool autoSize);
-
+		void Measure(const UIRect& parentRect) override;
+		void Layout(const UIRect& parentRect) override;
 
 	private:
 		std::string mText;
-		bool mAutoSize;
 	};
 }

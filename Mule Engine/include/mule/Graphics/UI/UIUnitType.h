@@ -10,6 +10,7 @@ namespace Mule
 	{
 		Pixels,
 		Percentage,
+		Auto,
 
 		MAX_UNIT_TYPE
 	};
@@ -20,6 +21,7 @@ namespace Mule
 		{
 		case Mule::UIUnitType::Pixels:		return "Pixels";
 		case Mule::UIUnitType::Percentage:	return "Percentage";
+		case Mule::UIUnitType::Auto:		return "Auto";
 		case Mule::UIUnitType::MAX_UNIT_TYPE:
 		default:
 			assert("Invalid unit type");
@@ -31,6 +33,7 @@ namespace Mule
 	{
 		if (unit == "Pixels") return UIUnitType::Pixels;
 		if (unit == "Percentage") return UIUnitType::Percentage;
+		if (unit == "Auto") return UIUnitType::Auto;
 		return UIUnitType::MAX_UNIT_TYPE;
 	}
 }

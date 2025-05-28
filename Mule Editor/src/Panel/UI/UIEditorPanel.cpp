@@ -1,6 +1,7 @@
 #include "UIEditorPanel.h"
 
 #include "ImGuiExtension.h"
+#include "Panel/UI/UIEditorDisplay.h"
 
 #include "Event/EditUISceneEvent.h"
 
@@ -19,6 +20,7 @@ void UIEditorPanel::OnAttach()
 	auto registry = Mule::Renderer::Get().CreateResourceRegistry();
 	mUIEditorCamera->SetResourceRegistry(registry);
 	mSelectedElement = nullptr;
+
 }
 
 void UIEditorPanel::OnUIRender(float dt)
@@ -103,6 +105,7 @@ void UIEditorPanel::OnEditorEvent(Ref<IEditorEvent> event)
 		mUIScene = assetManager->Get<Mule::UIScene>(sceneEvent->GetUISceneHandle());
 		mSelectedElement = nullptr;
 		mIsModified = false;
+		mUIScene->SetAssetManager(assetManager);
 	}
 	break;
 	}
@@ -179,10 +182,10 @@ void UIEditorPanel::DisplayCanvasPanel()
 		case Mule::UIElementType::UIText:
 		{
 			Ref<Mule::UIText> text = MakeRef<Mule::UIText>("UI Text");
-			text->GetTransform().Left = Mule::UIMeasurement(mousePos.x, Mule::UIUnitType::Pixels);
-			text->GetTransform().Top = Mule::UIMeasurement(mousePos.y, Mule::UIUnitType::Pixels);
-			text->GetTransform().Width = Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels);
-			text->GetTransform().Height = Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels);
+			text->SetLeft(mousePos.x, Mule::UIUnitType::Pixels);
+			text->SetTop(mousePos.y, Mule::UIUnitType::Pixels);
+			text->SetWidth(100.f, Mule::UIUnitType::Pixels);
+			text->SetHeight(100.f, Mule::UIUnitType::Pixels);
 
 			mUIScene->AddUIElement(text);
 			mSelectedElement = text;
@@ -192,10 +195,10 @@ void UIEditorPanel::DisplayCanvasPanel()
 		case Mule::UIElementType::UIButton:
 		{
 			Ref<Mule::UIButton> button = MakeRef<Mule::UIButton>("UI Text");
-			button->GetTransform().Left = Mule::UIMeasurement(mousePos.x, Mule::UIUnitType::Pixels);
-			button->GetTransform().Top = Mule::UIMeasurement(mousePos.y, Mule::UIUnitType::Pixels);
-			button->GetTransform().Width = Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels);
-			button->GetTransform().Height = Mule::UIMeasurement(100.f, Mule::UIUnitType::Pixels);
+			button->SetLeft(mousePos.x, Mule::UIUnitType::Pixels);
+			button->SetTop(mousePos.y, Mule::UIUnitType::Pixels);
+			button->SetWidth(100.f, Mule::UIUnitType::Pixels);
+			button->SetHeight(100.f, Mule::UIUnitType::Pixels);
 
 			mUIScene->AddUIElement(button);
 			mSelectedElement = button;
@@ -261,19 +264,43 @@ void UIEditorPanel::DisplayInspectorPanel()
 		mIsModified = true;
 	}
 
-	Mule::UITransform& transform = mSelectedElement->GetTransform();
+	Mule::UITransform transform = mSelectedElement->GetTransform();
 
 	ImGui::SeparatorText("Location");
 
 	float parentWidth = mViewportSize.x;
 	float parentHeight = mViewportSize.y;
 
-	if (transform.Top) DisplayUIMeasurement("Top", *transform.Top, parentHeight);
-	if (transform.Left) DisplayUIMeasurement("Left", *transform.Left, parentWidth);
-	if (transform.Width) DisplayUIMeasurement("Width", *transform.Width, parentWidth);
-	if (transform.Height) DisplayUIMeasurement("Height", *transform.Height, parentHeight);
+	if (transform.Top)
+	{
+		if (DisplayUIMeasurement("Top", *transform.Top))
+		{
+			mSelectedElement->SetTop(transform.Top->Value, transform.Top->GetUnitType());
+		}
+	}
+	if (transform.Left)
+	{
+		if (DisplayUIMeasurement("Left", *transform.Left))
+		{
+			mSelectedElement->SetLeft(transform.Left->Value, transform.Left->GetUnitType());
+		}
+	}
+	if (transform.Width)
+	{
+		if (DisplayUIMeasurement("Width", *transform.Width))
+		{
+			mSelectedElement->SetWidth(transform.Width->Value, transform.Width->GetUnitType());
+		}
+	}
+	if (transform.Height)
+	{
+		if (DisplayUIMeasurement("Height", *transform.Height))
+		{
+			mSelectedElement->SetHeight(transform.Height->Value, transform.Height->GetUnitType());
+		}
+	}
 
-	ImGui::SeparatorText("Style");
+	//ImGui::SeparatorText("Style");
 	std::string styleName = "(Null)";
 
 	/*
@@ -294,23 +321,16 @@ void UIEditorPanel::DisplayInspectorPanel()
 	}
 	*/
 
+	auto elementType = mSelectedElement->GetType();
+	std::string elementTypeName = Mule::ToString(elementType);
+	ImGui::SeparatorText(elementTypeName.c_str());
 	switch (mSelectedElement->GetType())
 	{
 	case Mule::UIElementType::UIText:
-	{
-		WeakRef<Mule::UIText> textElem = mSelectedElement;
-		static char buffer[1024] = { 0 };
-		std::string text = textElem->GetText();
-		memset(buffer, 0, 1024);
-		memcpy(buffer, text.data(), text.size());
-		ImGui::Text("Text");
-		ImGui::SameLine();
-		if (ImGui::InputTextMultiline("##Text", buffer, 1024, {250, 150}))
-		{
-			textElem->SetText(buffer);
-			mIsModified = true;
-		}		
-	}
+		mIsModified |= DisplayTextElementEditor(mSelectedElement);
+		break;
+	case Mule::UIElementType::UIButton:
+		mIsModified |= DisplayButtonElementEditor(mSelectedElement);
 		break;
 	}
 }
@@ -329,51 +349,12 @@ void UIEditorPanel::DisplayElementSelection(Mule::UIElementType type)
 		});
 }
 
-void UIEditorPanel::DisplayUIMeasurement(const char* label, Mule::UIMeasurement& measurement, float parentSize)
-{
-	ImGui::PushID(label);
-	ImGui::Text(label);
-	ImGui::SameLine(75.f);
-	ImGui::PushItemWidth(100.f);
-	if (ImGui::DragFloat("##MeasurementValue", &measurement.Value, 1.f, 0.f, 0.f, "%.1f"))
-	{
-		mIsModified = true;
-	}
-	ImGui::SameLine();
-
-	const char* options[] = {
-		"px",
-		"%"
-	};
-
-	Mule::UIUnitType currentType = measurement.GetUnitType();
-	const char* selectedOption = options[static_cast<uint32_t>(currentType)];
-
-	ImGui::PushItemWidth(50.f);
-	if (ImGui::BeginCombo("Combo", selectedOption))
-	{
-		for (uint32_t i = 0; i < static_cast<uint32_t>(Mule::UIUnitType::MAX_UNIT_TYPE); i++)
-		{
-			Mule::UIUnitType type = static_cast<Mule::UIUnitType>(i);
-			bool selected = (type == currentType);
-
-			if (ImGui::Selectable(options[i], selected))
-			{
-				measurement.SetUnitType(static_cast<Mule::UIUnitType>(i), parentSize);
-				mIsModified = true;
-			}
-		}
-		ImGui::EndCombo();
-	}
-	ImGui::PopID();
-}
-
 void UIEditorPanel::SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec2& mousePos, float threshold)
 {	
-	float left = draggedRect.X;
-	float right = draggedRect.X + draggedRect.Width;
-	float top = draggedRect.Y;
-	float bottom = draggedRect.Y + draggedRect.Height;
+	float left = draggedRect.x;
+	float right = draggedRect.x + draggedRect.width;
+	float top = draggedRect.y;
+	float bottom = draggedRect.y + draggedRect.height;
 	float centerX = (left + right) * 0.5f;
 	float centerY = (top + bottom) * 0.5f;
 
@@ -382,12 +363,12 @@ void UIEditorPanel::SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec
 		if (element == mSelectedElement)
 			continue;
 	
-		const Mule::UIRect& rect = element->GetScreenRect();
+		const Mule::UIRect& rect = element->GetFinalRect();
 	
-		float otherLeft = mousePos.x + rect.X;
-		float otherRight = otherLeft + rect.Width;
-		float otherTop = mousePos.y + rect.Y;
-		float otherBottom = otherTop + rect.Height;
+		float otherLeft = mousePos.x + rect.x;
+		float otherRight = otherLeft + rect.width;
+		float otherTop = mousePos.y + rect.y;
+		float otherBottom = otherTop + rect.height;
 		float otherCenterX = (otherLeft + otherRight) * 0.5f;
 		float otherCenterY = (otherTop + otherBottom) * 0.5f;
 	
@@ -398,7 +379,7 @@ void UIEditorPanel::SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec
 		}
 		else if (glm::abs(right - otherRight) < threshold)
 		{
-			mSelectedElement->SetRight(otherRight - rect.Width, Mule::UIUnitType::Pixels);
+			mSelectedElement->SetRight(otherRight - rect.width, Mule::UIUnitType::Pixels);
 		}
 		//else if (glm::abs(centerX - otherCenterX) < threshold) result.SnapX = otherCenterX - boxSize.x * 0.5f;
 	
@@ -409,7 +390,7 @@ void UIEditorPanel::SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec
 		}
 		else if (glm::abs(bottom - otherBottom) < threshold)
 		{
-			mSelectedElement->SetBottom(otherBottom - rect.Height, Mule::UIUnitType::Pixels);
+			mSelectedElement->SetBottom(otherBottom - rect.height, Mule::UIUnitType::Pixels);
 		}
 		//else if (glm::abs(centerY - otherCenterY) < threshold) result.SnapY = otherCenterY - boxSize.y * 0.5f;
 	}
@@ -423,9 +404,9 @@ bool UIEditorPanel::ModifySelected()
 	ImGui::PushID("ModifyElement");
 
 	ImVec2 cursorPos = ImGui::GetCursorPos();
-	Mule::UIRect uiRect = mSelectedElement->GetScreenRect();
-	ImVec2 pos = ImVec2(uiRect.X, uiRect.Y) + mFrameCursorPos;
-	ImVec2 size = { uiRect.Width, uiRect.Height };
+	Mule::UIRect uiRect = mSelectedElement->GetFinalRect();
+	ImVec2 pos = ImVec2(uiRect.x, uiRect.y) + mFrameCursorPos;
+	ImVec2 size = { uiRect.width, uiRect.height };
 
 	const ImVec2 minSize = ImVec2(10.f, 10.f);
 
@@ -595,20 +576,20 @@ bool UIEditorPanel::ModifySelected()
 				if (element == mSelectedElement)
 					continue;
 
-				const Mule::UIRect& rect = element->GetScreenRect();
+				const Mule::UIRect& rect = element->GetFinalRect();
 				const float displayLineThreshold = 15.f;
 				const float snapDist = 5.f;
 
-				float mouseLeftDist = glm::abs(mousePos.x - rect.X);
-				float mouseRightDist = glm::abs(mousePos.x - rect.X - rect.Width);
-				float mouseTopDist = glm::abs(mousePos.y - rect.Y);
-				float mouseBottomDist = glm::abs(mousePos.y - rect.Y - rect.Height);
-				float mouseHorizontalCenterDist = glm::abs(mousePos.x - rect.X - rect.Width * 0.5f);
-				float mouseVerticalCenterDist = glm::abs(mousePos.y - rect.Y - rect.Height * 0.5f);
+				float mouseLeftDist = glm::abs(mousePos.x - rect.x);
+				float mouseRightDist = glm::abs(mousePos.x - rect.x - rect.width);
+				float mouseTopDist = glm::abs(mousePos.y - rect.y);
+				float mouseBottomDist = glm::abs(mousePos.y - rect.y - rect.height);
+				float mouseHorizontalCenterDist = glm::abs(mousePos.x - rect.x - rect.width * 0.5f);
+				float mouseVerticalCenterDist = glm::abs(mousePos.y - rect.y - rect.height * 0.5f);
   
 				if (mouseLeftDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Left))
 				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.x, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.x, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseLeftDist <= snapDist)
 					{
 						if (h.dir.x < 0)
@@ -626,7 +607,7 @@ bool UIEditorPanel::ModifySelected()
 
 				if (mouseRightDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Right))
 				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.X + rect.Width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.x + rect.width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.x + rect.width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseRightDist <= snapDist)
 					{
 						if (h.dir.x < 0)
@@ -644,7 +625,7 @@ bool UIEditorPanel::ModifySelected()
 
 				if (mouseTopDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Top))
 				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseTopDist <= snapDist)
 					{
 						if (h.dir.y < 0)
@@ -662,7 +643,7 @@ bool UIEditorPanel::ModifySelected()
 
 				if (mouseBottomDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Bottom))
 				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.Y + rect.Height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.Y + rect.Height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
+					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.y + rect.height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.y + rect.height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseBottomDist <= snapDist)
 					{
 						if (h.dir.y < 0)
@@ -681,7 +662,7 @@ bool UIEditorPanel::ModifySelected()
 				// Vertical Center
 				if (mouseVerticalCenterDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical))
 				{
-					float yOffset = rect.Y + rect.Height * 0.5f;
+					float yOffset = rect.y + rect.height * 0.5f;
 					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + yOffset }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + yOffset }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseVerticalCenterDist <= snapDist)
 					{
@@ -706,7 +687,7 @@ bool UIEditorPanel::ModifySelected()
 				// Horizontal Center
 				if (mouseHorizontalCenterDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical))
 				{
-					float xOffset = rect.X + rect.Width * 0.5f;
+					float xOffset = rect.x + rect.width * 0.5f;
 					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + xOffset, mFrameCursorPos.y }, { mFrameCursorPos.x + xOffset, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
 					if (mouseHorizontalCenterDist <= snapDist)
 					{
@@ -752,7 +733,8 @@ bool UIEditorPanel::ModifySelected()
 		}
 
 		// Y-axis handling
-		if (h.dir.y < 0) {
+		if (h.dir.y < 0) 
+		{
 			if (!topSnapped && !bottomSnapped)
 			{
 				pos.y += delta.y;
@@ -761,7 +743,8 @@ bool UIEditorPanel::ModifySelected()
 			}
 			size.y -= delta.y;
 		}
-		else if (h.dir.y > 0) {
+		else if (h.dir.y > 0) 
+		{
 			if (!topSnapped && !bottomSnapped)
 			{
 				size.y += delta.y;
@@ -802,17 +785,18 @@ bool UIEditorPanel::ModifySelected()
 
 	ImGui::PopID();
 
-	float relativeLeft = pos.x - mFrameCursorPos.x;
-	float relativeTop = pos.y - mFrameCursorPos.y;
-	float relativeWidth = size.x;
-	float relativeHeight = size.y;
+	if (changed)
+	{
+		float relativeLeft = pos.x - mFrameCursorPos.x;
+		float relativeTop = pos.y - mFrameCursorPos.y;
+		float relativeWidth = size.x;
+		float relativeHeight = size.y;
 
-	Mule::UITransform& transform = mSelectedElement->GetTransform();
-
-	mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
-	mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
-	mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
-	mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
+		mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
+	}
 
 	mIsModified = true;
 

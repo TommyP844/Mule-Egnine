@@ -27,6 +27,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 		std::string extension = dir.path().extension().string();
 		fs::path filePath = dir.path();
 
+		/*
 		if (IsModelExtension(dir.path()))
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
@@ -67,7 +68,7 @@ EditorContext::EditorContext(const fs::path& projectPath, WeakRef<Mule::EngineCo
 				assetManager->Load<Mule::Scene>(filePath);
 				});
 		}
-		else if (extension == ".ttf")
+		else */ if (extension == ".ttf")
 		{
 			jobSystem->PushJob([assetManager, filePath]() {
 				assetManager->Load<Mule::UIFont>(filePath);

@@ -18,8 +18,6 @@ UIThemeEditor::~UIThemeEditor()
 
 void UIThemeEditor::OnAttach()
 {
-	mTempTheme = MakeRef<Mule::UITheme>();
-	mTheme = mTempTheme;
 }
 
 void UIThemeEditor::OnUIRender(float dt)
@@ -62,7 +60,11 @@ void UIThemeEditor::OnUIRender(float dt)
 				if (ImGui::BeginTabItem(stateName.c_str()))
 				{
 					if (ImGui::CollapsingHeader("Button Style"))
+					{
 						mIsModified |= DisplayButtonStyleEditor(mTheme->ButtonStyle, state);
+						ImGui::SeparatorText("Button Text Style");
+						mIsModified |= DisplayTextStyleEditor(mTheme->ButtonStyle->TextStyle.GetValue(), state);
+					}
 
 					if (ImGui::CollapsingHeader("Text Style"))
 						mIsModified |= DisplayTextStyleEditor(mTheme->TextStyle, state);

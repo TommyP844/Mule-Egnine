@@ -1,5 +1,9 @@
 #pragma once
 
+#include "StyleVariable.h"
+#include "UIColor.h"
+#include "Graphics/UI/UIBorder.h"
+#include "Graphics/UI/UIPadding.h"
 #include "Graphics/UI/Element/UIElementState.h"
 #include "Graphics/UI/Element/UIElementType.h"
 
@@ -27,6 +31,8 @@ namespace Mule
 		{
 			mType = type;
 		}
+
+		virtual ~UIBaseStyle() {}
 
 		UIElementType GetElementType() const { return mType; }
 

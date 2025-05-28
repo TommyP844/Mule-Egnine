@@ -24,8 +24,12 @@ namespace Mule
 		UIBaseElement(const std::string& name, UIElementType elementType, UIHandle handle);
 		virtual ~UIBaseElement() {}
 
-		virtual void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
 		virtual void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) = 0;
+		virtual void Measure(const UIRect& parentRect) = 0;
+		virtual void Layout(const UIRect& parentRect) = 0;
+		UIRect ResolveRect(const UIRect& parentRect);
+
+		void AddChild(Ref<UIBaseElement> child);
 
 		// Anchors
 		void AddAnchor(UIHandle targetElement, UIAnchorAxis targetAxis, UIAnchorAxis selfAxis);
@@ -37,14 +41,11 @@ namespace Mule
 		void SetName(const std::string& name) { mName = name; }
 		const std::string& GetName() const { return mName; }
 
-		// Per Frame
-
 		void OnEvent(WeakRef<Event> event);
 
 		// Transform
 		void SetTransform(const UITransform& transform) { mTransform = transform; mIsDirty = true; }
 		const UITransform& GetTransform() const { return mTransform; }
-		UITransform& GetTransform() { return mTransform; }
 		void SetLeft(float value, UIUnitType type);
 		void SetRight(float value, UIUnitType type);
 		void SetTop(float value, UIUnitType type);
@@ -52,14 +53,20 @@ namespace Mule
 		void SetWidth(float value, UIUnitType type);
 		void SetHeight(float value, UIUnitType type);
 
-		// Helpers
+		// Visibility
 		void SetVisible(bool visible) { mVisible = visible; }
 		bool IsVisible() const { return mVisible; }
-		void UpdateRect(const UIRect& parentRect);
-		const UIRect& GetScreenRect() const { return mScreenRect; }
 
-		virtual void SetHandle(UIHandle handle) = 0;
+		const UIRect& GetContentRect() const { return mContentRect; }
+		const UIRect& GetFinalRect() const { return mFinalRect; }
+
+		const glm::vec2& GetMeasuredSize() const { return mMeasuredSize; }
+
+
+		void SetHandle(UIHandle handle);
 		UIHandle GetHandle() const { return mHandle; }
+		
+		void SetScene(WeakRef<UIScene> scene);
 
 		WeakRef<UIBaseElement> HitTest(float screenX, float screenY);
 		UIElementType GetType() const { return mType; }
@@ -71,21 +78,25 @@ namespace Mule
 			return WeakRef<T>((T*)this);
 		}
 
-		virtual void SetScene(WeakRef<UIScene> scene) = 0;
 
 	protected:
+		UIHandle mHandle;
 		UIElementState mState;
-		bool mVisible;
 		UITransform mTransform;
+		UIRect mContentRect;
+		UIRect mFinalRect;
+		glm::vec2 mMeasuredSize;
 
+		// Flags
+		bool mVisible;
 		bool mIsDirty;
-		UIRect mScreenRect;
 
 		// Self Axis -> Anchor
 		std::unordered_map<UIAnchorAxis, UIAnchor> mAnchors;
-		WeakRef<UIScene> mScene;
 
-		UIHandle mHandle;
+		WeakRef<UIScene> mScene;
+		std::vector<Ref<UIBaseElement>> mChildren;
+
 	private:
 		std::string mName;
 		UIElementType mType;

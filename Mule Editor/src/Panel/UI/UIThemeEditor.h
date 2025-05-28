@@ -16,7 +16,6 @@ public:
 	void SetTheme(WeakRef<Mule::UITheme> theme);
 
 private:
-	Ref<Mule::UITheme> mTempTheme; // TODO: remove
 	WeakRef<Mule::UITheme> mTheme;
 	bool mIsModified;
 };

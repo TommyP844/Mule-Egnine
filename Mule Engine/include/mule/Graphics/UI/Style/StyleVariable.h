@@ -28,6 +28,11 @@ namespace Mule
 			return *mValue;
 		}
 
+		T& GetValue()
+		{
+			return *mValue;
+		}
+
 	private:
 		std::optional<T> mValue;
 	};

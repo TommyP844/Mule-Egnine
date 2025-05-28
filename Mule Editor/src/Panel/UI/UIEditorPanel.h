@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include "Panel/IPanel.h"
 
@@ -31,7 +31,6 @@ private:
 	void DisplayInspectorPanel();
 
 	void DisplayElementSelection(Mule::UIElementType type);
-	void DisplayUIMeasurement(const char* label, Mule::UIMeasurement& measurement, float parentSize);
 
 	void SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec2& mousePos, float threshold = 5.f);
 	bool ModifySelected();

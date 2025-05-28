@@ -43,13 +43,24 @@ namespace Mule
 			mUnitType = type;
 		}
 
+		void SetUnitType(UIUnitType type)
+		{
+			mUnitType = type;
+		}
+
 		void Init(float value, UIUnitType type)
 		{
 			Value = value;
 			mUnitType = type;
 		}
 
+		bool IsAuto() const
+		{
+			return mUnitType == UIUnitType::Auto;
+		}
+
 	private:
 		UIUnitType mUnitType = UIUnitType::Pixels;
 	};
+
 }

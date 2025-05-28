@@ -15,9 +15,6 @@ namespace Mule
 		auto theme = assetManager->Get<UITheme>(mThemeHandle);
 		theme = theme ? theme : UITheme::GetDefault();
 
-		for (auto panel : mPanels)
-			panel->Render(commandList, screenRect);
-
 		for (auto element : mElements)
 			element->Render(commandList, screenRect, assetManager, theme);
 	}
@@ -47,35 +44,17 @@ namespace Mule
 		mElementHandles.erase(element->GetHandle());
 	}
 
-	void UIScene::AddUIPanel(Ref<UIPanel> panel)
-	{
-		auto iter = std::find(mPanels.begin(), mPanels.end(), panel);
-		if (iter != mPanels.end())
-		{
-			SPDLOG_WARN("Element already exists in UIScene: {}", panel->GetName());
-			return;
-		}
-		mPanels.push_back(panel);
-	}
-
-	void UIScene::RemoveUIPanel(Ref<UIPanel> panel)
-	{
-		auto iter = std::find(mPanels.begin(), mPanels.end(), panel);
-		if (iter == mPanels.end())
-		{
-			SPDLOG_WARN("UIPanel does not exist in UIScene: {}", panel->GetName());
-			return;
-		}
-		mPanels.push_back(panel);
-	}
 
 	void UIScene::Update(const UIRect& windowRect, WeakRef<AssetManager> assetManager)
 	{
-		auto theme = assetManager->Get<UITheme>(mThemeHandle);
-		theme = theme ? theme : UITheme::GetDefault();
+		mTheme = assetManager->Get<UITheme>(mThemeHandle);
+		mTheme = mTheme ? mTheme : UITheme::GetDefault();
 
 		for (auto element : mElements)
-			element->Update(windowRect, assetManager, theme);
+		{
+			element->Measure(windowRect);
+			element->Layout(windowRect);
+		}
 	}
 
 	WeakRef<UIBaseElement> UIScene::HitTest(float screenX, float screenY)

@@ -23,12 +23,13 @@ namespace Mule
 	class UIFont : public Asset<AssetType::UIFont>
 	{
 	public:
-		UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, float lineHeight, AssetHandle atlasHandle);
+		UIFont(Ref<Texture2D> atlas, const std::unordered_map<uint32_t, UIFontGlyph>& glyphs, float lineHeight, float ascenderY, AssetHandle atlasHandle);
 		~UIFont();
 
 		const UIFontGlyph& GetGlyph(uint32_t codepoint) const;
 		AssetHandle GetAtlasHandle() const { return mAtlasHandle; }
 		float GetLineHeight() const { return mLineHeight; }
+		float GetAscenderY() const { return mAscenderY; }
 
 		glm::vec2 CalculateSize(const std::string& str, float fontSize, float wrapWidth);
 
@@ -37,5 +38,6 @@ namespace Mule
 		std::unordered_map<uint32_t, UIFontGlyph> mGlyphs;
 		AssetHandle mAtlasHandle;
 		float mLineHeight;
+		float mAscenderY;
 	};
 }

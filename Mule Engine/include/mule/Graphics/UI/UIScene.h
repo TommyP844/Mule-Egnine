@@ -17,11 +17,7 @@ namespace Mule
 		void AddUIElement(Ref<UIBaseElement> element);
 		void RemoveUIElement(WeakRef<UIBaseElement> element);
 
-		void AddUIPanel(Ref<UIPanel> panel);
-		void RemoveUIPanel(Ref<UIPanel> panel);
-
 		const std::vector<Ref<UIBaseElement>>& GetUIElements() const { return mElements; }
-		const std::vector<Ref<UIPanel>>& GetUIPanels() const { return mPanels; }
 
 		void Update(const UIRect& windowRect, WeakRef<AssetManager> assetManager);
 		WeakRef<UIBaseElement> HitTest(float screenX, float screenY);
@@ -31,10 +27,23 @@ namespace Mule
 		void SetThemeHandle(AssetHandle themeHandle) { mThemeHandle = themeHandle; }
 		AssetHandle GetThemeHandle() const { return mThemeHandle; }
 
+		void SetAssetManager(WeakRef<AssetManager> assetManager)
+		{
+			mAssetManager = assetManager;
+		}
+
+		WeakRef<AssetManager> GetAssetManager() const
+		{
+			return mAssetManager;
+		}
+
+		WeakRef<UITheme> GetTheme() const { return mTheme; }
+
 	private:
 		std::vector<Ref<UIBaseElement>> mElements;
-		std::vector<Ref<UIPanel>> mPanels;
 		std::unordered_map<UIHandle, Ref<UIBaseElement>> mElementHandles;
 		AssetHandle mThemeHandle;
+		WeakRef<UITheme> mTheme;
+		WeakRef<AssetManager> mAssetManager;
 	};
 }

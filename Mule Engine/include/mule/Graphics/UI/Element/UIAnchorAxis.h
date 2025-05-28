@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Core.h"
+
 #include <string>
 #include <assert.h>
 
@@ -15,7 +17,8 @@ namespace Mule
         CenterVertical,
 	};
 
-    constexpr std::string GetUIAnchorAxisString(UIAnchorAxis axis)
+    template<>
+    std::string ToString(UIAnchorAxis axis)
     {
         switch (axis)
         {
@@ -31,7 +34,8 @@ namespace Mule
         }
     }
 
-    constexpr UIAnchorAxis GetUIAnchorAxisFromString(const std::string& axis)
+    template<>
+    UIAnchorAxis FromString(const std::string& axis)
     {
         if(axis == "Top") return UIAnchorAxis::Top;
         if (axis == "Bottom") return UIAnchorAxis::Bottom;

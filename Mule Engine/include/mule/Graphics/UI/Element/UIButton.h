@@ -13,9 +13,8 @@ namespace Mule
 		virtual ~UIButton();
 				
 		void Render(CommandList& commandList, const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) override;
-		void Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme) override;
-		void SetHandle(UIHandle handle) override;
-		void SetScene(WeakRef<UIScene> scene) override;
+		void Measure(const UIRect& parentRect) override;
+		void Layout(const UIRect& parentRect) override;
 
 		Ref<UIText> GetTextElement() const { return mButtonText; }
 		void SetTextElement(Ref<UIText> textElem) { mButtonText = textElem; }

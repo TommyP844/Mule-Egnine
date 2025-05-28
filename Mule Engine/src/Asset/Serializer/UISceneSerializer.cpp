@@ -32,20 +32,32 @@ namespace Mule
 
 		AssetHandle themeHandle = node["Theme"].as<AssetHandle>();
 		scene->SetThemeHandle(themeHandle);
-		for (auto child : node["Elements"])
+		for (auto elementNode : node["Elements"])
 		{
-			auto type = FromString<UIElementType>(child["Type"].as<std::string>());
+			auto type = FromString<UIElementType>(elementNode["Type"].as<std::string>());
 			Ref<UIBaseElement> element;
 			switch (type)
 			{
 			case UIElementType::UIText:
+			{
+				Ref<UIText> textElement = MakeRef<UIText>();
+				YAML::convert<UIText>::decode(elementNode, *textElement);
+				element = textElement;
+			}
 				break;
 			case UIElementType::UIButton:
+			{
+				Ref<UIButton> buttonElement = MakeRef<UIButton>();
+				YAML::convert<UIButton>::decode(elementNode, *buttonElement);
+				element = buttonElement;
+			}
 				break;
 			}
 
-
-			scene->AddUIElement(element);
+			if(element)
+				scene->AddUIElement(element);
+			else
+				SPDLOG_WARN("Failed to deserialize UI element of type: {}", ToString(type));
 		}
 
 		return scene;
@@ -85,8 +97,16 @@ namespace Mule
 		switch (element->GetType())
 		{
 		case UIElementType::UIText:
+		{
+			Ref<UIText> textElement = Ref<UIText>(element);
+			elementNode = YAML::convert<UIText>::encode(*textElement);
+		}
 			break;
 		case UIElementType::UIButton:
+		{
+			Ref<UIButton> buttonElement = Ref<UIButton>(element);
+			elementNode = YAML::convert<UIButton>::encode(*buttonElement);
+		}
 			break;
 		default:
 			assert(false && "Invalid UIElementType");

@@ -4,13 +4,14 @@
 #include "Graphics/UI/UIFont.h"
 #include "Core/StringUtil.h"
 
+#include "Graphics/UI/UIScene.h"
+
 namespace Mule
 {
 	UIText::UIText(const std::string& name)
 		:
 		UIElement(name, UIElementType::UIText),
-		mText(""),
-		mAutoSize(false)
+		mText("")
 	{
 	}
 
@@ -33,24 +34,28 @@ namespace Mule
 			return;
 
 		WeakRef<UIFont> font = assetManager->Get<UIFont>(fontHandle);
+
+		if (!font)
+			return;
+
 		WeakRef<Texture2D> fontAtlas = assetManager->Get<Texture2D>(font->GetAtlasHandle());
 		float fontSize = style->GetFontSize(mState, fallbackStyle);
-		glm::vec4 fontColor = style->GetForegroundColor(mState, fallbackStyle);
+		glm::vec4 fontColor = style->GetFontColor(mState, fallbackStyle);
 		//glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BackgroundColor, theme);
 		//bool hasBorder = mStyle->GetValue<bool>(mState, UIStyleKey::HasBorder, theme);
 		//glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BorderColor, theme);
 		//float borderWidth = mStyle->GetValue<float>(mState, UIStyleKey::BorderWidth, theme);
 		//glm::vec2 padding = mStyle->GetValue<glm::vec2>(mState, UIStyleKey::Padding, theme);
 
-		const UIRect& rect = GetScreenRect();
+		const UIRect& rect = GetContentRect();
 
-		glm::vec2 cursor = glm::vec2(rect.X, rect.Y + font->GetLineHeight() * fontSize);
+		glm::vec2 cursor = glm::vec2(rect.x, rect.y + font->GetLineHeight() * fontSize);
 
 		for (auto c : mText)
 		{			
 			if (c == '\n')
 			{
-				cursor.x = rect.X;
+				cursor.x = rect.x;
 				cursor.y += font->GetLineHeight() * fontSize;
 				continue;
 			}
@@ -59,9 +64,11 @@ namespace Mule
 			glm::vec2 min = cursor + glyph.PlaneMin * fontSize;
 			glm::vec2 max = cursor + glyph.PlaneMax * fontSize;
 
-			if (max.x > rect.X + rect.Width)
+			// Need epsilon for floating point precision issues
+			float espsilon = 1.f / fontSize;
+			if (max.x > rect.x + rect.width + espsilon)
 			{
-				cursor.x = rect.X;
+				cursor.x = rect.x;
 				cursor.y += font->GetLineHeight() * fontSize;
 
 				min = cursor + glyph.PlaneMin * fontSize;
@@ -83,56 +90,69 @@ namespace Mule
 				fontAtlas->GetGlobalIndex()
 			);
 
-
 			commandList.AddCommand(command);
 
 			cursor.x += glyph.Advance * fontSize;
 		}
-		
 	}
 
-	void UIText::Update(const UIRect& parentRect, WeakRef<AssetManager> assetManager, WeakRef<UITheme> theme)
+	void UIText::Measure(const UIRect& parentRect)
 	{
-		
-		if (mAutoSize)
+		auto assetManager = mScene->GetAssetManager();
+		WeakRef<UITextStyle> style = mStyle ? mStyle : mScene->GetTheme()->TextStyle;
+		WeakRef<UITextStyle> fallbackStyle = mScene->GetTheme()->TextStyle;
+
+		AssetHandle fontHandle = style->GetFontHandle(mState, fallbackStyle);
+		if (!fontHandle)
+			return;
+
+		WeakRef<UIFont> font = assetManager->Get<UIFont>(fontHandle);
+		if (!font)
+			return;
+
+		float wrapWidth = parentRect.width;
+
+		if (mTransform.Width.has_value() && mTransform.Width->GetUnitType() != UIUnitType::Auto)
 		{
-			WeakRef<UITextStyle> style = mStyle ? mStyle : theme->TextStyle;
-			WeakRef<UITextStyle> fallbackStyle = theme->TextStyle;
-
-			float fontSize = style->GetFontSize(mState, fallbackStyle);
-			auto fontHandle = style->GetFontHandle(mState, fallbackStyle);
-			auto font = assetManager->Get<UIFont>(fontHandle); // Font should always exist, default loaded at engine startup
-
-			if (font)
-			{
-				glm::vec2 textSize = font->CalculateSize(mText, fontSize, parentRect.Width);
-
-				mTransform.Width = UIMeasurement(textSize.x, UIUnitType::Pixels);
-				mTransform.Height = UIMeasurement(textSize.y, UIUnitType::Pixels);
-			}
-			else
-			{
-				mTransform.Width = UIMeasurement(10.f, UIUnitType::Pixels);
-				mTransform.Height = UIMeasurement(10.f, UIUnitType::Pixels);
-			}
+			wrapWidth = mTransform.Width->Resolve(parentRect.width);
 		}
-		
-		UpdateRect(parentRect);		
+
+		float fontSize = style->GetFontSize(mState, fallbackStyle);
+		glm::vec2 size = font->CalculateSize(mText, fontSize, parentRect.width);
+
+		mMeasuredSize = size;
 	}
 
-	void UIText::SetAutoSize(bool autoSize)
+	void UIText::Layout(const UIRect& parentRect)
 	{
-		mAutoSize = true;
-		mIsDirty = true;
-	}
+		WeakRef<UITextStyle> style = mStyle ? mStyle : mScene->GetTheme()->TextStyle;
+		WeakRef<UITextStyle> fallbackStyle = mScene->GetTheme()->TextStyle;
 
-	void UIText::SetScene(WeakRef<UIScene> scene)
-	{
-		mScene = scene;
-	}
+		const UIPadding& padding = style->GetPadding(mState, fallbackStyle);
 
-	void UIText::SetHandle(UIHandle handle)
-	{
-		mHandle = handle;
+		UIRect rect = ResolveRect(parentRect);
+
+		if (mTransform.Width.has_value() && mTransform.Width->GetUnitType() == UIUnitType::Auto)
+		{
+			rect.width = mMeasuredSize.x + padding.Left.Resolve(rect.width) + padding.Right.Resolve(rect.width);
+		}
+		if (mTransform.Height.has_value() && mTransform.Height->GetUnitType() == UIUnitType::Auto)
+		{
+			rect.height = mMeasuredSize.y + padding.Top.Resolve(rect.height) + padding.Bottom.Resolve(rect.height);
+		}
+
+		mFinalRect = rect;
+		mContentRect = rect;
+
+		mContentRect.x += padding.Left.Resolve(rect.width);
+		mContentRect.y += padding.Top.Resolve(rect.height);
+		mContentRect.width -= padding.Left.Resolve(rect.width) + padding.Right.Resolve(rect.width);
+		mContentRect.height -= padding.Top.Resolve(rect.height) + padding.Bottom.Resolve(rect.height);
+
+		for (auto child : mChildren)
+		{
+			child->Measure(mContentRect);
+			child->Layout(mContentRect);
+		}
 	}
 }
