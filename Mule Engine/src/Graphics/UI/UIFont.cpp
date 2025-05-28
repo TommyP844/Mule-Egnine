@@ -24,7 +24,7 @@ namespace Mule
 
     glm::vec2 UIFont::CalculateSize(const std::string& str, float fontSize, float wrapWidth)
     {
-		glm::vec2 cursor = glm::vec2(0.f, GetLineHeight() * fontSize);
+		glm::vec2 cursor = glm::vec2(0.f, GetAscenderY() * fontSize);
 
 		for (auto c : str)
 		{

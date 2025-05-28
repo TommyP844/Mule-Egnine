@@ -41,15 +41,30 @@ namespace Mule
 		WeakRef<Texture2D> fontAtlas = assetManager->Get<Texture2D>(font->GetAtlasHandle());
 		float fontSize = style->GetFontSize(mState, fallbackStyle);
 		glm::vec4 fontColor = style->GetFontColor(mState, fallbackStyle);
-		//glm::vec4 backgroundColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BackgroundColor, theme);
-		//bool hasBorder = mStyle->GetValue<bool>(mState, UIStyleKey::HasBorder, theme);
-		//glm::vec4 borderColor = mStyle->GetValue<glm::vec4>(mState, UIStyleKey::BorderColor, theme);
-		//float borderWidth = mStyle->GetValue<float>(mState, UIStyleKey::BorderWidth, theme);
-		//glm::vec2 padding = mStyle->GetValue<glm::vec2>(mState, UIStyleKey::Padding, theme);
+		glm::vec4 backgroundColor = style->GetBackgroundColor(mState, fallbackStyle);
+		UIBorder border = style->GetBorder(mState, fallbackStyle);
+
+
+		if (backgroundColor.a > 0.f)
+		{
+			float borderThickness = border.Thickness.Resolve(parentRect.width);
+
+			const UIRect& finalRect = GetFinalRect();
+			DrawRectCommand command(
+				finalRect.GetPosition(),
+				finalRect.GetSize(),
+				backgroundColor,
+				borderThickness > 0.f,
+				border.Color,
+				borderThickness
+			);
+
+			commandList.AddCommand(command);
+		}
 
 		const UIRect& rect = GetContentRect();
 
-		glm::vec2 cursor = glm::vec2(rect.x, rect.y + font->GetLineHeight() * fontSize);
+		glm::vec2 cursor = glm::vec2(rect.x, rect.y + font->GetAscenderY() * fontSize);
 
 		for (auto c : mText)
 		{			
@@ -66,7 +81,7 @@ namespace Mule
 
 			// Need epsilon for floating point precision issues
 			float espsilon = 1.f / fontSize;
-			if (max.x > rect.x + rect.width + espsilon)
+			if (glm::floor(max.x) > rect.x + rect.width + espsilon)
 			{
 				cursor.x = rect.x;
 				cursor.y += font->GetLineHeight() * fontSize;

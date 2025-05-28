@@ -578,7 +578,7 @@ bool UIEditorPanel::ModifySelected()
 
 				const Mule::UIRect& rect = element->GetFinalRect();
 				const float displayLineThreshold = 15.f;
-				const float snapDist = 5.f;
+				const float snapDist = 7.f;
 
 				float mouseLeftDist = glm::abs(mousePos.x - rect.x);
 				float mouseRightDist = glm::abs(mousePos.x - rect.x - rect.width);
@@ -717,8 +717,8 @@ bool UIEditorPanel::ModifySelected()
 			if (!leftSnapped && !rightSnapped)
 			{
 				pos.x += delta.x;
-				if(!horizontalCenterSnapped)
-					mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
+				//if(!horizontalCenterSnapped)
+				//	mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
 			}
 			
 			size.x -= delta.x;
@@ -727,8 +727,8 @@ bool UIEditorPanel::ModifySelected()
 			if (!leftSnapped && !rightSnapped)
 			{
 				size.x += delta.x;
-				if(!horizontalCenterSnapped)
-					mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
+				//if(!horizontalCenterSnapped)
+				//	mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
 			}
 		}
 
@@ -757,20 +757,20 @@ bool UIEditorPanel::ModifySelected()
 		{
 			if (!horizontalCenterSnapped)
 			{
-				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
-				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
+				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
+				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
 				pos.x += delta.x;
 			}
 
 			if (!verticalCenterSnapped)
 			{
-				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Top);
-				mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Bottom);
+				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Top);
+				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Bottom);
 				pos.y += delta.y;
 			}
 
-			if(!verticalCenterSnapped && !horizontalCenterSnapped)
-				mSelectedElement->RemoveAllAnchors();
+			//if(!verticalCenterSnapped && !horizontalCenterSnapped)
+			//	mSelectedElement->RemoveAllAnchors();
 		}
 
 		// Clamp to min size
@@ -792,10 +792,17 @@ bool UIEditorPanel::ModifySelected()
 		float relativeWidth = size.x;
 		float relativeHeight = size.y;
 
-		mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
-		mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
+		if(!leftSnapped)
+			mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
+
+		if(!topSnapped)
+			mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
+
+		if(!horizontalCenterSnapped)
+			mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
+
+		if (!verticalCenterSnapped)
+			mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
 	}
 
 	mIsModified = true;
