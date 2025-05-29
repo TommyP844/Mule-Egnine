@@ -303,5 +303,42 @@ namespace Mule
 		mTransform.Height = UIMeasurement(value, type);
 		mIsDirty = true;
 	}
+
+	const UIMeasurement& UIBaseElement::GetMeasurement(UIAnchorAxis axis) const
+	{
+		switch (axis)
+		{
+		case UIAnchorAxis::Top:
+			return mTransform.Top ? *mTransform.Top : UIMeasurement(0.f, UIUnitType::Pixels);
+			break;
+
+		case UIAnchorAxis::Bottom:
+			return mTransform.Bottom ? *mTransform.Bottom : UIMeasurement(0.f, UIUnitType::Pixels);
+			break;
+
+		case UIAnchorAxis::Left:
+			return mTransform.Left ? *mTransform.Left : UIMeasurement(0.f, UIUnitType::Pixels);
+			break;
+
+		case UIAnchorAxis::Right:
+			return mTransform.Right ? *mTransform.Right : UIMeasurement(0.f, UIUnitType::Pixels);
+			break;
+		}
+	}
+
+	void UIBaseElement::SetAxisMeasurement(UIAnchorAxis axis, const UIMeasurement& measurement)
+	{
+		switch (axis)
+		{
+		case UIAnchorAxis::Top: mTransform.Top = measurement; break;
+		case UIAnchorAxis::Bottom: mTransform.Bottom = measurement; break;
+		case UIAnchorAxis::Left: mTransform.Left = measurement; break;
+		case UIAnchorAxis::Right: mTransform.Right = measurement; break;
+		default: 
+			SPDLOG_WARN("Invalid axis for SetAxisMeasurement: {}", ToString(axis));
+			break;
+		}
+		mIsDirty = true;
+	}
 	
 }

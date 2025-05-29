@@ -34,4 +34,14 @@ private:
 
 	void SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec2& mousePos, float threshold = 5.f);
 	bool ModifySelected();
+
+	struct SnapCorner
+	{
+		ImGuiMouseCursor cursor;
+		ImVec2 Pos;
+		Mule::UIAnchorAxis axis;
+		glm::vec2 AxisMovement;
+	};
+
+	
 };

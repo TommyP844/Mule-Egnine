@@ -53,6 +53,9 @@ namespace Mule
 		void SetWidth(float value, UIUnitType type);
 		void SetHeight(float value, UIUnitType type);
 
+		const UIMeasurement& GetMeasurement(UIAnchorAxis axis) const;
+		void SetAxisMeasurement(UIAnchorAxis axis, const UIMeasurement& measurement);
+
 		// Visibility
 		void SetVisible(bool visible) { mVisible = visible; }
 		bool IsVisible() const { return mVisible; }

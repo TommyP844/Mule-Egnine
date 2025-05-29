@@ -401,411 +401,87 @@ bool UIEditorPanel::ModifySelected()
 	if (!mSelectedElement)
 		return false;
 
+	bool changed = false;
+
 	ImGui::PushID("ModifyElement");
 
 	ImVec2 cursorPos = ImGui::GetCursorPos();
 	Mule::UIRect uiRect = mSelectedElement->GetFinalRect();
-	ImVec2 pos = ImVec2(uiRect.x, uiRect.y) + mFrameCursorPos;
-	ImVec2 size = { uiRect.width, uiRect.height };
 
-	const ImVec2 minSize = ImVec2(10.f, 10.f);
+	ImVec2 min = ImVec2(uiRect.x, uiRect.y) + mFrameCursorPos;
+	ImVec2 max = min + ImVec2(uiRect.width, uiRect.height);
 
-	ImGuiIO& io = ImGui::GetIO();
+	// Draw Rect
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
-	const ImU32 lineColor = IM_COL32(255, 255, 255, 255);
-	const ImU32 cornerColor = IM_COL32(255, 20, 20, 255);
-	const ImU32 midColor = IM_COL32(20, 20, 255, 255);
-	ImVec2 min = pos;
-	ImVec2 max = pos + size;
+	drawList->PushClipRect(mFrameCursorPos, mFrameCursorPos + mViewportSize);
+	ImGuiExtension::DrawDashedLine(ImVec2(min.x, min.y), ImVec2(min.x, max.y)); // Left
+	ImGuiExtension::DrawDashedLine(ImVec2(max.x, min.y), ImVec2(max.x, max.y)); // Right
+	ImGuiExtension::DrawDashedLine(ImVec2(min.x, min.y), ImVec2(max.x, min.y)); // Top
+	ImGuiExtension::DrawDashedLine(ImVec2(min.x, max.y), ImVec2(max.x, max.y)); // Bottom
+	
+	const float halfWidth = uiRect.width * 0.5f;
+	const float halfHeight = uiRect.height * 0.5f;
 
-	const float dashLength = 4.0f;
-	const float gapLength = 2.0f;
-	ImVec2 handleSize = ImVec2(7.f, 7.f);
-	ImVec2 halfHandle = handleSize * 0.5f;
-
-	bool changed = false;
-
-	// Helpers
-	auto drawQuad = [&](ImVec2 center, ImU32 color) {
-		drawList->AddRectFilled(center - halfHandle, center + halfHandle, color);
-		};
-
-	// Handle definitions
-	struct Handle {
-		ImVec2 center;
-		ImVec2 dir; // (0, 1), (1, 0) or (1, 1) for corner/edge dragging
-		ImU32 color;
-		ImGuiMouseCursor Cursor;
+	SnapCorner corners[4] = {
+		//SnapCorner(ImGuiMouseCursor_ResizeNWSE, min, Mule::UIAnchorAxis::Top | Mule::UIAnchorAxis::Left, glm::vec2(1.f, 1.f)),							// Top Left
+		SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(min.x + halfWidth, min.y), Mule::UIAnchorAxis::Top, glm::vec2(0.f, 1.f)),						// Top
+		//SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(max.x, min.y), Mule::UIAnchorAxis::Top | Mule::UIAnchorAxis::Right, glm::vec2(1.f, 1.f)),		// Top Right
+		SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(min.x, min.y + halfHeight), Mule::UIAnchorAxis::Left, glm::vec2(1.f, 0.f)),						// Left
+		SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(max.x, min.y + halfHeight), Mule::UIAnchorAxis::Right, glm::vec2(1.f, 0.f)),						// Right
+		//SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(min.x, max.y), Mule::UIAnchorAxis::Bottom | Mule::UIAnchorAxis::Left, glm::vec2(1.f, 1.f)),		// Bottom Left
+		SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(min.x + halfWidth, max.y), Mule::UIAnchorAxis::Bottom, glm::vec2(0.f, 1.f)),						// Bottom
+		//SnapCorner(ImGuiMouseCursor_ResizeNWSE, ImVec2(max.x, max.y), Mule::UIAnchorAxis::Bottom | Mule::UIAnchorAxis::Right, glm::vec2(1.f, 1.f)),		// Bottom Right
 	};
 
-	std::vector<Handle> handles = {
-		// Center (move)
-		{ (min + max) * 0.5f, ImVec2(0, 0), 0, ImGuiMouseCursor_ResizeAll },
+	for (uint32_t i = 0; i < 4; i++)
+	{
+		SnapCorner& corner = corners[i];
 
-		// Corners
-		{ min, ImVec2(-1, -1), cornerColor, ImGuiMouseCursor_ResizeNWSE },                    // Top-left
-		{ ImVec2(max.x, min.y), ImVec2(1, -1), cornerColor, ImGuiMouseCursor_ResizeNESW },    // Top-right
-		{ max, ImVec2(1, 1), cornerColor, ImGuiMouseCursor_ResizeNWSE },                      // Bottom-right
-		{ ImVec2(min.x, max.y), ImVec2(-1, 1), cornerColor, ImGuiMouseCursor_ResizeNESW },    // Bottom-left
+		const ImVec2 snapDotHalfSize = ImVec2(5.f, 5.f);
+		const ImVec2 snapDotMin = corner.Pos - snapDotHalfSize;
+		const ImVec2 snapDotMax = corner.Pos + snapDotHalfSize;
 
-		// Edges (midpoints)
-		{ (min + ImVec2(max.x, min.y)) * 0.5f, ImVec2(0, -1), midColor, ImGuiMouseCursor_ResizeNS }, // Top
-		{ (ImVec2(max.x, min.y) + max) * 0.5f, ImVec2(1, 0), midColor, ImGuiMouseCursor_ResizeEW },  // Right
-		{ (ImVec2(min.x, max.y) + max) * 0.5f, ImVec2(0, 1), midColor, ImGuiMouseCursor_ResizeNS },  // Bottom
-		{ (min + ImVec2(min.x, max.y)) * 0.5f, ImVec2(-1, 0), midColor, ImGuiMouseCursor_ResizeEW }, // Left
-	};
-
-	static int activeHandle = -1;
-
-	// Draw dashed border last
-	ImGuiExtension::DrawDashedLine(min, ImVec2(max.x, min.y));
-	ImGuiExtension::DrawDashedLine(ImVec2(max.x, min.y), max);
-	ImGuiExtension::DrawDashedLine(max, ImVec2(min.x, max.y));
-	ImGuiExtension::DrawDashedLine(ImVec2(min.x, max.y), min);
-
-	struct LineArea {
-		ImVec2 p1, p2;
-	};
-
-	const float edgeInset = 7.0f;
-	const float midSize = 10.0f; // half-width around the midpoint to exclude
-
-	ImVec2 midTop = ImVec2((min.x + max.x) * 0.5f, min.y);
-	ImVec2 midRight = ImVec2(max.x, (min.y + max.y) * 0.5f);
-	ImVec2 midBottom = ImVec2((min.x + max.x) * 0.5f, max.y);
-	ImVec2 midLeft = ImVec2(min.x, (min.y + max.y) * 0.5f);
-
-	std::vector<LineArea> edges = {
-		// Top edge split
-		{ ImVec2(min.x + edgeInset, min.y), ImVec2(midTop.x - midSize, min.y) },
-		{ ImVec2(midTop.x + midSize, min.y), ImVec2(max.x - edgeInset, min.y) },
-
-		// Right edge split
-		{ ImVec2(max.x, min.y + edgeInset), ImVec2(max.x, midRight.y - midSize) },
-		{ ImVec2(max.x, midRight.y + midSize), ImVec2(max.x, max.y - edgeInset) },
-
-		// Bottom edge split
-		{ ImVec2(max.x - edgeInset, max.y), ImVec2(midBottom.x + midSize, max.y) },
-		{ ImVec2(midBottom.x - midSize, max.y), ImVec2(min.x + edgeInset, max.y) },
-
-		// Left edge split
-		{ ImVec2(min.x, max.y - edgeInset), ImVec2(min.x, midLeft.y + midSize) },
-		{ ImVec2(min.x, midLeft.y - midSize), ImVec2(min.x, min.y + edgeInset) },
-	};
-
-	const float lineHitThickness = 6.0f;
-
-	for (int i = 0; i < edges.size(); ++i) {
-		ImVec2 p1 = edges[i].p1;
-		ImVec2 p2 = edges[i].p2;
-
-		// Expand along normal for hitbox
-		ImVec2 dir = p2 - p1;
-		float len = ImLengthSqr(dir) > 0.0f ? std::sqrt(dir.x * dir.x + dir.y * dir.y) : 1.0f;
-		ImVec2 norm = ImVec2(-dir.y, dir.x) / len; // Perpendicular
-
-		ImVec2 offset = norm * (lineHitThickness * 0.5f);
-		ImVec2 a = p1 + offset;
-		ImVec2 b = p2 + offset;
-		ImVec2 c = p2 - offset;
-		ImVec2 d = p1 - offset;
-
-		// Create invisible button in a rectangle between a-b-c-d
-		ImGui::SetCursorScreenPos(ImMin(a, c));
-		ImVec2 size = ImVec2(ImAbs(c.x - a.x), ImAbs(c.y - a.y));
-		size.x = glm::max(size.x, 2.f);
-		size.y = glm::max(size.y, 2.f);
-		ImGui::InvisibleButton(("line_drag_" + std::to_string(i)).c_str(), size);
-
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-			if (ImGui::IsMouseClicked(0))
-				activeHandle = 0; // Center (move entire box)
-		}
-	}
-
-	for (int i = 1; i < handles.size(); ++i) {
-		Handle& h = handles[i];
-
-		// Determine rect for the handle
-		ImVec2 topLeft = h.center - halfHandle;
-		ImVec2 bottomRight = h.center + halfHandle;
-
-		// Use ImGui style-based colors
-		ImU32 fillColor = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
-		ImU32 borderColor = ImGui::GetColorU32(ImGuiCol_Border);
-
-		// Optional: distinguish corners from edges
-		if (std::abs(h.dir.x) + std::abs(h.dir.y) == 2) { // corner
-			fillColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
-		}
-
-		// Draw filled rectangle with border and optional rounding
-		drawList->AddRectFilled(topLeft, bottomRight, fillColor, 2.0f);
-		drawList->AddRect(topLeft, bottomRight, borderColor, 2.0f, 0, 1.5f);
-
-		// Invisible button for interaction
-		ImGui::SetCursorScreenPos(topLeft);
-		ImGui::InvisibleButton(std::to_string(i).c_str(), handleSize);
-
-		// Handle interaction
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetMouseCursor(h.Cursor);
-			if (ImGui::IsMouseClicked(0))
-				activeHandle = i;
-		}
-	}
-
-	bool leftSnapped = false;
-	bool rightSnapped = false;
-	bool topSnapped = false;
-	bool bottomSnapped = false;
-	bool verticalCenterSnapped = false;
-	bool horizontalCenterSnapped = false;
-
-	if (activeHandle != -1 && ImGui::IsMouseDown(0)) {
-		ImVec2 delta = io.MouseDelta;
-		Handle& h = handles[activeHandle];
-
-		// Draw Snap Lines
-		{
-			ImVec2 mousePos = ImGui::GetMousePos() - mFrameCursorPos;
-			// draw other bod lines
-			for (auto element : mUIScene->GetUIElements())
-			{
-				if (element == mSelectedElement)
-					continue;
-
-				const Mule::UIRect& rect = element->GetFinalRect();
-				const float displayLineThreshold = 15.f;
-				const float snapDist = 7.f;
-
-				float mouseLeftDist = glm::abs(mousePos.x - rect.x);
-				float mouseRightDist = glm::abs(mousePos.x - rect.x - rect.width);
-				float mouseTopDist = glm::abs(mousePos.y - rect.y);
-				float mouseBottomDist = glm::abs(mousePos.y - rect.y - rect.height);
-				float mouseHorizontalCenterDist = glm::abs(mousePos.x - rect.x - rect.width * 0.5f);
-				float mouseVerticalCenterDist = glm::abs(mousePos.y - rect.y - rect.height * 0.5f);
-  
-				if (mouseLeftDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Left))
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.x, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.x, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseLeftDist <= snapDist)
-					{
-						if (h.dir.x < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Left, Mule::UIAnchorAxis::Left);
-							leftSnapped = true;
-						}
-						else if (h.dir.x > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Left, Mule::UIAnchorAxis::Right);
-							leftSnapped = true;
-						}
-					}
-				}
-
-				if (mouseRightDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Right))
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + rect.x + rect.width, mFrameCursorPos.y }, { mFrameCursorPos.x + rect.x + rect.width, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseRightDist <= snapDist)
-					{
-						if (h.dir.x < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Right, Mule::UIAnchorAxis::Left);
-							rightSnapped = true;
-						}
-						else if (h.dir.x > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Right, Mule::UIAnchorAxis::Right);
-							rightSnapped = true;
-						}
-					}
-				}
-
-				if (mouseTopDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Top))
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.y }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseTopDist <= snapDist)
-					{
-						if (h.dir.y < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Top, Mule::UIAnchorAxis::Top);
-							topSnapped = true;
-						}
-						else if (h.dir.y > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Top, Mule::UIAnchorAxis::Bottom);
-							topSnapped = true;
-						}
-					}
-				}
-
-				if (mouseBottomDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::Bottom))
-				{
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + rect.y + rect.height }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + rect.y + rect.height }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseBottomDist <= snapDist)
-					{
-						if (h.dir.y < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Bottom, Mule::UIAnchorAxis::Top);
-							bottomSnapped = true;
-						}
-						else if (h.dir.y > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::Bottom, Mule::UIAnchorAxis::Bottom);
-							bottomSnapped = true;
-						}
-					}
-				}
-
-				// Vertical Center
-				if (mouseVerticalCenterDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical))
-				{
-					float yOffset = rect.y + rect.height * 0.5f;
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x, mFrameCursorPos.y + yOffset }, { mFrameCursorPos.x + mViewportSize.x, mFrameCursorPos.y + yOffset }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseVerticalCenterDist <= snapDist)
-					{
-						if (h.dir.y < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical, Mule::UIAnchorAxis::Top);
-							verticalCenterSnapped = true;
-						}
-						else if (h.dir.y > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical, Mule::UIAnchorAxis::Bottom);
-							verticalCenterSnapped = true;
-						}
-						else if (h.dir.y == 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical, Mule::UIAnchorAxis::CenterVertical);
-							verticalCenterSnapped = true;
-						}
-					}
-				}
-
-				// Horizontal Center
-				if (mouseHorizontalCenterDist < displayLineThreshold && !mSelectedElement->IsAnchoredToElementAxis(element->GetHandle(), Mule::UIAnchorAxis::CenterVertical))
-				{
-					float xOffset = rect.x + rect.width * 0.5f;
-					ImGuiExtension::DrawDashedLine({ mFrameCursorPos.x + xOffset, mFrameCursorPos.y }, { mFrameCursorPos.x + xOffset, mFrameCursorPos.y + mViewportSize.y }, 3.f, 3.f, IM_COL32(200, 20, 10, 255));
-					if (mouseHorizontalCenterDist <= snapDist)
-					{
-						if (h.dir.x < 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterHorizontal, Mule::UIAnchorAxis::Left);
-							horizontalCenterSnapped = true;
-						}
-						else if (h.dir.x > 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterHorizontal, Mule::UIAnchorAxis::Right);
-							horizontalCenterSnapped = true;
-						}
-						else if (h.dir.x == 0)
-						{
-							mSelectedElement->AddAnchor(element->GetHandle(), Mule::UIAnchorAxis::CenterHorizontal, Mule::UIAnchorAxis::CenterHorizontal);
-							horizontalCenterSnapped = true;
-						}
-					}
-				}
-			}
-		}
+		ImU32 boxColor = IM_COL32(51, 51, 51, 255);
 		
-
-		// X-axis handling
-		if (h.dir.x < 0) {
-			if (!leftSnapped && !rightSnapped)
-			{
-				pos.x += delta.x;
-				//if(!horizontalCenterSnapped)
-				//	mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
-			}
-			
-			size.x -= delta.x;
-		}
-		else if (h.dir.x > 0) {
-			if (!leftSnapped && !rightSnapped)
-			{
-				size.x += delta.x;
-				//if(!horizontalCenterSnapped)
-				//	mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
-			}
-		}
-
-		// Y-axis handling
-		if (h.dir.y < 0) 
+		ImGui::SetCursorPos(corner.Pos - snapDotHalfSize);
+		ImGui::InvisibleButton("##SnapDot", ImVec2(2.f * snapDotHalfSize.x, 2.f * snapDotHalfSize.y));
+		if (ImGui::IsItemHovered())
 		{
-			if (!topSnapped && !bottomSnapped)
-			{
-				pos.y += delta.y;
-				if(!verticalCenterSnapped)
-					mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Top);
-			}
-			size.y -= delta.y;
-		}
-		else if (h.dir.y > 0) 
-		{
-			if (!topSnapped && !bottomSnapped)
-			{
-				size.y += delta.y;
-				if (!verticalCenterSnapped)
-					mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Bottom);
-			}
-		}
+			boxColor = IM_COL32(31, 31, 31, 255);
 
-		if (h.dir.x == 0 && h.dir.y == 0)
-		{
-			if (!horizontalCenterSnapped)
+			ImGui::SetMouseCursor(corner.cursor);
+			if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 			{
-				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Left);
-				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Right);
-				pos.x += delta.x;
-			}
+				// Get Drag Delta
+				const ImVec2 IV2dragDelta = ImGui::GetMouseDragDelta();
 
-			if (!verticalCenterSnapped)
-			{
-				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Top);
-				//mSelectedElement->RemoveAnchor(Mule::UIAnchorAxis::Bottom);
-				pos.y += delta.y;
-			}
+				// Multiply by corner axis enablement (glm::vec2, 1 for movement, 0 for no movement)
+				const glm::vec2 dragDelta = glm::vec2(IV2dragDelta.x, IV2dragDelta.y) * corner.AxisMovement;
 
-			//if(!verticalCenterSnapped && !horizontalCenterSnapped)
-			//	mSelectedElement->RemoveAllAnchors();
+				Mule::UIMeasurement measurement = mSelectedElement->GetMeasurement(corner.axis);
+				if (corner.AxisMovement.x == 1)
+				{
+					measurement.Value += dragDelta.x;
+				}
+				if (corner.AxisMovement.y == 1)
+				{
+					measurement.Value += dragDelta.y;
+				}
+
+				// append delta to element axis
+				mSelectedElement->SetAxisMeasurement(corner.axis, measurement);
+				boxColor = IM_COL32(10, 10, 10, 255);
+			}
 		}
 
-		// Clamp to min size
-		if (size.x < minSize.x) size.x = minSize.x;
-		if (size.y < minSize.y) size.y = minSize.y;
+		drawList->AddRectFilled(snapDotMin, snapDotMax, boxColor, 2.f, ImDrawFlags_RoundCornersAll);
+		drawList->AddRect(snapDotMin - ImVec2(2.f, 2.f), snapDotMax + ImVec2(2.f, 2.f), IM_COL32(200, 200, 200, 255), 2.f, ImDrawFlags_RoundCornersAll);
 
-		changed = true;
+		ImGui::SetCursorPos(cursorPos);
 	}
-	else if (activeHandle != -1 && ImGui::IsMouseReleased(0)) {
-		activeHandle = -1;
-	}
+	
 
 	ImGui::PopID();
-
-	if (changed)
-	{
-		float relativeLeft = pos.x - mFrameCursorPos.x;
-		float relativeTop = pos.y - mFrameCursorPos.y;
-		float relativeWidth = size.x;
-		float relativeHeight = size.y;
-
-		if(!leftSnapped)
-			mSelectedElement->SetLeft(relativeLeft, Mule::UIUnitType::Pixels);
-
-		if(!topSnapped)
-			mSelectedElement->SetTop(relativeTop, Mule::UIUnitType::Pixels);
-
-		if(!horizontalCenterSnapped)
-			mSelectedElement->SetWidth(relativeWidth, Mule::UIUnitType::Pixels);
-
-		if (!verticalCenterSnapped)
-			mSelectedElement->SetHeight(relativeHeight, Mule::UIUnitType::Pixels);
-	}
-
-	mIsModified = true;
 
 	return changed;
 }

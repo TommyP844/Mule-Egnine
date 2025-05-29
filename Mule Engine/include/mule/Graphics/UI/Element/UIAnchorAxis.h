@@ -9,13 +9,15 @@ namespace Mule
 {
 	enum class UIAnchorAxis
 	{
-        Top,
-        Bottom,
-        Right,
-        Left,
-        CenterHorizontal,
-        CenterVertical,
+        Top                 = 1 << 1,
+        Bottom              = 1 << 2,
+        Right               = 1 << 3,
+        Left                = 1 << 4,
+        CenterHorizontal    = 1 << 5,
+        CenterVertical      = 1 << 6,
 	};
+
+	MULE_ENUM_OPERATORS(UIAnchorAxis)
 
     template<>
     std::string ToString(UIAnchorAxis axis)
