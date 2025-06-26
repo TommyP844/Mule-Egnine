@@ -15,33 +15,7 @@ public:
 
 	void OnEngineEvent(Ref<Mule::Event> event) override;
 
-	void SetUIScene(WeakRef<Mule::UIScene> scene);
 
 private:
-	WeakRef<Mule::Texture2D> mBlackTexture;
-	WeakRef<Mule::UIScene> mUIScene;
-	Ref<Mule::Camera> mUIEditorCamera;
-	WeakRef<Mule::UIBaseElement> mSelectedElement;
-	bool mIsModified;
-	ImVec2 mViewportSize;
-	ImVec2 mFrameCursorPos;
-
-	void DisplayElementPanel();
-	void DisplayCanvasPanel();
-	void DisplayInspectorPanel();
-
-	void DisplayElementSelection(Mule::UIElementType type);
-
-	void SnapDraggingBox(const Mule::UIRect& draggedRect, const ImVec2& mousePos, float threshold = 5.f);
-	bool ModifySelected();
-
-	struct SnapCorner
-	{
-		ImGuiMouseCursor cursor;
-		ImVec2 Pos;
-		Mule::UIAnchorAxis axis;
-		glm::vec2 AxisMovement;
-	};
-
-	
+	WeakRef<Mule::Texture2D> mBlackTexture;	
 };

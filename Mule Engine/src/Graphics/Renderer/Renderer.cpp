@@ -9,6 +9,12 @@
 
 #include "ScopedBuffer.h"
 
+#include <RmlUi/Core.h>
+#include "Graphics/UI/Rml/FileInterface.h"
+#include "Graphics/UI/Rml/RenderInterface.h"
+#include "Graphics/UI/Rml/SystemInterface.h"
+#include "Graphics/UI/Rml/FontInterface.h"
+
 namespace Mule
 {
 	Renderer* Renderer::sRenderer = nullptr;
@@ -23,6 +29,12 @@ namespace Mule
 
 	void Renderer::Init()
 	{
+		Rml::SetRenderInterface(new UI::RmlRenderInterface());
+		Rml::SetSystemInterface(new UI::RmlSystemInterface());
+		Rml::SetFileInterface(new UI::RmlFileInterface());
+		Rml::SetFontEngineInterface(new UI::RmlFontInterface());
+		assert(Rml::Initialise() && "Failed to Initialise RmlUi");
+
 		assert(!sRenderer && "Renderer has already been initialized");
 		sRenderer = new Renderer();
 

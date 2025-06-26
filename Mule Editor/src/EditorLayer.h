@@ -16,9 +16,6 @@
 #include "Panel/PerformancePanel.h"
 #include "Panel/EnvironmentMapGeneratorPanel.h"
 #include "Panel/UI/UIEditorPanel.h"
-#include "Panel/UI/UIElementEditorPanel.h"
-#include "Panel/UI/UIStyleEditorPanel.h"
-#include "Panel/UI/UIThemeEditor.h"
 
 
 // STD
@@ -53,9 +50,6 @@ private:
 	PerformancePanel mPerformancePanel;
 	EnvironmentMapGeneratorPanel mEnvironmentMapGeneratorPanel;
 	UIEditorPanel mUIEditorPanel;
-	UIElementEditorPanel mUIElementEditorPanel;
-	UIStyleEditorPanel mUIStyleEditorPanel;
-	UIThemeEditor mUIThemeEditorPanel;
 
 
 	bool mShowDemoWindow = false;

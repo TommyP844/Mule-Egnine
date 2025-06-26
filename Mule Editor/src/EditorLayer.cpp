@@ -38,9 +38,6 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mPerformancePanel.SetContext(mEditorState, context);
 	mEnvironmentMapGeneratorPanel.SetContext(mEditorState, context);
 	mUIEditorPanel.SetContext(mEditorState, context);
-	mUIElementEditorPanel.SetContext(mEditorState, context);
-	mUIStyleEditorPanel.SetContext(mEditorState, context);
-	mUIThemeEditorPanel.SetContext(mEditorState, context);
 
 	mSceneHierarchyPanel.OnAttach();
 	mSceneViewPanel.OnAttach();
@@ -54,15 +51,11 @@ EditorLayer::EditorLayer(Ref<Mule::EngineContext> context)
 	mPerformancePanel.OnAttach();
 	mEnvironmentMapGeneratorPanel.OnAttach();
 	mUIEditorPanel.OnAttach();
-	mUIElementEditorPanel.OnAttach();
-	mUIStyleEditorPanel.OnAttach();
-	mUIThemeEditorPanel.OnAttach();
 
 	mAssetManagerPanel.Close();
 	mMaterialEditorPanel.Close();
 	mTextureViewerPanel.Close();
 	mEnvironmentMapGeneratorPanel.Close();
-	mUIElementEditorPanel.Close();
 
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("../Assets/Fonts/Roboto/Roboto-black.ttf", 18.f);
 	ImFontConfig fontConfig;
@@ -221,10 +214,7 @@ void EditorLayer::OnUIRender(float dt)
 		if (ImGui::BeginMenu("Editors"))
 		{
 			ImGui::MenuItem("Material Editor", "", mMaterialEditorPanel.OpenPtr());
-			ImGui::MenuItem("UI Element Editor", "", mUIElementEditorPanel.OpenPtr());
 			ImGui::MenuItem("UI Panel Editor", "", mUIEditorPanel.OpenPtr());
-			ImGui::MenuItem("UI Style Editor", "", mUIStyleEditorPanel.OpenPtr());
-			ImGui::MenuItem("UI Theme Editor", "", mUIThemeEditorPanel.OpenPtr());
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Tools"))
@@ -271,9 +261,6 @@ void EditorLayer::OnUIRender(float dt)
 		mPerformancePanel.OnEditorEvent(event);
 		mEnvironmentMapGeneratorPanel.OnEditorEvent(event);
 		mUIEditorPanel.OnEditorEvent(event);
-		mUIElementEditorPanel.OnEditorEvent(event);
-		mUIStyleEditorPanel.OnEditorEvent(event);
-		mUIThemeEditorPanel.OnEditorEvent(event);
 	}
 
 	mEditorState->ClearEvents();
@@ -291,9 +278,6 @@ void EditorLayer::OnUIRender(float dt)
 	mPerformancePanel.OnUIRender(dt);
 	mEnvironmentMapGeneratorPanel.OnUIRender(dt);
 	mUIEditorPanel.OnUIRender(dt);
-	mUIElementEditorPanel.OnUIRender(dt);
-	mUIStyleEditorPanel.OnUIRender(dt);
-	mUIThemeEditorPanel.OnUIRender(dt);
 
 	NewItemPopup(mNewScenePopup, "Scene", ".scene", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
 		auto serviceManager = mEngineContext->GetServiceManager();
@@ -327,26 +311,6 @@ void EditorLayer::OnUIRender(float dt)
 		// TODO: check if current style exists and is modified then prompt the user before opening
 		});
 	*/
-
-	NewItemPopup(mNewUIThemePopup, "UI Theme", ".mtheme", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
-		auto theme = MakeRef<Mule::UITheme>();
-		theme->SetFilePath(filepath);
-		assetManager->Insert(theme);
-		mUIThemeEditorPanel.Open();
-		mUIThemeEditorPanel.SetTheme(theme);
-
-		// TODO: check if current theme exists and is modified then prompt the user before opening
-		});
-
-	NewItemPopup(mNewUIScenePopup, "UI Scene", ".muis", mEditorState->GetAssetsPath(), [&](const fs::path& filepath) {
-		auto scene = MakeRef<Mule::UIScene>();
-		scene->SetFilePath(filepath);
-		assetManager->Insert(scene);
-		mUIEditorPanel.Open();
-		mUIEditorPanel.SetUIScene(scene);
-
-		// TODO: check if current scene exists and is modified then prompt the user before opening
-		});
 }
 
 void EditorLayer::OnRender(float dt)

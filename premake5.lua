@@ -1,8 +1,11 @@
+
+dir = os.getcwd();
+FREETYPE_INCLUDEDIR = dir .. "Submodules/msdf-atlas-gen/msdfgen/freetype/include"
+
 workspace "Mule"
     configurations { "Debug", "Release" }
     startproject "Mule Editor"
 
-    dir = os.getcwd();
 
     filter "configurations:Debug"
         staticruntime "Off"
@@ -25,6 +28,9 @@ workspace "Mule"
         dir .. "/Submodules/msdf-atlas-gen",
         dir .. "/Submodules/msdf-atlas-gen/msdfgen/include",
         dir .. "/Submodules/msdf-atlas-gen/msdfgen",
+        dir .. "/Submodules/RmlUi/Include",
+        dir .. "/Submodules/msdf-atlas-gen/msdfgen/freetype/include",
+        dir .. "/Submodules/RmlUi/Dependencies/rlottie/inc",
     }
 
     debugLibs = {
@@ -81,6 +87,8 @@ workspace "Mule"
 		'{COPYFILE} "%{wks.location}Submodules/Coral/Coral.Managed/Coral.Managed.runtimeconfig.json" "%{wks.location}Submodules/Coral/Build/%{cfg.targetdir}"',
 	}
     
+
+
     -- Submodule
     group "Submodules"
         include "Submodules/imgui/premake5.lua"
@@ -92,6 +100,8 @@ workspace "Mule"
         include "Submodules/Coral/Coral.Managed/premake5.lua"
         include "Submodules/Coral/Coral.Native/premake5.lua"
         include "Submodules/msdf-atlas-gen/premake5.lua"
+        include "Submodules/RmlUi/premake5.lua"
+        include "Submodules/RmlUi/Dependencies/rlottie/premake5.lua"
     group ""
     -- Projects
     include "Mule Editor/editor.lua"

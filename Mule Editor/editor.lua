@@ -11,7 +11,8 @@ project "Mule Editor"
     buildoptions {"/utf-8"} -- Needed for spdlog to compile
 
     defines {
-        "GLFW_INCLUDE_VULKAN"
+        "GLFW_INCLUDE_VULKAN",
+        "RMLUI_STATIC_LIB"
     }
 
     includedirs {
@@ -31,7 +32,8 @@ project "Mule Editor"
         "nativefiledialog",
         "ImGuizmo",
         libs,
-        "Coral.Native"
+        "Coral.Native",
+        "RmlUi"
     }
 
     files {

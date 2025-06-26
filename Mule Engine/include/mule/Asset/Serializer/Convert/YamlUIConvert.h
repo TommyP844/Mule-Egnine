@@ -56,36 +56,13 @@ namespace YAML
         {
             Node node;
             
-            if (transform.Left)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Left;
-                node["Left"] = measurement;
-            }
-            if (transform.Top)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Top;
-                node["Top"] = measurement;
-            }
-            if (transform.Bottom)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Bottom;
-                node["Bottom"] = measurement;
-            }
-            if (transform.Right)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Right;
-                node["Right"] = measurement;
-            }
-            if (transform.Width)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Width;
-                node["Width"] = measurement;
-            }
-            if (transform.Height)
-            {
-                const Mule::UIMeasurement& measurement = *transform.Height;
-                node["Height"] = measurement;
-            }
+            node["Left"] = transform.Left;
+            node["Top"] = transform.Top;
+            node["Bottom"] = transform.Bottom;
+            node["Right"] = transform.Right;
+            node["Width"] = transform.Width;
+            node["Height"] = transform.Height;
+            
 
             return node;
         }

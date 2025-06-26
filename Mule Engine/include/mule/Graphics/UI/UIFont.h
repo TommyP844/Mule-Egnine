@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Asset/Asset.h"
+#include "Ref.h"
 #include "Graphics/API/Texture2D.h"
-#include "Graphics/UI/UIRect.h"
-#include "Graphics/UI/UITheme.h"
 
 #include <unordered_map>
 
