@@ -338,21 +338,9 @@ bool ContentBrowserPanel::FilePopContent(const DisplayFile& file)
 				mEditorContext->PushEvent(event);
 			}
 			break;
-			case Mule::AssetType::UIStyle:
-			{
-				Ref<EditUIStyleEvent> event = MakeRef<EditUIStyleEvent>(file.Handle);
-				mEditorContext->PushEvent(event);
-			}
-			break;
 			case Mule::AssetType::UIScene:
 			{
 				Ref<EditUISceneEvent> event = MakeRef<EditUISceneEvent>(file.Handle);
-				mEditorContext->PushEvent(event);
-			}
-			break;
-			case Mule::AssetType::UITheme:
-			{
-				Ref<EditUIThemeEvent> event = MakeRef<EditUIThemeEvent>(file.Handle);
 				mEditorContext->PushEvent(event);
 			}
 			break;

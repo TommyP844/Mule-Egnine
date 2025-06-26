@@ -81,7 +81,6 @@ void AssetManagerPanel::OnUIRender(float dt)
 				if (index == 4) assetType = Mule::AssetType::Model;
 				if (index == 5) assetType = Mule::AssetType::Shader;
 				if (index == 6) assetType = Mule::AssetType::Texture;
-				if (index == 7) assetType = Mule::AssetType::UIStyle;
 			}
 		}
 

@@ -69,3 +69,4 @@
 
 // UI
 #include "Graphics/UI/UIFont.h"
+#include "Graphics/UI/Scene.h"

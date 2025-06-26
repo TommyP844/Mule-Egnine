@@ -81,6 +81,7 @@ void ComponentPanel::OnUIRender(float dt)
 				ImGui::EndMenu();
 			}
 			ADD_COMPONENT("Script", Mule::ScriptComponent);
+			ADD_COMPONENT("UI", Mule::UISceneComponent);
 
 			ImGui::EndMenu();
 		}
@@ -424,6 +425,32 @@ void ComponentPanel::OnUIRender(float dt)
 				}
 			}
 
+			});
+
+		DisplayComponent<Mule::UISceneComponent>(ICON_FA_PAINTBRUSH "UI", e, [&](Mule::UISceneComponent& scene) {
+
+			DisplayRow("Active");
+			ImGui::Checkbox("##UISceneActive", &scene.Active);
+
+			auto uiScene = assetManager->Get<Mule::UI::Scene>(scene.SceneHandle);
+			std::string sceneName = "(Empty)";
+			if (uiScene)
+				sceneName = uiScene->Name();
+
+			DisplayRow("UIScene");
+			ImGui::BeginDisabled();
+			ImGui::InputText("##SceneName", sceneName.data(), sceneName.size());
+			ImGui::EndDisabled();
+
+			ImGuiExtension::DragDropFile ddf;
+			if (ImGuiExtension::DragDropTarget(ImGuiExtension::PAYLOAD_TYPE_FILE, ddf))
+			{
+				if (ddf.AssetType == Mule::AssetType::UIScene)
+				{
+					auto uiScene = assetManager->Get<Mule::UI::Scene>(ddf.AssetHandle);
+					scene.SceneHandle = uiScene->Handle();
+				}
+			}
 			});
 
 		ImGui::PopStyleColor(3);

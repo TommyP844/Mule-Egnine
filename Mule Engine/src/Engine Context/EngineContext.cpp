@@ -17,6 +17,7 @@
 #include "Asset/Serializer/MaterialSerializer.h"
 #include "Asset/Serializer/ScriptSerializer.h"
 #include "Asset/Serializer/FontSerializer.h"
+#include "Asset/Serializer/UISceneSerializer.h"
 
 // Generators
 #include "Asset/Generator/EnvironmentMapGenerator.h"
@@ -53,6 +54,7 @@ namespace Mule
 		assetManager->RegisterLoader<TextureSerializer>(mServiceManager);
 		assetManager->RegisterLoader<MaterialSerializer>(mServiceManager);
 		assetManager->RegisterLoader<FontSerializer>(mServiceManager);
+		assetManager->RegisterLoader<UISceneSerializer>(mServiceManager);
 
 		assetManager->RegisterLoadCallback<Material>([](WeakRef<Material> material) {
 			Renderer::Get().AddMaterial(material);

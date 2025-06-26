@@ -127,6 +127,14 @@ namespace Mule
 		glm::vec3 Color = glm::vec3(1.f);
 	};
 
+	struct UISceneComponent
+	{
+		UISceneComponent() = default;
+		UISceneComponent(const UISceneComponent&) = default;
+		bool Active = true;
+		AssetHandle SceneHandle = AssetHandle::Null();
+	};
+
 	struct MeshComponent
 	{
 		MeshComponent() = default;

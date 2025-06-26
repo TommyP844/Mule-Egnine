@@ -95,6 +95,7 @@ namespace Mule
 		SERIALIZE_COMPONENT_IF_EXISTS("CapsuleCollider", CapsuleColliderComponent);
 		SERIALIZE_COMPONENT_IF_EXISTS("PlaneCollider", PlaneColliderComponent);
 		SERIALIZE_COMPONENT_IF_EXISTS("RigidBodyConstraint", RigidBodyConstraintComponent);
+		SERIALIZE_COMPONENT_IF_EXISTS("UIScene", UISceneComponent);
 
 		YAML::Node childNode;
 		for (auto child : e.Children())
@@ -125,6 +126,7 @@ namespace Mule
 		DESERIALIZE_COMPONENT_IF_EXISTS("PlaneCollider", PlaneColliderComponent);
 		DESERIALIZE_COMPONENT_IF_EXISTS("RigidBodyConstraint", RigidBodyConstraintComponent);
 		DESERIALIZE_COMPONENT_IF_EXISTS("Script", ScriptComponent);
+		DESERIALIZE_COMPONENT_IF_EXISTS("UIScene", UISceneComponent);
 
 
 		for (auto childNode : node["Children"])

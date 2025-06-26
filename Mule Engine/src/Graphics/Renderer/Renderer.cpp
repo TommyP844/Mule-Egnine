@@ -192,6 +192,7 @@ namespace Mule
 
 	void Renderer::Shutdown()
 	{
+		Rml::Shutdown();
 		assert(sRenderer && "Renderer has not been initialized");
 		delete sRenderer;
 	}

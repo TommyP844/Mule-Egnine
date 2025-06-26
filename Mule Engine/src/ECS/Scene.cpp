@@ -32,6 +32,7 @@ namespace Mule
 
 	Scene::~Scene()
 	{
+		
 	}
 
 	Entity Scene::CreateEntity(const std::string& name, const Guid& guid)

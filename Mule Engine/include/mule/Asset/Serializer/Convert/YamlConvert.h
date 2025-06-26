@@ -652,5 +652,25 @@ namespace YAML {
         }
     };
 
+    template<>
+    struct convert<Mule::UISceneComponent> {
+        static Node encode(const Mule::UISceneComponent& scene) {
+            Node node;
+
+            node["Active"] = scene.Active;
+			node["SceneHandle"] = scene.SceneHandle;
+
+            return node;
+        }
+
+        static bool decode(const Node& node, Mule::UISceneComponent& scene) {
+
+            scene.Active = node["Active"].as<bool>();
+			scene.SceneHandle = node["SceneHandle"].as<Mule::AssetHandle>();
+
+            return true;
+        }
+    };
+
 #pragma endregion
 }
