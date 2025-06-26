@@ -43,3 +43,6 @@
 [submodule "Submodules/msdf-atlas-gen"]
 	path = Submodules/msdf-atlas-gen
 	url = https://github.com/TheCherno/msdf-atlas-gen
+[submodule "Submodules/RmlUi"]
+	path = Submodules/RmlUi
+	url = https://github.com/TommyP844/RmlUi
